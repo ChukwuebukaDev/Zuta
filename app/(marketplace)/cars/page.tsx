@@ -1,5 +1,6 @@
-import CarCard from "@/components/UI/Cards/CarCard";
-import { cars } from "@/lib/cars";
+import { Suspense } from "react";
+import CarGridSkeleton from "@/components/UI/Wrapper/CarGridSkeleton";
+import CarsList from "./CarServer";
 
 export default function CarsPage() {
   return (
@@ -13,12 +14,9 @@ export default function CarsPage() {
           </p>
         </div>
 
-        {/* Cars grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cars.map((car) => (
-            <CarCard key={car.id} {...car} />
-          ))}
-        </div>
+        <Suspense fallback={<CarGridSkeleton />}>
+          <CarsList />
+        </Suspense>
       </div>
     </section>
   );

@@ -1,13 +1,7 @@
 import Link from "next/link";
+import { MarketplaceItem } from "@/types/Marketplace-types";
 
-type CarCardProps = {
-  id: string;
-  name: string;
-  price: string;
-  image: string;
-};
-
-export default function CarCard({ id, name, price, image }: CarCardProps) {
+export default function CarCard({ id, name, price, image }: MarketplaceItem) {
   return (
     <Link href={`/cars/${id}`}>
       <div className="rounded-xl bg-white shadow-sm p-4 hover:shadow-md transition cursor-pointer">

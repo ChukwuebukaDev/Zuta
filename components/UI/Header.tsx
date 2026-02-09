@@ -5,7 +5,12 @@ import Link from "next/link";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
+  const links = [
+    { name: "Cars", link: "/cars" },
+    { name: "Parts", link: "/parts" },
+    { name: "Accessories", link: "/accessories" },
+    { name: "Services & Repairs", link: "/services&repairs" },
+  ];
   return (
     <header className="bg-white shadow sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
@@ -16,18 +21,15 @@ export default function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex space-x-6 items-center">
-          <Link className="hover:underline" href="/Cars">
-            Cars
-          </Link>
-          <Link className="hover:underline" href="/Parts">
-            Parts
-          </Link>
-          <Link className="hover:underline" href="/Accessories">
-            Accessories
-          </Link>
-          <Link className="hover:underline" href="/Services & Repairs">
-            Services & Repairs
-          </Link>
+          {links.map((li, i) => (
+            <Link
+              key={i}
+              className="hover:bg-gray-600 hover:p-1 hover:rounded hover:text-white transition-all duration-700"
+              href={li.link}
+            >
+              {li.name}
+            </Link>
+          ))}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -55,22 +57,22 @@ export default function Header() {
         <nav className="bg-gray-100 rounded-b-2xl">
           <ul className="flex flex-col p-4 space-y-2">
             <li>
-              <Link className="hover:underline" href="/Cars">
+              <Link className="hover:underline" href="/cars">
                 Cars
               </Link>
             </li>
             <li>
-              <Link className="hover:underline" href="/Parts">
+              <Link className="hover:underline" href="/parts">
                 Parts
               </Link>
             </li>
             <li>
-              <Link className="hover:underline" href="/Accessories">
+              <Link className="hover:underline" href="/accessories">
                 Accessories
               </Link>
             </li>
             <li>
-              <Link className="hover:underline" href="/Services & Repairs">
+              <Link className="hover:underline" href="/services-repairs">
                 Services & Repairs
               </Link>
             </li>
