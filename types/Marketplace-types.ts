@@ -8,8 +8,23 @@ export type MarketplaceItem = {
   location?: string;
   year?: string;
   condition?: string;
+
+  [key: string]: any;
 };
 
-export type MarketplaceState = {
+export interface MarketplaceState {
   items: MarketplaceItem[];
+  filteredItems: MarketplaceItem[];
+  filters: Record<string, string>;
+}
+
+export type MarketplaceContextType = {
+  items: MarketplaceItem[];
+  filteredItems: MarketplaceItem[];
+  filters: Record<string, string>;
+  setFilters: (filters: Record<string, string>) => void;
+
+  addItem: (item: MarketplaceItem) => void;
+  removeItem: (id: string) => void;
+  getItemsByCategory: (category: string) => MarketplaceItem[];
 };

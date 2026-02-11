@@ -1,6 +1,6 @@
 import "./globals.css";
-import Header from "@/components/UI/Header";
-import Footer from "@/components/UI/Footer";
+import Header from "@/components/UI/Home/Header";
+import Footer from "@/components/UI/Home/Footer";
 export const metadata = {
   title: "Zuta Marketplace",
   description: "Car marketplace built with Next.js and React",

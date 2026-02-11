@@ -1,26 +1,26 @@
 import { MarketplaceItem } from "@/types/Marketplace-types";
 
-export async function fetchMarketplaceItems(): Promise<MarketplaceItem[]> {
-  await new Promise((res) => setTimeout(res, 2200));
+export function fetchMarketplaceItems(): MarketplaceItem[] {
+  // await new Promise((res) => setTimeout(res, 2200));
 
   return [
     {
       id: "1",
-      name: "Toyota Camry 2020",
-      price: "₦12,500,000",
+      name: "Toyota Corolla",
+      price: "2500000",
       category: "cars",
+      year: "2020",
+      condition: "used",
+      transmission: "automatic",
     },
     {
       id: "2",
-      name: "Honda Accord 2019",
-      price: "₦10,800,000",
+      name: "Honda Civic",
+      price: "3000000",
       category: "cars",
-    },
-    {
-      id: "3",
-      name: "Brake Pads Set",
-      price: "₦45,000",
-      category: "parts",
+      year: "2022",
+      condition: "new",
+      transmission: "manual",
     },
   ];
 }

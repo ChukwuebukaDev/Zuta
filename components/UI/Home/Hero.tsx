@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Car } from "lucide-react";
-import { Button } from "./Controls/Button";
+import { Button } from "../Controls/Button";
 
 export default function Hero() {
   return (

@@ -1,6 +1,8 @@
+"use client";
 import { Suspense } from "react";
 import CarGridSkeleton from "@/components/UI/Wrapper/CarGridSkeleton";
 import CarsList from "./CarServer";
+import FilterClient from "@/components/UI/Filter/FilterClient";
 
 export default function CarsPage() {
   return (
@@ -13,7 +15,7 @@ export default function CarsPage() {
             Explore available cars from trusted sellers
           </p>
         </div>
-
+        <FilterClient />
         <Suspense fallback={<CarGridSkeleton />}>
           <CarsList />
         </Suspense>
