@@ -27,4 +27,5 @@ export type MarketplaceContextType = {
   addItem: (item: MarketplaceItem) => void;
   removeItem: (id: string) => void;
   getItemsByCategory: (category: string) => MarketplaceItem[];
+  getItemsById: (id: string) => MarketplaceItem | undefined;
 };

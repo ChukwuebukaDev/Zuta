@@ -1,8 +1,6 @@
 import { MarketplaceItem } from "@/types/Marketplace-types";
 
 export function fetchMarketplaceItems(): MarketplaceItem[] {
-  // await new Promise((res) => setTimeout(res, 2200));
-
   return [
     {
       id: "1",
