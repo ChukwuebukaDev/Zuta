@@ -1,59 +1,48 @@
-"use client";
-
-import { useMarketplace } from "@/context/MarketplaceEngine";
-import FilterEngine from "@/components/UI/Filter/FilterEngine";
+import { getParts } from "@/lib/engine/PartsEngine";
 import PartCard from "@/components/UI/Cards/PartsCard";
+import PartsFilter from "@/components/UI/Filter/PartsFilter";
+import type { Part } from "@/types/parts/part";
 
-export default function PartsPage() {
-  const { filteredItems, setFilters } = useMarketplace();
+type PartsPageProps = {
+  searchParams?: {
+    brand?: string;
+    category?: string;
+    condition?: string;
+    maxPrice?: string;
+  };
+};
 
-  // Only show parts
-  const parts = filteredItems.filter((item) => item.category === "parts");
+export default async function PartsPage({ searchParams }: PartsPageProps) {
+  // Transform URL params → proper types
+  const conditionParam = searchParams?.condition;
+  const condition =
+    conditionParam === "new" ||
+    conditionParam === "used" ||
+    conditionParam === "refurbished"
+      ? conditionParam
+      : undefined;
 
-  // Filters specific to parts
-  const partsFilters = [
-    {
-      type: "select",
-      name: "brand",
-      label: "Brand",
-      options: [
-        { label: "Toyota", value: "Toyota" },
-        { label: "Honda", value: "Honda" },
-        { label: "BMW", value: "BMW" },
-        { label: "Mercedes", value: "Mercedes" },
-        { label: "Ford", value: "Ford" },
-      ],
-    },
-    {
-      type: "select",
-      name: "condition",
-      label: "Condition",
-      options: [
-        { label: "New", value: "new" },
-        { label: "Used", value: "used" },
-      ],
-    },
-    {
-      type: "text",
-      name: "location",
-      label: "Location",
-    },
-  ];
+  const filters: Partial<Part> = {
+    brand: searchParams?.brand,
+    category: searchParams?.category,
+    condition,
+    price: searchParams?.maxPrice ? Number(searchParams.maxPrice) : undefined,
+  };
+
+  const parts = await getParts(filters);
 
   return (
-    <div className="max-w-7xl mx-auto flex gap-8 p-6">
-      {/* Filter Section */}
-      <div className="w-64">
-        <FilterEngine fields={partsFilters} onFilterChange={setFilters} />
-      </div>
+    <div className="p-6 space-y-8">
+      <h1 className="text-3xl font-bold">Available Parts</h1>
+
+      {/* Client Filter UI */}
+      <PartsFilter />
 
       {/* Parts Grid */}
-      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {parts.length === 0 ? (
-          <p className="text-gray-500">No parts found.</p>
-        ) : (
-          parts.map((part) => <PartCard key={part.id} {...part} />)
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {parts.map((part) => (
+          <PartCard key={part.id} part={part} />
+        ))}
       </div>
     </div>
   );

@@ -1,18 +1,23 @@
-import { notFound } from "next/navigation";
-import { getCarById } from "@/lib/engine/marketplace";
+import { getCarBySlug } from "@/lib/engine/marketplace";
 import Image from "next/image";
+import Link from "next/link";
+import CarImageSlider from "@/components/UI/Wrapper/CarImageSlider";
 
-type CarDetailsPageProps = {
-  params: {
-    id: string;
-  };
-};
-
-export default async function CarDetailsPage({ params }: CarDetailsPageProps) {
-  const car = await getCarById(params.id);
+export default async function CarDetailsPage(props: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await props.params; // <-- unwrap the promise
+  const car = await getCarBySlug(slug);
 
   if (!car) {
-    notFound();
+    return (
+      <div className="h-screen flex flex-col items-center justify-center">
+        <h1 className="text-2xl font-bold">Car Not Found</h1>
+        <Link className="underline" href="/cars">
+          Back To Cars
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -23,23 +28,14 @@ export default async function CarDetailsPage({ params }: CarDetailsPageProps) {
           {car.brand} {car.model} {car.year}
         </h1>
         <p className="text-gray-500">
-          ₦{car.price.toLocaleString()} {car.negotiable && "(Negotiable)"}
+          ₦{car.price.toLocaleString()}{" "}
+          {car.negotiable ? "(Negotiable)" : "(Non-Negotiale)"}
         </p>
       </div>
 
       {/* Images */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {car.images.map((img, index) => (
-          <div key={index} className="relative w-full h-80">
-            <Image
-              src={img}
-              alt={`${car.model}-${index}`}
-              fill
-              className="object-cover rounded-xl"
-            />
-          </div>
-        ))}
-      </div>
+
+      <CarImageSlider images={car.images} model={car.model} />
 
       {/* Specifications */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 border rounded-xl p-6 bg-white shadow-sm">

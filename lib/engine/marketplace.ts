@@ -1,74 +1,6 @@
-import { Car } from "@/types/car/cars.types";
+import { mockCars } from "@/data/cars";
 import { CarFilters } from "@/types/car/cars.types";
-const mockCars: Car[] = [
-  {
-    id: "1",
-    slug: "2022-mercedes-c300",
-    brand: "Mercedes-Benz",
-    model: "C300",
-    year: 2022,
-    bodyType: "sedan",
-
-    transmission: "automatic",
-    fuelType: "petrol",
-    drivetrain: "rwd",
-    mileage: 12000,
-
-    condition: "foreign-used",
-    accidentHistory: false,
-    serviceHistory: true,
-
-    price: 32000000,
-    currency: "NGN",
-    negotiable: true,
-
-    thumbnail: "/cars/benz-thumb.jpg",
-    images: ["/cars/benz-1.jpg", "/cars/benz-2.jpg", "/cars/benz-3.jpg"],
-
-    status: "available",
-    featured: true,
-    views: 124,
-
-    sellerId: "seller_001",
-
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-
-  {
-    id: "2",
-    slug: "2021-toyota-camry",
-    brand: "Toyota",
-    model: "Camry",
-    year: 2021,
-    bodyType: "sedan",
-
-    transmission: "automatic",
-    fuelType: "petrol",
-    drivetrain: "fwd",
-    mileage: 25000,
-
-    condition: "nigeria-used",
-    accidentHistory: false,
-    serviceHistory: true,
-
-    price: 18000000,
-    currency: "NGN",
-    negotiable: false,
-
-    thumbnail: "/cars/camry-thumb.jpg",
-    images: ["/cars/camry-1.jpg", "/cars/camry-2.jpg"],
-
-    status: "available",
-    featured: false,
-    views: 89,
-
-    sellerId: "seller_002",
-
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+import { Car } from "@/types/car/cars.types";
 
 export async function getCars(filters?: Partial<CarFilters>): Promise<Car[]> {
   let results = [...mockCars];
@@ -119,7 +51,7 @@ export async function getCars(filters?: Partial<CarFilters>): Promise<Car[]> {
   return results;
 }
 
-export async function getCarById(id: string): Promise<Car | null> {
-  const car = mockCars.find((car) => car.id === id);
+export async function getCarBySlug(slug: string): Promise<Car | null> {
+  const car = mockCars.find((car) => car.slug === slug);
   return car ?? null;
 }
