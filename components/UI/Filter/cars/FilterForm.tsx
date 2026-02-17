@@ -10,7 +10,7 @@ export default function FilterForm({
   return (
     <>
       <div
-        className={`grid gap-4 ${mobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-5"}`}
+        className={`grid gap-4 ${mobile ? "grid-cols-1" : "grid-cols-1 md:flex md:flex-col"}`}
       >
         <Input
           placeholder="Brand"

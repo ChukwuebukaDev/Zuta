@@ -34,21 +34,36 @@ export default function CarsFilter() {
   };
 
   const applyFilters = () => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams.toString());
+
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.set(key, value);
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
     });
 
+    // Reset page when filters change
+    params.delete("page");
+
     startTransition(() => {
-      router.push(`?${params.toString()}`);
+      router.replace(`?${params.toString()}`, { scroll: false });
       setOpenFilters(false);
     });
   };
 
   const resetFilters = () => {
-    setFilters({ brand: "", model: "", year: "", minPrice: "", maxPrice: "" });
+    const params = new URLSearchParams(searchParams.toString());
+
+    ["brand", "model", "year", "minPrice", "maxPrice"].forEach((key) =>
+      params.delete(key),
+    );
+
+    params.delete("page");
+
     startTransition(() => {
-      router.push("?");
+      router.replace(`?${params.toString()}`, { scroll: false });
       setOpenFilters(false);
     });
   };

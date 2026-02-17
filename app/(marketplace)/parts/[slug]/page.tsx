@@ -1,6 +1,7 @@
 import { getPartBySlug } from "@/lib/engine/PartsEngine";
 import Image from "next/image";
 import Link from "next/link";
+import CarImageSlider from "@/components/UI/Wrapper/CarImageSlider";
 
 type PartDetailsPageProps = {
   params: Promise<{ slug: string }>; // Next.js App Router requires this
@@ -39,18 +40,8 @@ export default async function PartDetailsPage({
       </div>
 
       {/* Images */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {part.images.map((img, i) => (
-          <div key={i} className="relative w-full h-80">
-            <Image
-              src={img}
-              alt={`${part.name}-${i}`}
-              fill
-              className="object-cover rounded-xl"
-            />
-          </div>
-        ))}
-      </div>
+
+      <CarImageSlider images={part.images} model={part.name} />
 
       {/* Compatibility */}
       <div className="border rounded-xl p-6 bg-white shadow-sm">

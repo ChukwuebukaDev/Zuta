@@ -1,12 +1,11 @@
 import { getCarBySlug } from "@/lib/engine/marketplace";
-import Image from "next/image";
 import Link from "next/link";
 import CarImageSlider from "@/components/UI/Wrapper/CarImageSlider";
 
 export default async function CarDetailsPage(props: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await props.params; // <-- unwrap the promise
+  const { slug } = await props.params;
   const car = await getCarBySlug(slug);
 
   if (!car) {
@@ -38,7 +37,7 @@ export default async function CarDetailsPage(props: {
       <CarImageSlider images={car.images} model={car.model} />
 
       {/* Specifications */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 border rounded-xl p-6 bg-white shadow-sm">
+      <div className="grid hover:bg-white/40 transition-colors duration-400 grid-cols-2 md:grid-cols-3 gap-6  rounded-xl p-6 bg-white shadow-lg">
         <Spec label="Body Type" value={car.bodyType} />
         <Spec label="Transmission" value={car.transmission} />
         <Spec label="Fuel Type" value={car.fuelType} />
@@ -48,7 +47,7 @@ export default async function CarDetailsPage(props: {
       </div>
 
       {/* Seller Info */}
-      <div className="border rounded-xl p-6 bg-white shadow-sm">
+      <div className="rounded-xl hover:bg-white/40 transition-colors duration-400 p-6 bg-white shadow-lg">
         <h2 className="text-xl font-semibold mb-4">Seller Information</h2>
         <p>Seller ID: {car.sellerId}</p>
         <p>Views: {car.views}</p>
@@ -58,7 +57,6 @@ export default async function CarDetailsPage(props: {
   );
 }
 
-/* Small reusable spec component */
 function Spec({ label, value }: { label: string; value: string }) {
   return (
     <div>

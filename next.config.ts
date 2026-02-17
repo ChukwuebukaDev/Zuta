@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "source.unsplash.com", // Often used for dynamic, source-based URLs
       },
+      {
+        protocol: "https",
+        hostname: "plus.unsplash.com", // Often used for dynamic, source-based URLs
+      },
     ],
     // Optional: Add modern image formats for better performance
     formats: ["image/avif", "image/webp"],

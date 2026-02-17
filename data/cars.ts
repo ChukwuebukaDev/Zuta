@@ -1,7 +1,7 @@
 import { Car } from "@/types/car/cars.types";
 export const mockCars: Car[] = [
   {
-    id: "1",
+    id: crypto.randomUUID(),
     slug: "2022-mercedes-c300",
     brand: "Mercedes-Benz",
     model: "C300",
@@ -13,7 +13,7 @@ export const mockCars: Car[] = [
     drivetrain: "rwd",
     mileage: 12000,
 
-    condition: "foreign-used",
+    condition: "new",
     accidentHistory: false,
     serviceHistory: true,
 
@@ -40,7 +40,7 @@ export const mockCars: Car[] = [
   },
 
   {
-    id: "2",
+    id: crypto.randomUUID(),
     slug: "2021-toyota-camry",
     brand: "Toyota",
     model: "Camry",
@@ -73,6 +73,158 @@ export const mockCars: Car[] = [
     views: 89,
 
     sellerId: "seller_002",
+
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: crypto.randomUUID(),
+    slug: "2022-honda-crv",
+    brand: "Honda",
+    model: "CR-V",
+    year: 2022,
+    bodyType: "suv",
+
+    transmission: "automatic",
+    fuelType: "petrol",
+    drivetrain: "awd",
+    mileage: 15000,
+
+    condition: "foreign-used",
+    accidentHistory: false,
+    serviceHistory: true,
+
+    price: 25000000,
+    currency: "NGN",
+    negotiable: false,
+
+    thumbnail:
+      "https://images.unsplash.com/photo-1708148246994-b7b3c818090d?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG9uZGElMjBjcnZ8ZW58MHx8MHx8fDA%3D",
+    images: [
+      "https://images.unsplash.com/photo-1623597780975-38ccd5030c83?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8aG9uZGElMjBjcnZ8ZW58MHx8MHx8fDA%3D",
+      "https://images.unsplash.com/photo-1718603494523-ed04bd2115ae?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8aG9uZGElMjBjcnZ8ZW58MHx8MHx8fDA%3D",
+      "https://images.unsplash.com/photo-1662981535849-b65888e3ec45?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGhvbmRhJTIwY3J2fGVufDB8fDB8fHww",
+    ],
+
+    status: "available",
+    featured: false,
+    views: 109,
+
+    sellerId: "seller_003",
+
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: crypto.randomUUID(),
+    slug: "2024-tesla-model-3",
+    brand: "Tesla",
+    model: "Model 3",
+    year: 2024,
+    bodyType: "sedan",
+
+    transmission: "automatic",
+    fuelType: "electric",
+    drivetrain: "fwd",
+    mileage: 1000,
+
+    condition: "foreign-used",
+    accidentHistory: false,
+    serviceHistory: false,
+
+    price: 45000000,
+    currency: "NGN",
+    negotiable: true,
+
+    thumbnail:
+      "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+    images: [
+      "https://images.unsplash.com/photo-1585011664466-b7bbe92f34ef?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+      "https://images.unsplash.com/photo-1638398417409-dd54452eccdf?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+      "https://images.unsplash.com/photo-1700411881984-971bc29083bd?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+    ],
+
+    status: "available",
+    featured: false,
+    views: 109,
+
+    sellerId: "seller_004",
+
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: crypto.randomUUID(),
+    slug: "2024-tesla-model-3",
+    brand: "Tesla",
+    model: "Model 3",
+    year: 2024,
+    bodyType: "sedan",
+
+    transmission: "automatic",
+    fuelType: "electric",
+    drivetrain: "fwd",
+    mileage: 1000,
+
+    condition: "foreign-used",
+    accidentHistory: false,
+    serviceHistory: false,
+
+    price: 45000000,
+    currency: "NGN",
+    negotiable: true,
+
+    thumbnail:
+      "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+    images: [
+      "https://images.unsplash.com/photo-1585011664466-b7bbe92f34ef?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+      "https://images.unsplash.com/photo-1638398417409-dd54452eccdf?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+      "https://images.unsplash.com/photo-1700411881984-971bc29083bd?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+    ],
+
+    status: "available",
+    featured: false,
+    views: 109,
+
+    sellerId: "seller_004",
+
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: crypto.randomUUID(),
+    slug: "2024-tesla-model-3",
+    brand: "Tesla",
+    model: "Model 3",
+    year: 2024,
+    bodyType: "sedan",
+
+    transmission: "automatic",
+    fuelType: "electric",
+    drivetrain: "fwd",
+    mileage: 1000,
+
+    condition: "foreign-used",
+    accidentHistory: false,
+    serviceHistory: false,
+
+    price: 45000000,
+    currency: "NGN",
+    negotiable: true,
+
+    thumbnail:
+      "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+    images: [
+      "https://images.unsplash.com/photo-1585011664466-b7bbe92f34ef?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+      "https://images.unsplash.com/photo-1638398417409-dd54452eccdf?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+      "https://images.unsplash.com/photo-1700411881984-971bc29083bd?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8dGVzbGElMjBtb2RlbCUyMDN8ZW58MHx8MHx8fDA%3D",
+    ],
+
+    status: "available",
+    featured: false,
+    views: 109,
+
+    sellerId: "seller_004",
 
     createdAt: new Date(),
     updatedAt: new Date(),

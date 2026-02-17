@@ -21,25 +21,25 @@ export default function Footer() {
           <h3 className="font-semibold text-lg">Quick Links</h3>
           <nav className="flex flex-col space-y-2">
             <Link
-              href="/Cars"
+              href="/cars"
               className="hover:underline text-gray-300 transition-colors duration-300"
             >
               Cars
             </Link>
             <Link
-              href="/Parts"
+              href="/parts"
               className="hover:underline text-gray-300 transition-colors duration-300"
             >
               Parts
             </Link>
             <Link
-              href="/Accessories"
+              href="/accessories"
               className="hover:underline text-gray-300 transition-colors duration-300"
             >
               Accessories
             </Link>
             <Link
-              href="/Services & Repairs"
+              href="/services_repairs"
               className="hover:underline text-gray-300 transition-colors duration-300"
             >
               Services & Repairs

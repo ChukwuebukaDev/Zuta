@@ -78,5 +78,6 @@ export type CarFilters = {
 
   // Pagination (future-ready)
   page?: number;
+  pageSize?: number;
   limit?: number;
 };

@@ -2,53 +2,63 @@ import { mockCars } from "@/data/cars";
 import { CarFilters } from "@/types/car/cars.types";
 import { Car } from "@/types/car/cars.types";
 
-export async function getCars(filters?: Partial<CarFilters>): Promise<Car[]> {
+export async function getCars(filters?: Partial<CarFilters>) {
   let results = [...mockCars];
 
-  if (!filters) return results;
+  if (filters) {
+    // Brand filter
+    if (filters.brand) {
+      results = results.filter((car) =>
+        car.brand.toLowerCase().includes(filters.brand!.toLowerCase()),
+      );
+    }
 
-  // Brand filter
-  if (filters.brand) {
-    results = results.filter((car) =>
-      car.brand.toLowerCase().includes(filters.brand!.toLowerCase()),
-    );
+    // Model filter
+    if (filters.model) {
+      results = results.filter((car) =>
+        car.model.toLowerCase().includes(filters.model!.toLowerCase()),
+      );
+    }
+
+    // Year filter
+    if (filters.year) {
+      results = results.filter((car) => car.year === filters.year);
+    }
+
+    // Price range
+    if (filters.minPrice)
+      results = results.filter((car) => car.price >= filters.minPrice!);
+    if (filters.maxPrice)
+      results = results.filter((car) => car.price <= filters.maxPrice!);
+
+    // Sorting
+    if (filters.sortBy) {
+      const direction = filters.order === "desc" ? -1 : 1;
+      const field = filters.sortBy;
+
+      results.sort((a, b) => {
+        if (a[field] > b[field]) return direction;
+        if (a[field] < b[field]) return -direction;
+        return 0;
+      });
+    }
   }
 
-  // Model filter
-  if (filters.model) {
-    results = results.filter((car) =>
-      car.model.toLowerCase().includes(filters.model!.toLowerCase()),
-    );
-  }
+  // Pagination
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 20;
+  const total = results.length;
+  const totalPages = Math.ceil(total / pageSize);
 
-  // Year filter
-  if (filters.year) {
-    results = results.filter((car) => car.year === filters.year);
-  }
+  const start = (page - 1) * pageSize;
+  const data = results.slice(start, start + pageSize);
 
-  // Price range
-  if (filters.minPrice) {
-    results = results.filter((car) => car.price >= filters.minPrice!);
-  }
-
-  if (filters.maxPrice) {
-    results = results.filter((car) => car.price <= filters.maxPrice!);
-  }
-
-  // Sorting
-  if (filters.sortBy) {
-    const direction = filters.order === "desc" ? -1 : 1;
-
-    results.sort((a, b) => {
-      const field = filters.sortBy!;
-
-      if (a[field] > b[field]) return direction;
-      if (a[field] < b[field]) return -direction;
-      return 0;
-    });
-  }
-
-  return results;
+  return {
+    data,
+    total,
+    totalPages,
+    page,
+  };
 }
 
 export async function getCarBySlug(slug: string): Promise<Car | null> {

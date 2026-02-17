@@ -2,32 +2,31 @@ import { getCars } from "@/lib/engine/marketplace";
 import CarCard from "@/components/UI/Cards/CarCard";
 import CarsFilter from "@/components/UI/Filter/cars/CarsFilter";
 import type { CarFilters } from "@/types/car/cars.types";
+import Pagination from "@/components/UI/Pagination/CarPagination";
 
-type CarsPageProps = {
-  searchParams?: {
-    brand?: string;
-    model?: string;
-    year?: string;
-    minPrice?: string;
-    maxPrice?: string;
-  };
-};
+export default async function CarsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
 
-export default async function CarsPage({ searchParams }: CarsPageProps) {
-  // Transform URL params → proper types
-  const filters: Partial<CarFilters> = {
-    brand: searchParams?.brand,
-    model: searchParams?.model,
-    year: searchParams?.year ? Number(searchParams.year) : undefined,
-    minPrice: searchParams?.minPrice
-      ? Number(searchParams.minPrice)
-      : undefined,
-    maxPrice: searchParams?.maxPrice
-      ? Number(searchParams.maxPrice)
-      : undefined,
+  const filters: CarFilters = {
+    brand: params.brand as string | undefined,
+    model: params.model as string | undefined,
+    year: params.year ? Number(params.year) : undefined,
+    minPrice: params.minPrice ? Number(params.minPrice) : undefined,
+    maxPrice: params.maxPrice ? Number(params.maxPrice) : undefined,
+    page: params.page ? Number(params.page) : 1,
+    sortBy: params.sort as CarFilters["sortBy"],
   };
 
-  const cars = await getCars(filters);
+  const cars = await getCars({
+    ...filters,
+    page: params.page ? Number(params.page) : 1,
+    pageSize: 5,
+  });
+  console.log(cars);
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
@@ -54,9 +53,21 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
           </div>
 
           {/* Cars Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
-            <CarCard cars={cars} />
+          <div
+            className="
+  grid 
+  grid-cols-1 
+  sm:grid-cols-2 
+  lg:grid-cols-3 
+  xl:grid-cols-4 
+  2xl:grid-cols-5
+  gap-6 
+  lg:gap-8
+"
+          >
+            <CarCard cars={cars.data} />
           </div>
+          <Pagination totalPages={cars.totalPages} currentPage={cars.page} />
         </main>
       </div>
     </div>
