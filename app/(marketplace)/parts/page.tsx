@@ -2,6 +2,7 @@ import { getParts } from "@/lib/engine/PartsEngine";
 import PartCard from "@/components/UI/Cards/PartsCard";
 import PartsFilter from "@/components/UI/Filter/PartsFilter";
 import type { Part } from "@/types/parts/part";
+import { Suspense } from "react";
 
 type PartsPageProps = {
   searchParams?: {
@@ -36,8 +37,9 @@ export default async function PartsPage({ searchParams }: PartsPageProps) {
       <h1 className="text-3xl font-bold">Available Parts</h1>
 
       {/* Client Filter UI */}
-      <PartsFilter />
-
+      <Suspense fallback={<div>Loading filters...</div>}>
+        <PartsFilter />
+      </Suspense>
       {/* Parts Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {parts.map((part) => (
