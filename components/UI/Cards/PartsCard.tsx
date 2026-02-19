@@ -11,63 +11,86 @@ export default function PartCard({ part }: PartCardProps) {
   const mainImage = part.images[0] || part.thumbnail || "";
 
   return (
-    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
-      {/* Image Section */}
-      <div className="relative w-full h-48 bg-gray-100">
-        {mainImage ? (
-          <Image
-            src={mainImage}
-            alt={part.name}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-            No Image Available
+    <div className="group relative rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2">
+      {/* Glass Background */}
+      <div className="absolute inset-0 bg-white/40 backdrop-blur-xl border border-white/30 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-all duration-500" />
+
+      {/* Content Wrapper */}
+      <div className="relative z-10 flex flex-col">
+        {/* Image Section */}
+        <div className="relative w-full h-52 bg-gray-100 overflow-hidden rounded-t-3xl">
+          {mainImage ? (
+            <Image
+              src={mainImage}
+              alt={part.name}
+              fill
+              className="object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+              No Image Available
+            </div>
+          )}
+
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent" />
+
+          {/* Condition Badge */}
+          {part.condition && (
+            <span
+              className={`absolute top-4 left-4 px-4 py-1.5 text-xs font-semibold rounded-full backdrop-blur-md border border-white/40
+                ${
+                  part.condition.toLowerCase() === "new"
+                    ? "bg-green-500/80 text-white"
+                    : "bg-amber-500/80 text-white"
+                }`}
+            >
+              {part.condition.toUpperCase()}
+            </span>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-3">
+          {/* Title */}
+          <h3 className="text-xl font-semibold text-gray-900 tracking-tight line-clamp-1">
+            {part.name}
+          </h3>
+
+          {/* Brand + Compatibility */}
+          {(part.brand || part.compatibleCars?.length > 0) && (
+            <p className="text-sm text-gray-500 line-clamp-1">
+              {part.brand}
+              {part.compatibleCars?.length > 0 &&
+                ` • ${part.compatibleCars.slice(0, 2).join(", ")}`}
+            </p>
+          )}
+
+          {/* Price */}
+          <div className="flex items-center justify-between pt-2">
+            <p className="text-2xl font-bold text-gray-900">
+              ₦{part.price.toLocaleString()}
+            </p>
+
+            {part.negotiable && (
+              <span className="text-xs text-gray-500 bg-gray-200/50 px-2 py-1 rounded-full">
+                Negotiable
+              </span>
+            )}
           </div>
-        )}
 
-        {/* Condition Badge */}
-        {part.condition && (
-          <span
-            className={`absolute top-3 left-3 px-3 py-1 text-xs font-semibold rounded-full shadow-sm
-              ${
-                part.condition.toLowerCase() === "new"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-yellow-100 text-yellow-700"
-              }`}
-          >
-            {part.condition.toUpperCase()}
-          </span>
-        )}
-      </div>
-
-      {/* Content Section */}
-      <div className="p-4 space-y-2">
-        {/* Name */}
-        <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">
-          {part.name}
-        </h3>
-
-        {/* Brand & Compatible Cars */}
-        {part.brand || part.compatibleCars?.length > 0 ? (
-          <p className="text-sm text-gray-500 line-clamp-1">
-            {part.brand}{" "}
-            {part.compatibleCars && `• ${part.compatibleCars.join(", ")}`}
-          </p>
-        ) : null}
-
-        {/* Price */}
-        <p className="text-xl font-bold text-black">
-          ₦{part.price.toLocaleString()} {part.negotiable && "(Negotiable)"}
-        </p>
-
-        {/* Action Button */}
-        <Link href={`/parts/${part.slug}`}>
-          <button className="mt-3 w-full bg-black text-white py-2 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors duration-200">
-            View Details
-          </button>
-        </Link>
+          {/* Button */}
+          <Link href={`/parts/${part.slug}`}>
+            <button
+              className="mt-4 w-full py-3 rounded-2xl font-medium text-sm 
+              bg-black text-white 
+              transition-all duration-300
+              hover:bg-gray-900 hover:shadow-lg active:scale-[0.98]"
+            >
+              View Details
+            </button>
+          </Link>
+        </div>
       </div>
     </div>
   );

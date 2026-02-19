@@ -80,4 +80,6 @@ export type CarFilters = {
   page?: number;
   pageSize?: number;
   limit?: number;
+
+  q?: string; // G
 };

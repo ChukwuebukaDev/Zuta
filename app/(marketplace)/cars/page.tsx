@@ -19,20 +19,25 @@ export default async function CarsPage({
     maxPrice: params.maxPrice ? Number(params.maxPrice) : undefined,
     page: params.page ? Number(params.page) : 1,
     sortBy: params.sort as CarFilters["sortBy"],
+    q: params.q as string | undefined, // 🔥 ADD THIS
   };
 
   const cars = await getCars({
     ...filters,
-    page: params.page ? Number(params.page) : 1,
     pageSize: 5,
   });
-  console.log(cars);
+  const heading = filters.q
+    ? `Search results for "${filters.q}"`
+    : filters.brand
+      ? `${filters.brand} Cars`
+      : "Cars In Nigeria";
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
       {/* Mobile Header */}
       <div className="flex items-center justify-between mb-6 lg:hidden">
-        <h1 className="text-2xl font-bold">Cars In Nigeria</h1>
+        <h1 className="text-3xl font-bold">{heading}</h1>
+
         <CarsFilter />
       </div>
 

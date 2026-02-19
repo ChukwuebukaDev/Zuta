@@ -6,6 +6,20 @@ export async function getCars(filters?: Partial<CarFilters>) {
   let results = [...mockCars];
 
   if (filters) {
+    // 🔍 Text search
+    if (filters.q) {
+      const search = filters.q.toLowerCase();
+
+      results = results.filter((car) => {
+        return (
+          car.brand.toLowerCase().includes(search) ||
+          car.model.toLowerCase().includes(search) ||
+          car.bodyType?.toLowerCase().includes(search) ||
+          car.year.toString().includes(search)
+        );
+      });
+    }
+
     // Brand filter
     if (filters.brand) {
       results = results.filter((car) =>
@@ -28,6 +42,7 @@ export async function getCars(filters?: Partial<CarFilters>) {
     // Price range
     if (filters.minPrice)
       results = results.filter((car) => car.price >= filters.minPrice!);
+
     if (filters.maxPrice)
       results = results.filter((car) => car.price <= filters.maxPrice!);
 

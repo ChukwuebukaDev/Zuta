@@ -20,38 +20,74 @@ export default async function CarDetailsPage(props: {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-10">
-      {/* Title */}
-      <div>
-        <h1 className="text-3xl font-bold">
-          {car.brand} {car.model} {car.year}
-        </h1>
-        <p className="text-gray-500">
-          ₦{car.price.toLocaleString()}{" "}
-          {car.negotiable ? "(Negotiable)" : "(Non-Negotiale)"}
-        </p>
-      </div>
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100">
+      <div className="max-w-6xl mx-auto px-6 py-12 space-y-14">
+        {/* Back Link */}
+        <Link
+          href="/cars"
+          className="text-sm text-gray-500 hover:text-black transition-colors"
+        >
+          ← Back to cars
+        </Link>
 
-      {/* Images */}
+        {/* Header Section */}
+        <div className="space-y-4">
+          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight">
+            {car.brand} {car.model} {car.year}
+          </h1>
 
-      <CarImageSlider images={car.images} model={car.model} />
+          <div className="flex items-center gap-4">
+            <p className="text-3xl font-bold text-gray-900">
+              ₦{car.price.toLocaleString()}
+            </p>
 
-      {/* Specifications */}
-      <div className="grid hover:bg-white/40 transition-colors duration-400 grid-cols-2 md:grid-cols-3 gap-6  rounded-xl p-6 bg-white shadow-lg">
-        <Spec label="Body Type" value={car.bodyType} />
-        <Spec label="Transmission" value={car.transmission} />
-        <Spec label="Fuel Type" value={car.fuelType} />
-        <Spec label="Mileage" value={`${car.mileage.toLocaleString()} km`} />
-        <Spec label="Condition" value={car.condition} />
-        <Spec label="Drivetrain" value={car.drivetrain} />
-      </div>
+            <span className="text-xs px-3 py-1 rounded-full bg-black/5 border border-black/10">
+              {car.negotiable ? "Negotiable" : "Fixed Price"}
+            </span>
+          </div>
+        </div>
 
-      {/* Seller Info */}
-      <div className="rounded-xl hover:bg-white/40 transition-colors duration-400 p-6 bg-white shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">Seller Information</h2>
-        <p>Seller ID: {car.sellerId}</p>
-        <p>Views: {car.views}</p>
-        <p>Status: {car.status}</p>
+        {/* Image Gallery */}
+        <div className="rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+          <CarImageSlider images={car.images} model={car.model} />
+        </div>
+
+        {/* Specifications */}
+        <div className="rounded-3xl p-8 bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
+          <h2 className="text-xl font-semibold mb-8">Specifications</h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+            <Spec label="Body Type" value={car.bodyType} />
+            <Spec label="Transmission" value={car.transmission} />
+            <Spec label="Fuel Type" value={car.fuelType} />
+            <Spec
+              label="Mileage"
+              value={`${car.mileage.toLocaleString()} km`}
+            />
+            <Spec label="Condition" value={car.condition} />
+            <Spec label="Drivetrain" value={car.drivetrain} />
+          </div>
+        </div>
+
+        {/* Seller Section */}
+        <div className="rounded-3xl p-8 bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_10px_40px_rgba(0,0,0,0.05)] flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+          <div>
+            <h2 className="text-xl font-semibold mb-3">Seller Information</h2>
+            <p className="text-gray-600">Seller ID: {car.sellerId}</p>
+            <p className="text-gray-600">Views: {car.views}</p>
+            <p className="text-gray-600 capitalize">Status: {car.status}</p>
+          </div>
+
+          <div className="flex gap-4">
+            <button className="px-6 py-3 rounded-full bg-black text-white font-medium hover:bg-gray-800 transition">
+              Contact Seller
+            </button>
+
+            <button className="px-6 py-3 rounded-full border border-black/20 hover:bg-black/5 transition">
+              Save Car
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

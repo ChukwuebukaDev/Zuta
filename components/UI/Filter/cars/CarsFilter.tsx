@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useTransition } from "react";
-import FilterForm from "./FilterForm";
+import FilterForm from "../FilterForm";
 export default function CarsFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -20,13 +20,27 @@ export default function CarsFilter() {
 
   // Sync filters with URL
   useEffect(() => {
-    setFilters({
+    const urlFilters = {
       brand: searchParams.get("brand") || "",
       model: searchParams.get("model") || "",
       year: searchParams.get("year") || "",
       minPrice: searchParams.get("minPrice") || "",
       maxPrice: searchParams.get("maxPrice") || "",
-    });
+    };
+
+    setFilters(urlFilters);
+
+    const hasActiveFilter = Object.values(urlFilters).some(Boolean);
+
+    if (hasActiveFilter) {
+      localStorage.setItem(
+        "zuta_last_search",
+        JSON.stringify({
+          ...urlFilters,
+          timestamp: Date.now(),
+        }),
+      );
+    }
   }, [searchParams]);
 
   const updateFilter = (key: keyof typeof filters, value: string) => {

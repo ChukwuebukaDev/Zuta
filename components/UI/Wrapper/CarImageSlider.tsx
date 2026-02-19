@@ -30,7 +30,7 @@ export default function CarImageSlider({ images, model }: CarImageSliderProps) {
   return (
     <div className="space-y-4 relative">
       {/* Main Image */}
-      <div className="relative w-full h-80 md:h-96 rounded-xl overflow-hidden">
+      <div className="relative w-full md:w-1/2 md:m-auto h-80 md:h-96 rounded-xl overflow-hidden">
         <Image
           src={images[mainIndex]}
           alt={`${model}-${mainIndex}`}
@@ -59,7 +59,7 @@ export default function CarImageSlider({ images, model }: CarImageSliderProps) {
 
       {/* Thumbnails */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex gap-2 mt-2 overflow-x-auto">
           {images.map((img, idx) => (
             <div
               key={idx}

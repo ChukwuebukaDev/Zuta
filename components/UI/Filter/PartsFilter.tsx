@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
+import Input from "./InputForm";
 
 export default function PartsFilter() {
   const router = useRouter();
@@ -162,28 +163,5 @@ function FilterForm({
         </button>
       </div>
     </>
-  );
-}
-
-/* ---------------- Simple Input Component ---------------- */
-function Input({
-  placeholder,
-  value,
-  onChange,
-  type = "text",
-}: {
-  placeholder: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-}) {
-  return (
-    <input
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="border rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-black"
-    />
   );
 }
