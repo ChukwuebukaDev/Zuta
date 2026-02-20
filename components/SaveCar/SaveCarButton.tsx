@@ -35,7 +35,7 @@ export default function SaveCarButton({ slug }: { slug: string }) {
     <button
       onClick={handleToggle}
       className={`
-        relative px-6 py-3 rounded-full font-medium
+        relative px-6 py-3  rounded-full font-medium
         backdrop-blur-xl
         border
         transition-all duration-300
@@ -43,8 +43,8 @@ export default function SaveCarButton({ slug }: { slug: string }) {
         overflow-hidden
         ${
           saved
-            ? "bg-white/20 border-white/40 shadow-[0_8px_30px_rgba(0,0,0,0.12)] scale-105"
-            : "bg-white/10 border-white/30 hover:bg-white/20"
+            ? "bg-white/20 text-black border-white/40 shadow-[0_8px_30px_rgba(0,0,0,0.12)] scale-105"
+            : "bg-emerald-600 text-white border-white/30 hover:bg-emerald-500"
         }
       `}
     >
@@ -63,7 +63,7 @@ export default function SaveCarButton({ slug }: { slug: string }) {
       </span>
 
       <span className="relative">
-        {saved ? "Saved" : "Save Car"}
+        {saved ? "Saved" : "Save"}
       </span>
     </button>
   );
