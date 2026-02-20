@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Part } from "@/types/parts/part";
 
+
 type PartCardProps = {
   part: Part;
 };

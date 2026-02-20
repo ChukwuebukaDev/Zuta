@@ -1,4 +1,5 @@
 import PersonalizedSection from "../(home)/PersonalizedSection";
+import { Toaster } from "sonner";
 export default function MarketplaceLayout({
   children,
 }: {
@@ -8,6 +9,7 @@ export default function MarketplaceLayout({
     <>
       <PersonalizedSection />
       <section className="bg-gray-100 min-h-screen">{children}</section>
+           <Toaster position="top-center" richColors/>
     </>
   );
 }

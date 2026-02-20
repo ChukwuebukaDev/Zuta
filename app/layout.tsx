@@ -1,6 +1,7 @@
 import "./globals.css";
 import Header from "@/components/UI/Home/Header";
 import Footer from "@/components/UI/Home/Footer";
+
 export const metadata = {
   title: "Zuta Marketplace",
   description: "Car marketplace built with Next.js and React",
@@ -17,6 +18,7 @@ export default function RootLayout({
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+   
       </body>
     </html>
   );

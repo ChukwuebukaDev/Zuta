@@ -1,7 +1,7 @@
 import { getCarBySlug } from "@/lib/engine/marketplace";
 import Link from "next/link";
 import CarImageSlider from "@/components/UI/Wrapper/CarImageSlider";
-
+import SaveCarButton from "@/components/SaveCar/SaveCarButton";
 export default async function CarDetailsPage(props: {
   params: Promise<{ slug: string }>;
 }) {
@@ -83,9 +83,7 @@ export default async function CarDetailsPage(props: {
               Contact Seller
             </button>
 
-            <button className="px-6 py-3 rounded-full border border-black/20 hover:bg-black/5 transition">
-              Save Car
-            </button>
+           <SaveCarButton slug={slug} />
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ export default function ({ variant, setIsMenuOpen }: NavListProps) {
   const links = [
     { name: "Cars", link: "/cars" },
     { name: "Parts", link: "/parts" },
+    {name:"saved Cars", link:"/saved-cars"},
     { name: "Accessories", link: "/accessories" },
     { name: "Services & Repairs", link: "/services-repairs" },
   ];
