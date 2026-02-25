@@ -16,7 +16,7 @@ export default function SavedCarsPage() {
       const slugs = getSavedCars();
 
       const carData = await Promise.all(
-        slugs.map((slug) => getCarBySlug(slug))
+        slugs.map((slug) => getCarBySlug(slug)),
       );
 
       setCars(carData.filter(Boolean) as Car[]);
@@ -59,9 +59,7 @@ export default function SavedCarsPage() {
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-6xl mx-auto px-6 py-12 space-y-10">
-        <h1 className="text-4xl font-semibold tracking-tight">
-          Saved Cars
-        </h1>
+        <h1 className="text-4xl font-semibold tracking-tight">Saved Cars</h1>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {cars.map((car) => (
@@ -71,13 +69,11 @@ export default function SavedCarsPage() {
             >
               {/* Image */}
               <div className="h-48 bg-slate-100">
-                
                 <img
                   src={car?.images?.[0]}
                   alt={car?.model}
                   className="w-full h-full object-cover"
                 />
-                
               </div>
 
               {/* Content */}
@@ -86,9 +82,7 @@ export default function SavedCarsPage() {
                   {car?.brand} {car?.model}
                 </h2>
 
-                <p className="text-gray-600">
-                  ₦{car?.price?.toLocaleString()}
-                </p>
+                <p className="text-gray-600">₦{car?.price?.toLocaleString()}</p>
 
                 <div className="flex justify-between items-center pt-4">
                   <Link

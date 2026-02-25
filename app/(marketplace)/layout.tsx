@@ -7,9 +7,9 @@ export default function MarketplaceLayout({
 }) {
   return (
     <>
-      <PersonalizedSection />
+      {/* <PersonalizedSection /> */}
       <section className="bg-gray-100 min-h-screen">{children}</section>
-           <Toaster position="top-center" richColors/>
+      <Toaster position="top-center" richColors />
     </>
   );
 }
