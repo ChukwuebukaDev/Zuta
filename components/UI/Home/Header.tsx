@@ -1,14 +1,13 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import NavList from "./NavList";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   return (
     <header className="bg-white shadow sticky top-0 z-50">
+
       <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
         {/* Logo */}
         <Link href="/" className="font-bold text-3xl text-black">
@@ -18,7 +17,8 @@ export default function Header() {
         {/* Desktop Navigation */}
         <NavList variant="desktop" />
 
-        {/* Mobile Menu Button */}
+
+       {/* Mobile Menu Button */}
         <button
           className="md:hidden flex flex-col justify-around w-8 h-8 cursor-pointer"
           onClick={() => setIsMenuOpen(!isMenuOpen)}

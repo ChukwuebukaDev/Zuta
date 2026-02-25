@@ -21,7 +21,7 @@ export default async function CarDetailsPage(props: {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100">
-      <div className="max-w-6xl mx-auto px-6 py-12 space-y-14">
+      <div className="max-w-6xl mx-auto px-6 py-12 space-y-2">
         {/* Back Link */}
         <Link
           href="/cars"
@@ -31,13 +31,13 @@ export default async function CarDetailsPage(props: {
         </Link>
 
         {/* Header Section */}
-        <div className="space-y-4">
-          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight">
+        <div className="space-y-4 shadow-2xl rounded-2xl p-2">
+          <h1 className="text-2xl md:text-5xl font-semibold tracking-tight">
             {car.brand} {car.model} {car.year}
           </h1>
 
-          <div className="flex items-center gap-4">
-            <p className="text-3xl font-bold text-gray-900">
+          <div className="flex justify-between items-center gap-4">
+            <p className="text-2xl font-bold text-gray-900">
               ₦{car.price.toLocaleString()}
             </p>
 
@@ -87,6 +87,14 @@ export default async function CarDetailsPage(props: {
           </div>
         </div>
       </div>
+      <Link
+  href="#seller"
+  className="fixed bottom-8 right-8 z-50"
+>
+  <div className="px-7 py-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-black font-medium shadow-[0_20px_60px_rgba(0,0,0,0.2)] hover:bg-white/20 transition">
+    Get More Details →
+  </div>
+</Link>
     </div>
   );
 }

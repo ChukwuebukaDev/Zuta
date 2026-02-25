@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { getCarBySlug } from "@/lib/engine/marketplace";
 import { getSavedCars, removeSavedCar } from "@/lib/utils/saveCar";
 

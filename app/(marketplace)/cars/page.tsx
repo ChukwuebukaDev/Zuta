@@ -19,12 +19,12 @@ export default async function CarsPage({
     maxPrice: params.maxPrice ? Number(params.maxPrice) : undefined,
     page: params.page ? Number(params.page) : 1,
     sortBy: params.sort as CarFilters["sortBy"],
-    q: params.q as string | undefined, // 🔥 ADD THIS
+    q: params.q as string | undefined, 
   };
 
   const cars = await getCars({
     ...filters,
-    pageSize: 5,
+    pageSize: 20,
   });
   const heading = filters.q
     ? `Search results for "${filters.q}"`

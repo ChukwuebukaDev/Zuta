@@ -17,13 +17,14 @@ export default function SaveCarButton({ slug }: { slug: string }) {
   }, [slug]);
 
   const handleToggle = () => {
+    const brand = slug.split('-').join(' ');
     setAnimating(true);
     setTimeout(() => setAnimating(false), 300);
 
     if (saved) {
       removeSavedCar(slug);
       setSaved(false);
-      toast.success("Removed from saved cars");
+      toast.error(`${brand} removed from saved cars`);
     } else {
       saveCar(slug);
       setSaved(true);
