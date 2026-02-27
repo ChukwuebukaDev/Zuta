@@ -1,14 +1,18 @@
 import { getCarBySlug } from "@/lib/engine/marketplace";
 import Link from "next/link";
+import { Metadata } from "next";
 import CarImageSlider from "@/components/UI/Wrapper/CarImageSlider";
 import SaveCarButton from "@/components/SaveCar/SaveCarButton";
-export default async function CarDetailsPage(props: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await props.params;
+
+type Props = {
+  params: { slug: string };
+};
+export default async function CarDetailsPage({params}:Props) {
+  const { slug } = await params;
   const car = await getCarBySlug(slug);
 
   if (!car) {
+
     return (
       <div className="h-screen flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold">Car Not Found</h1>
@@ -106,4 +110,22 @@ function Spec({ label, value }: { label: string; value: string }) {
       <p className="font-medium capitalize">{value}</p>
     </div>
   );
+}
+
+export async function generateMetadata({params}:Props):Promise<Metadata> {
+  const { slug } = await params;
+  const car = await getCarBySlug(slug);
+  if (!car) {
+    return {
+      title: "Car Not Found | Zuta",
+      description: "This car listing is no longer available on Zuta.",
+    };
+  }
+  const title = `${car.year} ${car.brand} ${car.model} – ₦${car.price.toLocaleString()} | Zuta`;
+
+  const description = `${car.year} ${car.brand} ${car.model} with ${car.mileage.toLocaleString()}km available in Nigeria. ${car.transmission} transmission. Buy now on Zuta.`;
+  return {
+    title,
+    description
+  }
 }

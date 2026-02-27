@@ -1,7 +1,7 @@
 import { mockCars } from "@/data/cars";
 import { CarFilters } from "@/types/car/cars.types";
 import { Car } from "@/types/car/cars.types";
-
+import {cache} from 'react';
 export async function getCars(filters?: Partial<CarFilters>) {
   let results = [...mockCars];
 
@@ -76,7 +76,8 @@ export async function getCars(filters?: Partial<CarFilters>) {
   };
 }
 
-export async function getCarBySlug(slug: string): Promise<Car | null> {
+
+export const getCarBySlug = cache(async (slug:string):Promise<Car | null> => {
   const car = mockCars.find((car) => car.slug === slug);
   return car ?? null;
-}
+})

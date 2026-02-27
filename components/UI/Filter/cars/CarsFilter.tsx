@@ -3,63 +3,51 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useTransition } from "react";
 import FilterForm from "../FilterForm";
+
 export default function CarsFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [openFilters, setOpenFilters] = useState(false);
 
-  // Single filters object
-  const [filters, setFilters] = useState({
-    brand: "",
-    model: "",
-    year: "",
-    minPrice: "",
-    maxPrice: "",
-  });
 
-  // Sync filters with URL
+  const [filters, setFilters] = useState(() => ({
+    brand: searchParams.get("brand") || "",
+    model: searchParams.get("model") || "",
+    year: searchParams.get("year") || "",
+    minPrice: searchParams.get("minPrice") || "",
+    maxPrice: searchParams.get("maxPrice") || "",
+  }));
+
+  // Update localStorage when filters change
   useEffect(() => {
-    const urlFilters = {
-      brand: searchParams.get("brand") || "",
-      model: searchParams.get("model") || "",
-      year: searchParams.get("year") || "",
-      minPrice: searchParams.get("minPrice") || "",
-      maxPrice: searchParams.get("maxPrice") || "",
-    };
-
-    setFilters(urlFilters);
-
-    const hasActiveFilter = Object.values(urlFilters).some(Boolean);
-
+    const hasActiveFilter = Object.values(filters).some(Boolean);
     if (hasActiveFilter) {
       localStorage.setItem(
         "zuta_last_search",
-        JSON.stringify({
-          ...urlFilters,
-          timestamp: Date.now(),
-        }),
+        JSON.stringify({ ...filters, timestamp: Date.now() })
       );
     }
-  }, [searchParams]);
+  }, [filters]);
 
+  // Update filter state
   const updateFilter = (key: keyof typeof filters, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    // If brand changes, reset model
+    if (key === "brand") {
+      setFilters((prev) => ({ ...prev, brand: value, model: "" }));
+    } else {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+    }
   };
 
+  // Apply filters to URL
   const applyFilters = () => {
     const params = new URLSearchParams(searchParams.toString());
-
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
+      if (value) params.set(key, value);
+      else params.delete(key);
     });
-
-    // Reset page when filters change
-    params.delete("page");
+    params.delete("page"); // reset page
 
     startTransition(() => {
       router.replace(`?${params.toString()}`, { scroll: false });
@@ -67,18 +55,25 @@ export default function CarsFilter() {
     });
   };
 
+  // Reset all filters
   const resetFilters = () => {
     const params = new URLSearchParams(searchParams.toString());
-
     ["brand", "model", "year", "minPrice", "maxPrice"].forEach((key) =>
-      params.delete(key),
+      params.delete(key)
     );
-
     params.delete("page");
 
     startTransition(() => {
       router.replace(`?${params.toString()}`, { scroll: false });
       setOpenFilters(false);
+    });
+
+    setFilters({
+      brand: "",
+      model: "",
+      year: "",
+      minPrice: "",
+      maxPrice: "",
     });
   };
 
@@ -109,7 +104,6 @@ export default function CarsFilter() {
           onClick={() => setOpenFilters(false)}
           className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
         >
-          {/* Modal Card */}
           <div
             onClick={(e) => e.stopPropagation()}
             className="relative w-[95%] max-w-md rounded-3xl bg-white shadow-2xl border border-gray-100 p-6 space-y-6 animate-in zoom-in-95 duration-200"
@@ -119,7 +113,6 @@ export default function CarsFilter() {
               <h2 className="text-xl font-semibold tracking-tight text-gray-900">
                 Filter Cars
               </h2>
-
               <button
                 onClick={() => setOpenFilters(false)}
                 className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors duration-200 text-gray-500 hover:text-gray-800"
@@ -129,7 +122,6 @@ export default function CarsFilter() {
               </button>
             </div>
 
-            {/* Divider */}
             <div className="h-px bg-gray-100" />
 
             {/* Scrollable Content */}

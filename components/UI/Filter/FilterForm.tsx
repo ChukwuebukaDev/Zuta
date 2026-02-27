@@ -1,4 +1,8 @@
+"use client";
+import { useEffect, useState, Suspense } from "react";
 import Input from "./InputForm";
+import BrandSelect from "./cars/BrandSelect";
+
 export default function FilterForm({
   filters,
   updateFilter,
@@ -7,56 +11,61 @@ export default function FilterForm({
   isPending,
   mobile = false,
 }: any) {
+  const [models, setModels] = useState<{ Model_Name: string }[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+
+  // Load models when brand changes
+  useEffect(() => {
+    if (!filters.brand) {
+      setModels([]);
+      return;
+    }
+    setLoadingModels(true);
+    fetch(`/api/models/${filters.brand}`)
+      .then((res) => res.json())
+      .then(setModels)
+      .finally(() => setLoadingModels(false));
+  }, [filters.brand]);
+
+  const handleBrandChange = (value: string) => {
+    updateFilter("brand", value);
+    updateFilter("model", "");
+  };
+
   return (
     <>
-      <div
-        className={`grid gap-4 ${mobile ? "grid-cols-1" : "grid-cols-1 md:flex md:flex-col"}`}
-      >
-        <Input
-          placeholder="Brand"
-          value={filters.brand}
-          onChange={(v) => updateFilter("brand", v)}
-        />
-        <Input
-          placeholder="Model"
+      <div className={`grid gap-4 ${mobile ? "grid-cols-1" : "grid-cols-1 md:flex md:flex-col"}`}>
+       
+        <Suspense fallback={<div>Loading brands...</div>}>
+          <BrandSelect value={filters.brand} onChange={handleBrandChange} />
+        </Suspense>
+
+        {/* Model Select */}
+        <select
           value={filters.model}
-          onChange={(v) => updateFilter("model", v)}
-        />
-        <Input
-          placeholder="Year"
-          type="number"
-          value={filters.year}
-          onChange={(v) => updateFilter("year", v)}
-        />
-        <Input
-          placeholder="Min Price"
-          type="number"
-          value={filters.minPrice}
-          onChange={(v) => updateFilter("minPrice", v)}
-        />
-        <Input
-          placeholder="Max Price"
-          type="number"
-          value={filters.maxPrice}
-          onChange={(v) => updateFilter("maxPrice", v)}
-        />
+          onChange={(e) => updateFilter("model", e.target.value)}
+          className="border rounded-lg p-2 w-full"
+          disabled={!filters.brand || loadingModels}
+        >
+          <option value="">All Models</option>
+          {models.map((m) => (
+            <option key={m.Model_Name} value={m.Model_Name}>
+              {m.Model_Name}
+            </option>
+          ))}
+        </select>
+
+        {/* Other Inputs */}
+        <Input placeholder="Year" type="number" value={filters.year} onChange={(v) => updateFilter("year", v)} />
+        <Input placeholder="Min Price" type="number" value={filters.minPrice} onChange={(v) => updateFilter("minPrice", v)} />
+        <Input placeholder="Max Price" type="number" value={filters.maxPrice} onChange={(v) => updateFilter("maxPrice", v)} />
       </div>
 
-      <div
-        className={`flex gap-4 ${mobile ? "sticky bottom-0 bg-white pt-4" : "mt-4"}`}
-      >
-        <button
-          onClick={applyFilters}
-          className="bg-black text-white px-6 py-2 rounded-lg w-full"
-          disabled={isPending}
-        >
+      <div className={`flex gap-4 ${mobile ? "sticky bottom-0 bg-white pt-4" : "mt-4"}`}>
+        <button onClick={applyFilters} className="bg-black text-white px-6 py-2 rounded-lg w-full" disabled={isPending}>
           Apply
         </button>
-        <button
-          onClick={resetFilters}
-          className="bg-red-500 text-white font-bold rounded-lg w-full"
-          disabled={isPending}
-        >
+        <button onClick={resetFilters} className="bg-red-500 text-white font-bold rounded-lg w-full" disabled={isPending}>
           Reset
         </button>
       </div>
