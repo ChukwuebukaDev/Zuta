@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Input from "./InputForm";
 import BrandSelect from "./cars/BrandSelect";
-
+import { FilterFormProps,CarFilters } from "@/types/car/cars.types";
 export default function FilterForm({
   filters,
   updateFilter,
@@ -10,22 +10,18 @@ export default function FilterForm({
   resetFilters,
   isPending,
   mobile = false,
-}: any) {
+}: FilterFormProps<CarFilters>) {
   const [models, setModels] = useState<{ Model_Name: string }[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
 
-  // Load models when brand changes
-  useEffect(() => {
-    if (!filters.brand) {
-      setModels([]);
-      return;
-    }
-    setLoadingModels(true);
-    fetch(`/api/models/${filters.brand}`)
-      .then((res) => res.json())
-      .then(setModels)
-      .finally(() => setLoadingModels(false));
-  }, [filters.brand]);
+useEffect(() => {
+  if (!filters.brand) return;
+  setLoadingModels(true);
+  fetch(`/api/models/${filters.brand}`)
+    .then((res) => res.json())
+    .then(setModels)
+    .finally(() => setLoadingModels(false));
+}, [filters.brand]);
 
   const handleBrandChange = (value: string) => {
     updateFilter("brand", value);
@@ -40,20 +36,18 @@ export default function FilterForm({
           <BrandSelect value={filters.brand} onChange={handleBrandChange} />
         </Suspense>
 
-        {/* Model Select */}
-        <select
-          value={filters.model}
-          onChange={(e) => updateFilter("model", e.target.value)}
-          className="border rounded-lg p-2 w-full"
-          disabled={!filters.brand || loadingModels}
-        >
-          <option value="">All Models</option>
-          {models.map((m) => (
-            <option key={m.Model_Name} value={m.Model_Name}>
-              {m.Model_Name}
-            </option>
-          ))}
-        </select>
+     <select className="border-gray-400 border rounded-4xl p-1 w-full focus:outline-none outline-0"
+  disabled={!filters.brand || loadingModels}
+>
+  <option value="">All Models</option>
+
+  {filters.brand &&
+    models.map((m) => (
+      <option key={m.Model_Name} value={m.Model_Name}>
+        {m.Model_Name}
+      </option>
+    ))}
+</select>
 
         {/* Other Inputs */}
         <Input placeholder="Year" type="number" value={filters.year} onChange={(v) => updateFilter("year", v)} />

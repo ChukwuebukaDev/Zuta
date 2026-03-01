@@ -21,7 +21,7 @@ export default function BrandSelect({ value, onChange }: BrandSelectProps) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="border rounded-lg p-2 w-full"
+      className="border-gray-400 border rounded-4xl p-1 w-full focus:outline-none outline-0"
     >
       <option value="">All Brands</option>
       {brands.map((b) => (

@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useTransition } from "react";
 import FilterForm from "../FilterForm";
+import { CarFilters } from "@/types/car/cars.types";
 
 export default function CarsFilter() {
   const router = useRouter();
@@ -19,7 +20,6 @@ export default function CarsFilter() {
     maxPrice: searchParams.get("maxPrice") || "",
   }));
 
-  // Update localStorage when filters change
   useEffect(() => {
     const hasActiveFilter = Object.values(filters).some(Boolean);
     if (hasActiveFilter) {
@@ -31,16 +31,17 @@ export default function CarsFilter() {
   }, [filters]);
 
   // Update filter state
-  const updateFilter = (key: keyof typeof filters, value: string) => {
-    // If brand changes, reset model
-    if (key === "brand") {
-      setFilters((prev) => ({ ...prev, brand: value, model: "" }));
-    } else {
-      setFilters((prev) => ({ ...prev, [key]: value }));
-    }
-  };
+const updateFilter = <K extends keyof CarFilters>(
+  key: K,
+  value: CarFilters[K]
+) => {
+  setFilters((prev) => ({
+    ...prev,
+    [key]: value,
+  }));
+};
 
-  // Apply filters to URL
+
   const applyFilters = () => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(filters).forEach(([key, value]) => {
@@ -55,7 +56,7 @@ export default function CarsFilter() {
     });
   };
 
-  // Reset all filters
+
   const resetFilters = () => {
     const params = new URLSearchParams(searchParams.toString());
     ["brand", "model", "year", "minPrice", "maxPrice"].forEach((key) =>
@@ -124,7 +125,7 @@ export default function CarsFilter() {
 
             <div className="h-px bg-gray-100" />
 
-            {/* Scrollable Content */}
+          
             <div className="max-h-[65vh] overflow-y-auto pr-1 custom-scrollbar">
               <FilterForm
                 filters={filters}
