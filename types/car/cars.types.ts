@@ -44,22 +44,20 @@ export type Car = {
   updatedAt: Date;
 };
 export type CarFilters = {
- 
-  brand: string;
-  model: string ;
-  year: string;
- 
-  minPrice: string;
-  maxPrice: string;
- 
-  bodyType?: string; 
-  fuelType?: string;
-  transmission?: string; 
-  condition?: "new" | "used";
+  brand?: string;
+  model?: string;
+
+  year?: number;
+  minPrice?: number;
+  maxPrice?: number;
+
+  bodyType?: BodyType;
+  fuelType?: FuelType;
+  transmission?: Transmission;
+  condition?: CarCondition;
 
   minMileage?: number;
   maxMileage?: number;
-
 
   sortBy?: "price" | "year" | "mileage";
   order?: "asc" | "desc";
@@ -68,7 +66,7 @@ export type CarFilters = {
   pageSize?: number;
   limit?: number;
 
-  q?: string; 
+  q?: string;
 };
 
 export type FilterFormProps<T extends object> = {
@@ -81,4 +79,12 @@ export type FilterFormProps<T extends object> = {
   resetFilters: () => void;
   isPending: boolean;
   mobile?: boolean;
+};
+
+export type CarFilterFormState = {
+  brand: string;
+  model: string;
+  year: string;
+  minPrice: string;
+  maxPrice: string;
 };

@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useTransition } from "react";
 import FilterForm from "../FilterForm";
-import { CarFilters } from "@/types/car/cars.types";
+import { CarFilterFormState } from "@/types/car/cars.types";
 
 export default function CarsFilter() {
   const router = useRouter();
@@ -12,13 +12,13 @@ export default function CarsFilter() {
   const [openFilters, setOpenFilters] = useState(false);
 
 
-  const [filters, setFilters] = useState(() => ({
-    brand: searchParams.get("brand") || "",
-    model: searchParams.get("model") || "",
-    year: searchParams.get("year") || "",
-    minPrice: searchParams.get("minPrice") || "",
-    maxPrice: searchParams.get("maxPrice") || "",
-  }));
+const [filters, setFilters] = useState<CarFilterFormState>(() => ({
+  brand: searchParams.get("brand") || "",
+  model: searchParams.get("model") || "",
+  year: searchParams.get("year") || "",
+  minPrice: searchParams.get("minPrice") || "",
+  maxPrice: searchParams.get("maxPrice") || "",
+}));
 
   useEffect(() => {
     const hasActiveFilter = Object.values(filters).some(Boolean);
@@ -31,9 +31,9 @@ export default function CarsFilter() {
   }, [filters]);
 
   // Update filter state
-const updateFilter = <K extends keyof CarFilters>(
+const updateFilter = <K extends keyof CarFilterFormState>(
   key: K,
-  value: CarFilters[K]
+  value: CarFilterFormState[K]
 ) => {
   setFilters((prev) => ({
     ...prev,
@@ -44,10 +44,10 @@ const updateFilter = <K extends keyof CarFilters>(
 
   const applyFilters = () => {
     const params = new URLSearchParams(searchParams.toString());
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.set(key, value);
-      else params.delete(key);
-    });
+Object.entries(filters).forEach(([key, value]) => {
+  if (value) params.set(key, value.toString());
+  else params.delete(key);
+});
     params.delete("page"); // reset page
 
     startTransition(() => {

@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Input from "./InputForm";
 import BrandSelect from "./cars/BrandSelect";
-import { FilterFormProps,CarFilters } from "@/types/car/cars.types";
+import { FilterFormProps,CarFilterFormState } from "@/types/car/cars.types";
 export default function FilterForm({
   filters,
   updateFilter,
@@ -10,7 +10,7 @@ export default function FilterForm({
   resetFilters,
   isPending,
   mobile = false,
-}: FilterFormProps<CarFilters>) {
+}: FilterFormProps<CarFilterFormState>) {
   const [models, setModels] = useState<{ Model_Name: string }[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
 
@@ -38,6 +38,8 @@ useEffect(() => {
 
      <select className="border-gray-400 border rounded-4xl p-1 w-full focus:outline-none outline-0"
   disabled={!filters.brand || loadingModels}
+  value={filters.model}
+  onChange={(e)=>updateFilter("model",e.target.value)}
 >
   <option value="">All Models</option>
 
