@@ -1,4 +1,4 @@
-import PersonalizedSection from "../(home)/PersonalizedSection";
+import MarketplaceHeader from "@/components/UI/Home/MarketplaceHeader";
 import { Toaster } from "sonner";
 export default function MarketplaceLayout({
   children,
@@ -7,7 +7,7 @@ export default function MarketplaceLayout({
 }) {
   return (
     <>
-      {/* <PersonalizedSection /> */}
+    <MarketplaceHeader/>
       <section className="bg-gray-100 min-h-screen">{children}</section>
       <Toaster position="top-center" richColors />
     </>
