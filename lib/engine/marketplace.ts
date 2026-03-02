@@ -6,7 +6,7 @@ export async function getCars(filters?: Partial<CarFilters>) {
   let results = [...mockCars];
 
   if (filters) {
-    // 🔍 Text search
+   
     if (filters.q) {
       const search = filters.q.toLowerCase();
 
@@ -20,33 +20,44 @@ export async function getCars(filters?: Partial<CarFilters>) {
       });
     }
 
-    // Brand filter
+
     if (filters.brand) {
       results = results.filter((car) =>
         car.brand.toLowerCase().includes(filters.brand!.toLowerCase()),
       );
     }
 
-    // Model filter
+   
     if (filters.model) {
       results = results.filter((car) =>
         car.model.toLowerCase().includes(filters.model!.toLowerCase()),
       );
     }
 
-    // Year filter
+   
     if (filters.year) {
       results = results.filter((car) => car.year === filters.year);
     }
+    
+if (filters.condition === "used") {
+  results = results.filter(
+    (car) =>
+      car.condition === "foreign-used" ||
+      car.condition === "nigeria-used"
+  );
+} else if (filters.condition) {
+  results = results.filter(
+    (car) => car.condition === filters.condition
+  );
+}
 
-    // Price range
     if (filters.minPrice)
       results = results.filter((car) => car.price >= filters.minPrice!);
 
     if (filters.maxPrice)
       results = results.filter((car) => car.price <= filters.maxPrice!);
 
-    // Sorting
+    
     if (filters.sortBy) {
       const direction = filters.order === "desc" ? -1 : 1;
       const field = filters.sortBy;

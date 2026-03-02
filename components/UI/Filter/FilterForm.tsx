@@ -50,7 +50,17 @@ useEffect(() => {
       </option>
     ))}
 </select>
-
+<select
+  value={filters.condition}
+onChange={(e) => updateFilter("condition", e.target.value)}
+  className="border-gray-400 border rounded-4xl p-1 w-full focus:outline-none outline-0"
+>
+  <option value="">All Conditions</option>
+  <option value="new">New</option>
+  <option value="used">Used (All)</option>
+  <option value="foreign-used">Foreign Used</option>
+  <option value="nigeria-used">Nigeria Used</option>
+</select>
         {/* Other Inputs */}
         <Input placeholder="Year" type="number" value={filters.year} onChange={(v) => updateFilter("year", v)} />
         <Input placeholder="Min Price" type="number" value={filters.minPrice} onChange={(v) => updateFilter("minPrice", v)} />

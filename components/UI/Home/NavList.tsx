@@ -14,16 +14,19 @@ export default function NavList({ variant, setIsMenuOpen }: NavListProps) {
 
   const links = [
     {
-      name: "Cars",
-      link: "/cars",
-      sub: [
-        { name: "Saved Cars", link: "/saved-cars" }, // 👈 moved here
-        { name: "SUV", link: "/cars?type=suv" },
-        { name: "Sedan", link: "/cars?type=sedan" },
-        { name: "Truck", link: "/cars?type=truck" },
-        { name: "Electric", link: "/cars?fuel=electric" },
-      ],
-    },
+  name: "Cars",
+  link: "/cars",
+  sub: [
+    { name: "Saved Cars", link: "/saved-cars" },
+    { name: "New Cars", link: "/cars?condition=new" },      
+    { name: "Foreign Used", link: "/cars?condition=foreign-used" },    
+    { name: "Nigerian Used", link: "/cars?condition=nigeria-used" },    
+    { name: "SUV", link: "/cars?type=suv" },
+    { name: "Sedan", link: "/cars?type=sedan" },
+    { name: "Truck", link: "/cars?type=truck" },
+    { name: "Electric", link: "/cars?fuel=electric" },
+  ],
+},
     {
       name: "Parts",
       link: "/parts",

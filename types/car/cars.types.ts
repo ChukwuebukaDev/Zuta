@@ -23,7 +23,7 @@ export type Car = {
   drivetrain: Drivetrain;
   mileage: number; // in kilometers
 
-    condition: CarCondition;
+  condition: CarCondition;
   accidentHistory: boolean;
   serviceHistory: boolean;
   
@@ -54,7 +54,7 @@ export type CarFilters = {
   bodyType?: BodyType;
   fuelType?: FuelType;
   transmission?: Transmission;
-  condition?: CarCondition;
+  condition?: CarCondition | 'used';
 
   minMileage?: number;
   maxMileage?: number;
@@ -87,4 +87,5 @@ export type CarFilterFormState = {
   year: string;
   minPrice: string;
   maxPrice: string;
+  condition?:string;
 };

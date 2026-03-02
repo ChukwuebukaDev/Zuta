@@ -18,6 +18,7 @@ const [filters, setFilters] = useState<CarFilterFormState>(() => ({
   year: searchParams.get("year") || "",
   minPrice: searchParams.get("minPrice") || "",
   maxPrice: searchParams.get("maxPrice") || "",
+  condition: searchParams.get("condition") || "",
 }));
 
   useEffect(() => {
