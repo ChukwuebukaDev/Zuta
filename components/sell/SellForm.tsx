@@ -36,10 +36,12 @@ export default function SellForm() {
     location: "",
   });
 
-  const handleChange = (key: keyof CarFormData, value: any) => {
-    setFormData({ ...formData, [key]: value });
-  };
-
+const handleChange = <K extends keyof CarFormData>(
+  key: K,
+  value: CarFormData[K]
+) => {
+  setFormData({ ...formData, [key]: value });
+};
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Submit to /api/cars
