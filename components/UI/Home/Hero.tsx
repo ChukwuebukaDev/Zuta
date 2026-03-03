@@ -4,11 +4,22 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Car } from "lucide-react";
 import { Button } from "../Controls/Button";
-
 export default function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden text-white">
-      
+     <motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 1 }}
+  className="absolute top-8 left-8 z-20"
+>
+  <Link
+    href="/"
+    className="text-xl md:text-2xl font-semibold tracking-widest uppercase text-white/90 hover:text-amber-400 transition-colors"
+  >
+    Zuta
+  </Link>
+</motion.div>
       {/* Background Image */}
       <div className="absolute inset-0 -z-20">
         <Image

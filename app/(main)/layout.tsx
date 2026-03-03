@@ -1,4 +1,4 @@
-import Header from "@/components/UI/Home/Header";
+// import Header from "@/components/UI/Home/Header";
 import Footer from "@/components/UI/Home/Footer";
 export default function MainLayout({
   children,
@@ -7,7 +7,8 @@ export default function MainLayout({
 }) {
   return (
     <>
-      <Header />
+  {/* Header handled by Hero section */}
+    {/* <Header />  */}
 
       <main className="min-h-screen">
         {children}
