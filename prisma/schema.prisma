@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Car {
+  id           String  @id @default(cuid())
+  title        String
+  brand        String
+  model        String
+  year         Int
+  price        Int
+  mileage      Int?
+  fuelType     String?
+  transmission String?
+  description  String?
+
+  sellerName  String
+  sellerPhone String
+  sellerEmail String?
+
+  createdAt DateTime @default(now())
+
+  images CarImage[]
+}
+
+model CarImage {
+  id    String @id @default(cuid())
+  url   String
+  carId String
+  car   Car    @relation(fields: [carId], references: [id])
+}

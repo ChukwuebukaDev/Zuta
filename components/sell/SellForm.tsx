@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "../UI/Controls/Button";
+import { toast } from "sonner";
 
 type CarFormData = {
   brand: string;
@@ -36,17 +37,46 @@ export default function SellForm() {
     location: "",
   });
 
-const handleChange = <K extends keyof CarFormData>(
-  key: K,
-  value: CarFormData[K]
-) => {
-  setFormData({ ...formData, [key]: value });
-};
+  const handleChange = <K extends keyof CarFormData>(
+    key: K,
+    value: CarFormData[K],
+  ) => {
+    setFormData({ ...formData, [key]: value });
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Submit to /api/cars
-    console.log(formData);
-    alert("Form submitted! (API integration coming next)");
+
+    try {
+      const res = await fetch("/api/cars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error);
+      }
+
+      toast.success("Car listed successfully!");
+      setFormData({
+        brand: "",
+        model: "",
+        year: "",
+        mileage: "",
+        transmission: "",
+        fuelType: "",
+        price: "",
+        negotiable: false,
+        mainImage: null,
+        galleryImages: [],
+        sellerName: "",
+        sellerPhone: "",
+        location: "",
+      });
+    } catch (error: any) {
+      toast.error("Error: " + error.message);
+    }
   };
 
   return (
@@ -149,7 +179,7 @@ const handleChange = <K extends keyof CarFormData>(
                 onChange={(e) =>
                   handleChange(
                     "galleryImages",
-                    e.target.files ? Array.from(e.target.files) : []
+                    e.target.files ? Array.from(e.target.files) : [],
                   )
                 }
                 className="mt-2 text-gray-200"
