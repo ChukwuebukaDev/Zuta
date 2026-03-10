@@ -1,4 +1,3 @@
-// components/BrandSelect.tsx
 "use client";
 import { useEffect, useState } from "react";
 
@@ -11,7 +10,7 @@ export default function BrandSelect({ value, onChange }: BrandSelectProps) {
   const [brands, setBrands] = useState<{ Make_Name: string }[]>([]);
 
   useEffect(() => {
-    fetch("/api/brands") 
+    fetch("/api/brands")
       .then((res) => res.json())
       .then(setBrands)
       .catch(() => setBrands([]));

@@ -26,7 +26,7 @@ const steps = [
 
 export default function SellSteps() {
   return (
-    <section className="bg-[#141414] text-white py-24 px-6">
+    <section id="how-it-works" className="bg-[#141414] text-white py-24 px-6">
       <div className="max-w-6xl mx-auto text-center">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
@@ -38,7 +38,8 @@ export default function SellSteps() {
         </motion.h2>
 
         <p className="mt-6 text-gray-400 max-w-2xl mx-auto">
-          Listing your car on Zuta is simple, secure, and designed for serious sellers.
+          Listing your car on Zuta is simple, secure, and designed for serious
+          sellers.
         </p>
 
         <div className="mt-16 grid md:grid-cols-3 gap-12">
@@ -60,9 +61,7 @@ export default function SellSteps() {
 
                 <div className="bg-[#1c1c1c] p-10 rounded-2xl border border-gray-800">
                   <Icon className="mx-auto mb-6 text-white" size={32} />
-                  <h3 className="text-xl font-semibold">
-                    {step.title}
-                  </h3>
+                  <h3 className="text-xl font-semibold">{step.title}</h3>
                   <p className="mt-4 text-gray-400 text-sm">
                     {step.description}
                   </p>
