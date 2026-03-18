@@ -7,24 +7,35 @@ datasource db {
 }
 
 model Car {
-  id           String  @id @default(cuid())
-  title        String
-  brand        String
-  model        String
-  year         Int
-  price        Int
-  mileage      Int?
-  fuelType     String?
-  transmission String?
-  description  String?
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  brand           String
+  model           String
+  year            Int
+  bodyType        String
+  transmission    String
+  fuelType        String
+  drivetrain      String
+  mileage         Int
+  condition       String
+  accidentHistory Boolean   @default(false)
+  serviceHistory  Boolean   @default(false)
+  price           Int
+  currency        String    @default("NGA")
+  negotiable      Boolean   @default(false)
+  thumbnail       String
+  status          String   @default("available")
+  featured        Boolean  @default(false)
+  views           Int      @default(0)
+  sellerName      String
+  sellerPhone     String
+  sellerEmail     String?
+  location        String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  sellerName  String
-  sellerPhone String
-  sellerEmail String?
-
-  createdAt DateTime @default(now())
-
-  images CarImage[]
+  carImages CarImage[]
 }
 
 model CarImage {

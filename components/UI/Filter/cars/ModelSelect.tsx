@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Dropdown from "@/utilities/Dropdown";
 
 type Props = {
   brand: string;
@@ -9,7 +10,7 @@ type Props = {
 };
 
 export default function ModelSelect({ brand, value, onChange }: Props) {
-  const [models, setModels] = useState<{ Model_Name: string }[]>([]);
+  const [models, setModels] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -22,24 +23,18 @@ export default function ModelSelect({ brand, value, onChange }: Props) {
 
     fetch(`/api/models/${brand}`)
       .then((res) => res.json())
-      .then(setModels)
+      .then((data: { Model_Name: string }[][]) =>
+        setModels(data.flat().map((m) => m.Model_Name)),
+      )
       .finally(() => setLoading(false));
   }, [brand]);
 
   return (
-    <select
-      className="border-gray-400 border rounded-4xl p-1 w-full focus:outline-none outline-0"
-      disabled={!brand || loading}
+    <Dropdown
+      options={models}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">All Models</option>
-
-      {models.map((m) => (
-        <option key={m.Model_Name} value={m.Model_Name}>
-          {m.Model_Name}
-        </option>
-      ))}
-    </select>
+      placeholder={loading ? "Loading models..." : "Select Model"}
+      onChange={onChange}
+    />
   );
 }

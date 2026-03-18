@@ -1,10 +1,10 @@
 import BrandSelect from "@/components/UI/Filter/cars/BrandSelect";
 import ModelSelect from "@/components/UI/Filter/cars/ModelSelect";
-
+import Dropdown from "@/utilities/Dropdown";
 type Props = {
   brand: string;
   model: string;
-  year: string;
+  year: number;
   onChange: (field: "brand" | "model" | "year", value: string) => void;
 };
 
@@ -34,19 +34,12 @@ export default function VehicleIdentity({
         onChange={(value) => onChange("model", value)}
       />
 
-      <select
+      <Dropdown
+        options={years.map(String)}
         value={year}
-        onChange={(e) => onChange("year", e.target.value)}
-        className="border-gray-400 border rounded-4xl p-1 w-full"
-      >
-        <option value="">Year</option>
-
-        {years.map((y) => (
-          <option key={y} value={y}>
-            {y}
-          </option>
-        ))}
-      </select>
+        placeholder="Select Year"
+        onChange={(val) => onChange("year", val)}
+      />
     </div>
   );
 }

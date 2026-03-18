@@ -1,7 +1,7 @@
 "use client";
 
 type Props = {
-  price: string;
+  price: number;
   negotiable: boolean;
   onChange: (field: "price" | "negotiable", value: string | boolean) => void;
 };

@@ -10,19 +10,24 @@ import {
 export type CarFormData = {
   brand: string;
   model: string;
-  year: string;
-  mileage: number | ""; // allow empty input initially
-  transmission: Transmission | "";
-  fuelType: FuelType | "";
-  drivetrain: Drivetrain | "";
-  bodyType: BodyType | "";
-  condition: CarCondition | "";
-  price: number | "";
-  currency: Currency;
+  year: number;
+  transmission: Transmission;
+  fuelType: FuelType;
+  drivetrain?: Drivetrain;
+  bodyType?: BodyType;
+  condition?: CarCondition;
+  accidentHistory?: boolean;
+  serviceHistory?: boolean;
+  mileage: number;
+  price: number; // number
+  currency?: Currency;
   negotiable: boolean;
-  mainImage: File | null;
-  galleryImages: File[];
+
+  thumbnail: File | null;
+  images: File[];
+
   sellerName: string;
   sellerPhone: string;
+  sellerEmail?: string;
   location: string;
 };

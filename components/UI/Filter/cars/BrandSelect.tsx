@@ -1,4 +1,5 @@
 "use client";
+import Dropdown from "@/utilities/Dropdown";
 import { useEffect, useState } from "react";
 
 interface BrandSelectProps {
@@ -7,27 +8,23 @@ interface BrandSelectProps {
 }
 
 export default function BrandSelect({ value, onChange }: BrandSelectProps) {
-  const [brands, setBrands] = useState<{ Make_Name: string }[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/brands")
       .then((res) => res.json())
-      .then(setBrands)
+      .then((data: { Make_Name: string }[][]) =>
+        setBrands(data.flat().map((b) => b.Make_Name)),
+      )
       .catch(() => setBrands([]));
   }, []);
 
   return (
-    <select
+    <Dropdown
+      options={brands}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="border-gray-400 border rounded-4xl p-1 w-full focus:outline-none outline-0"
-    >
-      <option value="">All Brands</option>
-      {brands.map((b) => (
-        <option key={b.Make_Name} value={b.Make_Name}>
-          {b.Make_Name}
-        </option>
-      ))}
-    </select>
+      placeholder="Select Brand"
+      onChange={onChange}
+    />
   );
 }
