@@ -87,6 +87,28 @@ export async function POST(req: Request) {
   }
 }
 
+export async function GET() {
+  try {
+    const carsFromDb = await prisma.car.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { carImages: true },
+    });
+
+    const cars = carsFromDb.map((car) => ({
+      ...car,
+      images: car.carImages.map((img) => img.url), // ✅ flattened
+      carImages: undefined, // optional: remove raw field
+    }));
+
+    return new Response(JSON.stringify(cars), { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return new Response(JSON.stringify({ error: "Failed to fetch cars" }), {
+      status: 500,
+    });
+  }
+}
+
 // catch (error: any) {
 //   console.error("FULL ERROR:", error);
 

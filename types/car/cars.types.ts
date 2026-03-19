@@ -16,30 +16,31 @@ export type Car = {
   brand: string;
   model: string;
   year: number;
-  bodyType: BodyType;
-  
-  transmission: Transmission;
-  fuelType: FuelType;
-  drivetrain: Drivetrain;
+  bodyType: string;
+
+  transmission: string;
+  fuelType: string;
+  drivetrain: string;
   mileage: number; // in kilometers
 
-  condition: CarCondition;
+  condition: string;
   accidentHistory: boolean;
   serviceHistory: boolean;
-  
+
   price: number;
-  currency: Currency;
+  currency: string;
   negotiable: boolean;
-  
+
   thumbnail: string;
   images: string[];
-  
-  status: ListingStatus;
+
+  status: string;
   featured: boolean;
   views: number;
-  
-  sellerId: string;
-  
+  sellerName: string;
+  sellerPhone: string;
+  sellerEmail?: string | null;
+  location: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -54,7 +55,7 @@ export type CarFilters = {
   bodyType?: BodyType;
   fuelType?: FuelType;
   transmission?: Transmission;
-  condition?: CarCondition | 'used';
+  condition?: CarCondition | "used";
 
   minMileage?: number;
   maxMileage?: number;
@@ -71,10 +72,7 @@ export type CarFilters = {
 
 export type FilterFormProps<T extends object> = {
   filters: T;
-  updateFilter: <K extends keyof T>(
-    key: K,
-    value: T[K]
-  ) => void;
+  updateFilter: <K extends keyof T>(key: K, value: T[K]) => void;
   applyFilters: () => void;
   resetFilters: () => void;
   isPending: boolean;
@@ -87,5 +85,5 @@ export type CarFilterFormState = {
   year: string;
   minPrice: string;
   maxPrice: string;
-  condition?:string;
+  condition?: string;
 };

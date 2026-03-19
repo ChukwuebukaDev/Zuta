@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Car } from "@/types/car/cars.types";
 
 type CarsListProps = {
@@ -24,13 +23,13 @@ export default function CarCard({ cars }: CarsListProps) {
                       : "bg-blue-500/90 text-white"
                 }`}
               >
-                {car.condition.replace("-", " ")}
+                {car.condition?.replace("-", " ")}
               </span>
 
-              <Image
+              <img
                 src={car.thumbnail}
                 alt={`${car.brand} ${car.model}`}
-                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
               />
             </div>

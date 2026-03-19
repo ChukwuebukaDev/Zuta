@@ -8,6 +8,8 @@ import {
 } from "./car.enums";
 
 export type CarFormData = {
+  id: string;
+  slug: string;
   brand: string;
   model: string;
   year: number;

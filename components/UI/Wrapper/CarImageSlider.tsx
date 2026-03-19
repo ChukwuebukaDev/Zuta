@@ -31,10 +31,9 @@ export default function CarImageSlider({ images, model }: CarImageSliderProps) {
     <div className="space-y-4 relative">
       {/* Main Image */}
       <div className="relative w-full md:w-1/2 md:m-auto h-80 md:h-96 rounded-xl overflow-hidden">
-        <Image
+        <img
           src={images[mainIndex]}
           alt={`${model}-${mainIndex}`}
-          fill
           className="object-cover object-center transition-all duration-300"
         />
 
@@ -68,10 +67,9 @@ export default function CarImageSlider({ images, model }: CarImageSliderProps) {
               }`}
               onClick={() => setMainIndex(idx)}
             >
-              <Image
+              <img
                 src={img}
                 alt={`${model}-${idx}`}
-                fill
                 className="object-cover object-center"
               />
             </div>

@@ -1,12 +1,19 @@
-import { mockCars } from "@/data/cars";
+import { prisma } from "@/lib/prisma";
 import { CarFilters } from "@/types/car/cars.types";
 import { Car } from "@/types/car/cars.types";
-import {cache} from 'react';
+import { cache } from "react";
 export async function getCars(filters?: Partial<CarFilters>) {
-  let results = [...mockCars];
+  const carsFromDb = await prisma.car.findMany({
+    include: { carImages: true },
+  });
+
+  // Transform to match frontend Car type
+  let results: Car[] = carsFromDb.map((car) => ({
+    ...car,
+    images: car.carImages.map((img) => img.url),
+  }));
 
   if (filters) {
-   
     if (filters.q) {
       const search = filters.q.toLowerCase();
 
@@ -20,36 +27,30 @@ export async function getCars(filters?: Partial<CarFilters>) {
       });
     }
 
-
     if (filters.brand) {
       results = results.filter((car) =>
         car.brand.toLowerCase().includes(filters.brand!.toLowerCase()),
       );
     }
 
-   
     if (filters.model) {
       results = results.filter((car) =>
         car.model.toLowerCase().includes(filters.model!.toLowerCase()),
       );
     }
 
-   
     if (filters.year) {
       results = results.filter((car) => car.year === filters.year);
     }
-    
-if (filters.condition === "used") {
-  results = results.filter(
-    (car) =>
-      car.condition === "foreign-used" ||
-      car.condition === "nigeria-used"
-  );
-} else if (filters.condition) {
-  results = results.filter(
-    (car) => car.condition === filters.condition
-  );
-}
+
+    if (filters.condition === "used") {
+      results = results.filter(
+        (car) =>
+          car.condition === "foreign-used" || car.condition === "nigeria-used",
+      );
+    } else if (filters.condition) {
+      results = results.filter((car) => car.condition === filters.condition);
+    }
 
     if (filters.minPrice)
       results = results.filter((car) => car.price >= filters.minPrice!);
@@ -57,7 +58,6 @@ if (filters.condition === "used") {
     if (filters.maxPrice)
       results = results.filter((car) => car.price <= filters.maxPrice!);
 
-    
     if (filters.sortBy) {
       const direction = filters.order === "desc" ? -1 : 1;
       const field = filters.sortBy;
@@ -87,8 +87,17 @@ if (filters.condition === "used") {
   };
 }
 
+export const getCarBySlug = cache(async (slug: string): Promise<Car | null> => {
+  const car = await prisma.car.findUnique({
+    where: { slug },
+    include: { carImages: true }, // include images
+  });
 
-export const getCarBySlug = cache(async (slug:string):Promise<Car | null> => {
-  const car = mockCars.find((car) => car.slug === slug);
-  return car ?? null;
-})
+  if (!car) return null;
+
+  // Map carImages -> images array to match UI shape
+  return {
+    ...car,
+    images: car.carImages.map((img) => img.url),
+  };
+});

@@ -7,12 +7,11 @@ import SaveCarButton from "@/components/SaveCar/SaveCarButton";
 type Props = {
   params: { slug: string };
 };
-export default async function CarDetailsPage({params}:Props) {
+export default async function CarDetailsPage({ params }: Props) {
   const { slug } = await params;
   const car = await getCarBySlug(slug);
 
   if (!car) {
-
     return (
       <div className="h-screen flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold">Car Not Found</h1>
@@ -77,7 +76,7 @@ export default async function CarDetailsPage({params}:Props) {
         <div className="rounded-3xl p-8 bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_10px_40px_rgba(0,0,0,0.05)] flex flex-col md:flex-row md:items-center md:justify-between gap-8">
           <div>
             <h2 className="text-xl font-semibold mb-3">Seller Information</h2>
-            <p className="text-gray-600">Seller ID: {car.sellerId}</p>
+            <p className="text-gray-600">Seller ID: 1122</p>
             <p className="text-gray-600">Views: {car.views}</p>
             <p className="text-gray-600 capitalize">Status: {car.status}</p>
           </div>
@@ -87,18 +86,15 @@ export default async function CarDetailsPage({params}:Props) {
               Contact Seller
             </button>
 
-           <SaveCarButton slug={slug} />
+            <SaveCarButton slug={slug} />
           </div>
         </div>
       </div>
-      <Link
-  href="#seller"
-  className="fixed bottom-8 right-8 z-50"
->
-  <div className="px-7 py-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-black font-medium shadow-[0_20px_60px_rgba(0,0,0,0.2)] hover:bg-white/20 transition">
-    Get More Details →
-  </div>
-</Link>
+      <Link href="#seller" className="fixed bottom-8 right-8 z-50">
+        <div className="px-7 py-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-black font-medium shadow-[0_20px_60px_rgba(0,0,0,0.2)] hover:bg-white/20 transition">
+          Get More Details →
+        </div>
+      </Link>
     </div>
   );
 }
@@ -112,7 +108,7 @@ function Spec({ label, value }: { label: string; value: string }) {
   );
 }
 
-export async function generateMetadata({params}:Props):Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const car = await getCarBySlug(slug);
   if (!car) {
@@ -126,6 +122,6 @@ export async function generateMetadata({params}:Props):Promise<Metadata> {
   const description = `${car.year} ${car.brand} ${car.model} with ${car.mileage.toLocaleString()}km available in Nigeria. ${car.transmission} transmission. Buy now on Zuta.`;
   return {
     title,
-    description
-  }
+    description,
+  };
 }

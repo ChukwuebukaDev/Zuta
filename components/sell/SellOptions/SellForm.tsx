@@ -73,12 +73,11 @@ export default function SellForm() {
       setIsSubmitting(true);
 
       const thumbnailFile = currentData.thumbnail as File;
-      const galleryFiles = currentData.images;
+      const images = currentData.images;
 
       const thumbnailUrl = await uploadImage(thumbnailFile);
-
       const imagesUrls = await Promise.all(
-        galleryFiles.map((file) => uploadImage(file)),
+        images.map((file) => uploadImage(file)),
       );
 
       const payload = {
@@ -92,7 +91,7 @@ export default function SellForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
+      console.log("payload", payload);
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error);
@@ -104,28 +103,28 @@ export default function SellForm() {
     } finally {
       setIsSubmitting(false);
     }
-    setFormData({
-      brand: "",
-      model: "",
-      year: 0,
-      mileage: 0,
-      transmission: "automatic",
-      fuelType: "petrol",
-      price: 0,
-      negotiable: false,
-      thumbnail: null,
-      images: [],
-      sellerName: "",
-      sellerPhone: "",
-      location: "",
-      drivetrain: undefined,
-      bodyType: undefined,
-      condition: undefined,
-      accidentHistory: undefined,
-      serviceHistory: undefined,
-      currency: "NGN",
-      sellerEmail: undefined,
-    });
+    // setFormData({
+    //   brand: "",
+    //   model: "",
+    //   year: 0,
+    //   mileage: 0,
+    //   transmission: "automatic",
+    //   fuelType: "petrol",
+    //   price: 0,
+    //   negotiable: false,
+    //   thumbnail: null,
+    //   images: [],
+    //   sellerName: "",
+    //   sellerPhone: "",
+    //   location: "",
+    //   drivetrain: undefined,
+    //   bodyType: undefined,
+    //   condition: undefined,
+    //   accidentHistory: undefined,
+    //   serviceHistory: undefined,
+    //   currency: "NGN",
+    //   sellerEmail: undefined,
+    // });
   };
 
   return (
