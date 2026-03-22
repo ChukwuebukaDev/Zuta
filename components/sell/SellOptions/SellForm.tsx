@@ -103,28 +103,28 @@ export default function SellForm() {
     } finally {
       setIsSubmitting(false);
     }
-    // setFormData({
-    //   brand: "",
-    //   model: "",
-    //   year: 0,
-    //   mileage: 0,
-    //   transmission: "automatic",
-    //   fuelType: "petrol",
-    //   price: 0,
-    //   negotiable: false,
-    //   thumbnail: null,
-    //   images: [],
-    //   sellerName: "",
-    //   sellerPhone: "",
-    //   location: "",
-    //   drivetrain: undefined,
-    //   bodyType: undefined,
-    //   condition: undefined,
-    //   accidentHistory: undefined,
-    //   serviceHistory: undefined,
-    //   currency: "NGN",
-    //   sellerEmail: undefined,
-    // });
+    setFormData({
+      brand: "",
+      model: "",
+      year: 0,
+      mileage: 0,
+      transmission: "automatic",
+      fuelType: "petrol",
+      price: 0,
+      negotiable: false,
+      thumbnail: null,
+      images: [],
+      sellerName: "",
+      sellerPhone: "",
+      location: "",
+      drivetrain: undefined,
+      bodyType: undefined,
+      condition: undefined,
+      accidentHistory: undefined,
+      serviceHistory: undefined,
+      currency: "NGN",
+      sellerEmail: undefined,
+    });
   };
 
   return (

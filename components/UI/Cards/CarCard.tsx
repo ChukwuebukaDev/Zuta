@@ -27,6 +27,7 @@ export default function CarCard({ cars }: CarsListProps) {
               </span>
 
               <img
+                loading="lazy"
                 src={car.thumbnail}
                 alt={`${car.brand} ${car.model}`}
                 sizes="(max-width: 768px) 100vw, 33vw"

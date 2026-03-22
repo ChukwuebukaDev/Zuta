@@ -15,7 +15,7 @@ export default function Input({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="border-gray-400 border rounded-4xl p-1 w-full focus:outline-none outline-0"
+      className=""
     />
   );
 }

@@ -55,28 +55,20 @@ export default async function CarsPage({
         ? `No ${filters.brand} cars available`
         : "No cars available";
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl relative mx-auto px-4 md:px-6 lg:px-8 py-4">
       <div className="flex items-center justify-between mb-6 lg:hidden">
         <h1 className="text-3xl font-bold">{heading}</h1>
-        <CarsFilter />
       </div>
 
       <div className="flex gap-8">
-        <aside className="hidden lg:block w-72 shrink-0">
-          <div className="sticky top-24 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 className="text-lg font-semibold mb-6">Filters</h2>
-            <CarsFilter />
-          </div>
-        </aside>
-
         <main className="flex-1">
-          <div className="hidden lg:block mb-8">
-            <h1 className="text-3xl font-bold">{heading}</h1>
+          <div className="hidden lg:block mb-2">
+            <h1 className="text-3xl text-center font-bold">{heading}</h1>
           </div>
-
+          <CarsFilter />
           {hasResults ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-4 lg:gap-2">
                 <CarCard cars={cars.data} />
               </div>
 

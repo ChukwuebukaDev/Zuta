@@ -34,6 +34,7 @@ export default function CarImageSlider({ images, model }: CarImageSliderProps) {
         <img
           src={images[mainIndex]}
           alt={`${model}-${mainIndex}`}
+          sizes="(max-width: 768px) 100vw, 33vw"
           className="object-cover object-center transition-all duration-300"
         />
 

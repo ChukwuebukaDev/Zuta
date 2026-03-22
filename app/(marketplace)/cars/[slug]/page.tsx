@@ -33,6 +33,8 @@ export default async function CarDetailsPage({ params }: Props) {
           ← Back to cars
         </Link>
 
+        <div className="w-2  h-2 border rounded-full border-black animate-spin border-t-transparent" />
+
         {/* Header Section */}
         <div className="space-y-4 shadow-2xl rounded-2xl p-2">
           <h1 className="text-2xl md:text-5xl font-semibold tracking-tight">

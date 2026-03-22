@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Dropdown from "@/utilities/Dropdown";
+import SelectMenu from "@/utilities/SelectMenu";
 
 type Props = {
   brand: string;
@@ -30,10 +30,10 @@ export default function ModelSelect({ brand, value, onChange }: Props) {
   }, [brand]);
 
   return (
-    <Dropdown
+    <SelectMenu
       options={models}
       value={value}
-      placeholder={loading ? "Loading models..." : "Select Model"}
+      placeholder={!brand ? "👈 select make" : loading ? "Loading..." : "Model"}
       onChange={onChange}
     />
   );
