@@ -40,7 +40,7 @@ export default async function CarsPage({
     ...filters,
     pageSize: 20,
   });
-
+console.log("Cars data:", cars);
   const hasResults = cars.data.length > 0;
 
   const heading = hasResults
@@ -68,7 +68,7 @@ export default async function CarsPage({
           <CarsFilter />
           {hasResults ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-4 lg:gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 2xl:grid-cols-6 gap-4 lg:gap-2">
                 <CarCard cars={cars.data} />
               </div>
 
@@ -89,14 +89,14 @@ export default async function CarsPage({
                     : "There are no cars available at the moment."}
               </p>
 
-              <div className="mt-6">
+             {cars.total >= 1 &&  <div className="mt-6">
                 <Link
                   href="/cars"
                   className="inline-block bg-black text-white px-6 py-2 rounded-lg"
                 >
                   View All Cars
                 </Link>
-              </div>
+              </div>}
             </div>
           )}
         </main>

@@ -19,7 +19,7 @@ export default function CarsFilter() {
     condition: "",
   });
 
-  // ✅ Sync FROM URL → state (important)
+  // Sync FROM URL → state
   useEffect(() => {
     setFilters({
       brand: searchParams.get("brand") || "",
@@ -31,7 +31,7 @@ export default function CarsFilter() {
     });
   }, [searchParams]);
 
-  // ✅ Save ONLY when applying filters (not every keystroke)
+  // Save ONLY when applying filters
   const persistSearch = (data: CarFilterFormState) => {
     localStorage.setItem(
       "zuta_last_search",
@@ -78,7 +78,7 @@ export default function CarsFilter() {
   };
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 mb-4">
       <FilterForm
         filters={filters}
         updateFilter={updateFilter}

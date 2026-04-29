@@ -10,7 +10,7 @@ declare global {
 }
 
 export const prisma =
-  global.prisma ??
+  global.prisma ?? 
   new PrismaClient({
     adapter,
     // log: ["query"],

@@ -1,9 +1,33 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+enum Condition {
+  NEW
+  USED
+  CERTIFIED
+}
+
+enum Status {
+  AVAILABLE
+  SOLD
 }
 
 model Car {
@@ -14,35 +38,42 @@ model Car {
   model           String
   year            Int
   bodyType        String
-  transmission    String
-  fuelType        String
+  transmission    Transmission
+  fuelType        FuelType
   drivetrain      String
   mileage         Int
-  condition       String
+  condition       Condition
   accidentHistory Boolean   @default(false)
   serviceHistory  Boolean   @default(false)
   price           Int
-  currency        String    @default("NGA")
+  currency        String    @default("NGN")
   negotiable      Boolean   @default(false)
   thumbnail       String
-  status          String   @default("available")
-  featured        Boolean  @default(false)
-  views           Int      @default(0)
+  status          Status    @default(AVAILABLE)
+  featured        Boolean   @default(false)
+  views           Int       @default(0)
   sellerName      String
-  sellerPhone     String
+  sellerPhone     String    @db.VarChar(20)
   sellerEmail     String?
   location        String
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  carImages CarImage[]
+  carImages       CarImage[]
+
+  @@index([price])
+  @@index([location])
+  @@index([createdAt])
+  @@index([status])
 }
 
 model CarImage {
-  id    String @id @default(cuid())
-  url   String
-  carId String
-  car   Car    @relation(fields: [carId], references: [id])
+  id        String   @id @default(cuid())
+  url       String
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model User {
@@ -51,4 +82,6 @@ model User {
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+
+  cars      Car[]
 }

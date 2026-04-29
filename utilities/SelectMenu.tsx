@@ -71,7 +71,7 @@ export default function SelectMenu({
       {/* Dropdown */}
       {open && !disabled && (
         <div
-          className={`absolute z-50 mt-2 ${width} bg-white border border-gray-100 rounded-xl shadow-lg`}
+          className={`absolute z-50 mt-2 ${width} bg-black border rounded-xl shadow-lg`}
         >
           {/* 🔍 Search Input */}
           <div className="p-2 border-b">
@@ -95,7 +95,7 @@ export default function SelectMenu({
                     setOpen(false);
                     setQuery("");
                   }}
-                  className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 ${
+                  className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 hover:text-black ${
                     option === value ? "bg-gray-100 font-medium" : ""
                   }`}
                 >

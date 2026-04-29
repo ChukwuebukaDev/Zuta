@@ -3,9 +3,11 @@
 type Props = {
   price: number;
   negotiable: boolean;
-  onChange: (field: "price" | "negotiable", value: string | boolean) => void;
+  onChange: (
+    field: "price" | "negotiable",
+    value: number | boolean
+  ) => void;
 };
-
 export default function PriceSection({ price, negotiable, onChange }: Props) {
   return (
     <div className="grid md:grid-cols-2 gap-6 items-center">
@@ -13,7 +15,9 @@ export default function PriceSection({ price, negotiable, onChange }: Props) {
         type="number"
         placeholder="Price (₦)"
         value={price}
-        onChange={(e) => onChange("price", e.target.value)}
+        onChange={(e) =>
+  onChange("price", Number(e.target.value))
+}
         className="p-4 rounded-lg bg-[#1a1a1a] border border-gray-800 text-white"
         required
       />

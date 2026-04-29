@@ -1,29 +1,39 @@
 "use client";
 import Dropdown from "@/utilities/Dropdown";
+import { CarFormData } from "@/types/car/CarFormData";
+
+import {
+  Transmission,
+  FuelType,
+  Drivetrain,
+  BodyType,
+  CarCondition,
+} from "@/types/car/car.enums";
 
 type Props = {
   mileage: number;
-  transmission: string;
-  fuelType: string;
-  drivetrain?: string;
-  bodyType?: string;
-  condition?: string;
+  transmission: Transmission;
+  fuelType: FuelType;
+  drivetrain?: Drivetrain;
+  bodyType?: BodyType;
+  condition?: CarCondition;
   accidentHistory?: boolean;
   serviceHistory?: boolean;
-  onChange: (
-    field:
-      | "mileage"
-      | "transmission"
-      | "fuelType"
-      | "condition"
-      | "drivetrain"
-      | "bodyType"
-      | "accidentHistory"
-      | "serviceHistory",
-    value: number | string,
+
+  onChange: <K extends
+    | "mileage"
+    | "transmission"
+    | "fuelType"
+    | "condition"
+    | "drivetrain"
+    | "bodyType"
+    | "accidentHistory"
+    | "serviceHistory"
+  >(
+    field: K,
+    value: CarFormData[K]
   ) => void;
 };
-
 export default function VehicleSpecs({
   mileage,
   transmission,
@@ -51,7 +61,7 @@ export default function VehicleSpecs({
         options={["automatic", "manual"]}
         value={transmission}
         placeholder="Transmission"
-        onChange={(val) => onChange("transmission", val)}
+        onChange={(val) => onChange("transmission", val as Transmission)}
       />
 
       {/* Fuel type dropdown */}
@@ -59,7 +69,7 @@ export default function VehicleSpecs({
         options={["petrol", "diesel", "electric", "hybrid"]}
         value={fuelType}
         placeholder="Fuel Type"
-        onChange={(val) => onChange("fuelType", val)}
+        onChange={(val) => onChange("fuelType", val as FuelType)}
       />
 
       {/* Drivetrain */}
@@ -67,7 +77,7 @@ export default function VehicleSpecs({
         options={["FWD", "RWD", "AWD"]}
         value={drivetrain || ""}
         placeholder="Drivetrain"
-        onChange={(val) => onChange("drivetrain", val)}
+        onChange={(val) => onChange("drivetrain", val as Drivetrain )}
       />
 
       {/* Body Type */}
@@ -75,7 +85,7 @@ export default function VehicleSpecs({
         options={["Sedan", "SUV", "Hatchback", "Coupe", "Truck"]}
         value={bodyType || ""}
         placeholder="Body Type"
-        onChange={(val) => onChange("bodyType", val)}
+        onChange={(val) => onChange("bodyType", val as BodyType)}
       />
 
       {/* Condition */}
@@ -83,7 +93,7 @@ export default function VehicleSpecs({
         options={["New", "Used", "Certified"]}
         value={condition || ""}
         placeholder="Condition"
-        onChange={(val) => onChange("condition", val)}
+        onChange={(val) => onChange("condition", val as CarCondition)}
       />
 
       {/* Accident History */}
@@ -93,7 +103,7 @@ export default function VehicleSpecs({
           accidentHistory === undefined ? "" : accidentHistory ? "Yes" : "No"
         }
         placeholder="Accident History"
-        onChange={(val) => onChange("accidentHistory", val)}
+        onChange={(val) => onChange("accidentHistory", val === 'Yes')}
       />
 
       {/* Service History */}
@@ -103,7 +113,7 @@ export default function VehicleSpecs({
           serviceHistory === undefined ? "" : serviceHistory ? "Yes" : "No"
         }
         placeholder="Service History"
-        onChange={(val) => onChange("serviceHistory", val)}
+        onChange={(val) => onChange("serviceHistory", val === 'Yes')}
       />
     </div>
   );

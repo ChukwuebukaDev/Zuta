@@ -1,122 +1,169 @@
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-// 1️⃣ Define the schema with Zod
 const carSchema = z.object({
-  brand: z.string().min(1, "Brand is required"),
-  model: z.string().min(1, "Model is required"),
+  brand: z.string().min(1),
+  model: z.string().min(1),
   year: z.coerce.number().int().gte(1900).lte(new Date().getFullYear()),
   bodyType: z.string().min(1),
-  transmission: z.string().min(1),
-  fuelType: z.string().min(1),
+
+  transmission: z.enum(["MANUAL", "AUTOMATIC"]),
+  fuelType: z.enum(["PETROL", "DIESEL", "ELECTRIC", "HYBRID"]),
   drivetrain: z.string().min(1),
+
   mileage: z.coerce.number().int().nonnegative(),
-  condition: z.string().min(1),
-  accidentHistory: z.coerce.boolean().optional().default(false),
-  serviceHistory: z.coerce.boolean().optional().default(false),
+
+  condition: z.enum(["NEW", "USED","CERTIFIED"]),
+
+  accidentHistory: z.coerce.boolean().default(false),
+  serviceHistory: z.coerce.boolean().default(false),
+
   price: z.coerce.number().positive(),
   negotiable: z.coerce.boolean().default(false),
-  thumbnail: z.string().url("Thumbnail must be a valid URL"),
-  images: z.array(z.string().url()).min(1, "At least one image is required"),
+
+  thumbnail: z.string().url(),
+  images: z.array(z.string().url()).min(1),
+
   sellerName: z.string().min(1),
-  sellerPhone: z.string().min(1),
+  sellerPhone: z.string().min(7).max(20),
   sellerEmail: z.string().email().optional().nullable(),
+
   location: z.string().min(1),
 });
 
+
+function generateSlug(brand: string, model: string) {
+  return `${brand}-${model}-${Date.now()}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+
 export async function POST(req: Request) {
   try {
-    // 2️⃣ Parse & validate request body
-    const body = await req.json();
-    const data = carSchema.parse(body);
+    let body;
 
-    // 3️⃣ Generate a clean slug
-    const slug = `${data.brand}-${data.model}-${Date.now()}`
-      .toLowerCase()
-      .replace(/\s+/g, "-");
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400 }
+      );
+    }
 
-    // 4️⃣ Create the car in Prisma
+    const result = carSchema.safeParse(body);
+    console.log("VALIDATION RESULT:", result);
+    if (!result.success) {
+      console.error("ZOD ERROR:", result.error.flatten());
+
+      return new Response(
+        JSON.stringify({
+          error: "Validation failed",
+          details: result.error.flatten(),
+        }),
+        { status: 400 }
+      );
+    }
+
+    const data = result.data;
+console.log("IMAGES:", data.images);
     const car = await prisma.car.create({
       data: {
-        slug,
+        slug: generateSlug(data.brand, data.model),
         title: `${data.brand} ${data.model}`,
+
         brand: data.brand,
         model: data.model,
         year: data.year,
         bodyType: data.bodyType,
+
         transmission: data.transmission,
         fuelType: data.fuelType,
         drivetrain: data.drivetrain,
+
         mileage: data.mileage,
         condition: data.condition,
-        accidentHistory: data.accidentHistory ?? null,
-        serviceHistory: data.serviceHistory ?? null,
+
+        accidentHistory: data.accidentHistory,
+        serviceHistory: data.serviceHistory,
+
         price: data.price,
         currency: "NGN",
         negotiable: data.negotiable,
+
         thumbnail: data.thumbnail,
-        carImages: {
-          create: data.images.map((url) => ({
-            url,
-          })),
-        },
-        status: "available",
+
+        status: "AVAILABLE",
         featured: false,
         views: 0,
+
         sellerName: data.sellerName,
         sellerPhone: data.sellerPhone,
         sellerEmail: data.sellerEmail ?? null,
         location: data.location,
+
+        // userId: null,
+
+        carImages: {
+          create: data.images.map((url) => ({ url })),
+        },
+      },
+      include: {
+        carImages: true,
       },
     });
 
-    return new Response(JSON.stringify(car), { status: 201 });
+    return new Response(
+      JSON.stringify({
+        ...car,
+        images: car.carImages.map((img) => img.url),
+      }),
+      { status: 201 }
+    );
   } catch (error) {
-    // 5️⃣ Handle validation errors
-    if (error instanceof z.ZodError) {
-      return new Response(JSON.stringify({ errors: error.flatten() }), {
-        status: 400,
-      });
-    }
+    console.error("PRISMA/SERVER ERROR:", error);
 
-    console.error(error);
-
-    return new Response(JSON.stringify({ error: "Failed to create car" }), {
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : "Unknown error",
+      }),
+      { status: 500 }
+    );
   }
 }
 
-export async function GET() {
+
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+
+    const page = Number(searchParams.get("page") || 1);
+    const limit = Number(searchParams.get("limit") || 20);
+
+    const skip = (page - 1) * limit;
+
     const carsFromDb = await prisma.car.findMany({
+      skip,
+      take: limit,
       orderBy: { createdAt: "desc" },
       include: { carImages: true },
     });
 
-    const cars = carsFromDb.map((car) => ({
+    const cars = carsFromDb.map(({ carImages, ...car }) => ({
       ...car,
-      images: car.carImages.map((img) => img.url), // ✅ flattened
-      carImages: undefined, // optional: remove raw field
+      images: carImages.map((img) => img.url),
     }));
 
     return new Response(JSON.stringify(cars), { status: 200 });
   } catch (error) {
     console.error(error);
-    return new Response(JSON.stringify({ error: "Failed to fetch cars" }), {
-      status: 500,
-    });
+
+    return new Response(
+      JSON.stringify({ error: "Failed to fetch cars" }),
+      { status: 500 }
+    );
   }
 }
-
-// catch (error: any) {
-//   console.error("FULL ERROR:", error);
-
-//   return new Response(
-//     JSON.stringify({
-//       error: error.message,
-//       stack: error.stack, // optional (for dev only)
-//     }),
-//     { status: 500 }
-//   );
-// }

@@ -8,20 +8,21 @@ import {
 } from "./car.enums";
 
 export type CarFormData = {
-  id: string;
-  slug: string;
   brand: string;
   model: string;
   year: number;
   transmission: Transmission;
   fuelType: FuelType;
+
   drivetrain?: Drivetrain;
   bodyType?: BodyType;
   condition?: CarCondition;
+
   accidentHistory?: boolean;
   serviceHistory?: boolean;
+
   mileage: number;
-  price: number; // number
+  price: number;
   currency?: Currency;
   negotiable: boolean;
 

@@ -36,7 +36,7 @@ export default function VehicleIdentity({
 
       <Dropdown
         options={years.map(String)}
-        value={year}
+        value={String(year)}
         placeholder="Select Year"
         onChange={(val) => onChange("year", val)}
       />

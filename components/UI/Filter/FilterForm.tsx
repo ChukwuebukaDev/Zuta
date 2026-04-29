@@ -32,7 +32,7 @@ export default function FilterForm({
   return (
     <div className="w-full shadow-sm p-2">
       <div className="flex flex-wrap gap-3 items-center">
-        <div className="flex items-center gap-2">
+        
           <BrandSelect value={filters.brand} onChange={handleBrandChange} />
           <ModelSelect
             brand={filters.brand}
@@ -92,7 +92,6 @@ export default function FilterForm({
             Reset
           </button>
         </div>
-      </div>
     </div>
   );
 }

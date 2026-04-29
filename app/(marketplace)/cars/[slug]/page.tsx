@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import CarImageSlider from "@/components/UI/Wrapper/CarImageSlider";
 import SaveCarButton from "@/components/SaveCar/SaveCarButton";
+import MapContainer from "@/map/MapContainer";
 
 type Props = {
   params: { slug: string };
@@ -33,30 +34,29 @@ export default async function CarDetailsPage({ params }: Props) {
           ← Back to cars
         </Link>
 
-        <div className="w-2  h-2 border rounded-full border-black animate-spin border-t-transparent" />
-
         {/* Header Section */}
-        <div className="space-y-4 shadow-2xl rounded-2xl p-2">
-          <h1 className="text-2xl md:text-5xl font-semibold tracking-tight">
-            {car.brand} {car.model} {car.year}
-          </h1>
-
-          <div className="flex justify-between items-center gap-4">
-            <p className="text-2xl font-bold text-gray-900">
-              ₦{car.price.toLocaleString()}
-            </p>
-
-            <span className="text-xs px-3 py-1 rounded-full bg-black/5 border border-black/10">
-              {car.negotiable ? "Negotiable" : "Fixed Price"}
-            </span>
-          </div>
-        </div>
 
         {/* Image Gallery */}
-        <div className="rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
-          <CarImageSlider images={car.images} model={car.model} />
-        </div>
+        <div className="relative h-50 rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+          <div className="absolute z-50 w-full top-0 bg-white/30 text-gray-800 space-y-4 shadow-2xl rounded-2xl p-2">
+            <h1 className="text-2xl md:text-2xl font-semibold tracking-tight">
+              {car.brand} {car.model} {car.year}
+            </h1>
 
+            <div className="flex justify-between items-center gap-4">
+              <p className="text-2xl font-bold">
+                ₦{car.price.toLocaleString()}
+              </p>
+
+              <span className="text-xs px-3 py-1 rounded-full bg-emerald-400 text-gray-900 font-bold border border-black/10">
+                {car.negotiable ? "Negotiable" : "Fixed Price"}
+              </span>
+            </div>
+          </div>
+
+          <MapContainer />
+        </div>
+        <CarImageSlider images={car.images} model={car.model} />
         {/* Specifications */}
         <div className="rounded-3xl p-8 bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
           <h2 className="text-xl font-semibold mb-8">Specifications</h2>
