@@ -15,6 +15,7 @@ export type Car = {
 
   brand: string;
   model: string;
+  color?: string;
   year: number;
   bodyType: string;
 

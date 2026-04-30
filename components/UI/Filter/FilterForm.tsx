@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import CarCondition from "./cars/CarCondition";
-import BrandSelect from "./cars/BrandSelect";
-import ModelSelect from "./cars/ModelSelect";
+import BrandSelect from "@/components/UI/Filter/cars/BrandSelect";
+import ModelSelect from "@/components/UI/Filter/cars/ModelSelect";
 import { FilterFormProps, CarFilterFormState } from "@/types/car/cars.types";
 export default function FilterForm({
   filters,
@@ -86,7 +86,7 @@ export default function FilterForm({
 
           <button
             onClick={resetFilters}
-            className="bg-gray-100 px-5 py-2 rounded-xl"
+            className="bg-red-500 text-gray-100 px-5 py-2 rounded-xl"
             disabled={isPending}
           >
             Reset

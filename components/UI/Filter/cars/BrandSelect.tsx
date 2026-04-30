@@ -13,7 +13,6 @@ export default function BrandSelect({ value, onChange }: BrandSelectProps) {
 
   useEffect(() => {
     setLoading(true);
-
     fetch("/api/brands")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch brands");

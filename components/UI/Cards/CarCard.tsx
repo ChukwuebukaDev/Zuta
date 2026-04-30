@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Car } from "@/types/car/cars.types";
-
+import Image from "next/image";
 type CarsListProps = {
   cars: Car[];
 };
@@ -32,6 +32,7 @@ export default function CarCard({ cars }: CarsListProps) {
   alt={`${car.brand} ${car.model}`}
   className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
 />
+
             </div>
 
             {/* Content Section */}
@@ -54,7 +55,7 @@ export default function CarCard({ cars }: CarsListProps) {
 
               {/* Extra meta row */}
               <div className="mt-auto flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
-                <span> Gray</span>
+                <span> {car.color}</span>
                 <span className="capitalize">{car.bodyType}</span>
               </div>
             </div>

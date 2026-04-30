@@ -37,7 +37,7 @@ export default async function CarDetailsPage({ params }: Props) {
         {/* Header Section */}
 
         {/* Image Gallery */}
-        <div className="relative h-50 rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+        <div className="relative h-25 0 rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
           <div className="absolute z-50 w-full top-0 bg-white/30 text-gray-800 space-y-4 shadow-2xl rounded-2xl p-2">
             <h1 className="text-2xl md:text-2xl font-semibold tracking-tight">
               {car.brand} {car.model} {car.year}
@@ -71,6 +71,7 @@ export default async function CarDetailsPage({ params }: Props) {
             />
             <Spec label="Condition" value={car.condition} />
             <Spec label="Drivetrain" value={car.drivetrain} />
+            <Spec label="Color" value={String(car.color)} />
           </div>
         </div>
 

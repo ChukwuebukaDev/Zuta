@@ -2,6 +2,7 @@ import { getCars } from "@/lib/engine/marketplace";
 import Link from "next/link";
 import CarCard from "@/components/UI/Cards/CarCard";
 import CarsFilter from "@/components/UI/Filter/cars/CarsFilter";
+import FilterSheet from "@/components/UI/Filter/FilterSheet";
 import type { CarFilters } from "@/types/car/cars.types";
 import Pagination from "@/components/UI/Pagination/CarPagination";
 
@@ -40,7 +41,7 @@ export default async function CarsPage({
     ...filters,
     pageSize: 20,
   });
-console.log("Cars data:", cars);
+
   const hasResults = cars.data.length > 0;
 
   const heading = hasResults
@@ -54,53 +55,55 @@ console.log("Cars data:", cars);
       : filters.brand
         ? `No ${filters.brand} cars available`
         : "No cars available";
+        
   return (
     <div className="max-w-7xl relative mx-auto px-4 md:px-6 lg:px-8 py-4">
-      <div className="flex items-center justify-between mb-6 lg:hidden">
-        <h1 className="text-3xl font-bold">{heading}</h1>
+      <div className="">
+        <h1 className="text-2xl text-center lg:text-3xl font-bold">{heading}</h1>
       </div>
 
-      <div className="flex gap-8">
-        <main className="flex-1">
-          <div className="hidden lg:block mb-2">
-            <h1 className="text-3xl text-center font-bold">{heading}</h1>
-          </div>
+      <main className="flex-1">
+        {/* Wrap CarsFilter in the closeable sheet */}
+       <FilterSheet totalResults={cars.total} defaultOpen={true}>
           <CarsFilter />
-          {hasResults ? (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 2xl:grid-cols-6 gap-4 lg:gap-2">
-                <CarCard cars={cars.data} />
-              </div>
-
-              <Pagination
-                totalPages={cars.totalPages}
-                currentPage={cars.page}
-              />
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <h2 className="text-2xl font-semibold mb-3">No cars found</h2>
-
-              <p className="text-gray-500 max-w-md">
-                {filters.q
-                  ? `We couldn’t find any cars matching "${filters.q}".`
-                  : filters.brand
-                    ? `There are currently no ${filters.brand} cars available.`
-                    : "There are no cars available at the moment."}
-              </p>
-
-             {cars.total >= 1 &&  <div className="mt-6">
-                <Link
-                  href="/cars"
-                  className="inline-block bg-black text-white px-6 py-2 rounded-lg"
-                >
-                  View All Cars
-                </Link>
-              </div>}
+        </FilterSheet>
+        
+        {hasResults ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 2xl:grid-cols-6 gap-4 lg:gap-2 mt-4">
+              <CarCard cars={cars.data} />
             </div>
-          )}
-        </main>
-      </div>
+
+            <Pagination
+              totalPages={cars.totalPages}
+              currentPage={cars.page}
+            />
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <h2 className="text-2xl font-semibold mb-3">No cars found</h2>
+
+            <p className="text-gray-500 max-w-md">
+              {filters.q
+                ? `We couldn’t find any cars matching "${filters.q}".`
+                : filters.brand
+                  ? `There are currently no ${filters.brand} cars available.`
+                  : "There are no cars available at the moment."}
+            </p>
+
+           {cars.total >= 1 && (
+             <div className="mt-6">
+              <Link
+                href="/cars"
+                className="inline-block bg-black text-white px-6 py-2 rounded-lg"
+              >
+                View All Cars
+              </Link>
+            </div>
+           )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

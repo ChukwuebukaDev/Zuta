@@ -12,6 +12,7 @@ import SellerSection from "../FormData/SellerSection";
 
 import { CarFormData } from "@/types/car/CarFormData";
 import {uploadImage} from "@/utilities/uploadImage";
+import { color } from "framer-motion";
 
 const normalizeTransmission = (v?: string) =>
   v === "automatic" ? "AUTOMATIC" : "MANUAL";
@@ -35,6 +36,7 @@ export default function SellForm() {
   const initialState: CarFormData = {
     brand: "",
     model: "",
+    color: "",
     year: 0,
     mileage: 0,
     transmission: "automatic",
@@ -89,11 +91,12 @@ export default function SellForm() {
 
       const thumbnailUrl = await uploadImage(formData.thumbnail);
       const imageUrls = await Promise.all(formData.images.map(uploadImage));
-      console.log('picks',thumbnailUrl)
+      
       const payload = {
         brand: snapshot.brand,
         model: snapshot.model,
         year: snapshot.year,
+        color: snapshot.color,
         mileage: snapshot.mileage,
 
         transmission: normalizeTransmission(snapshot.transmission),
@@ -116,8 +119,8 @@ export default function SellForm() {
 
         accidentHistory: snapshot.accidentHistory,
         serviceHistory: snapshot.serviceHistory,
+       
       };
-console.log("PAYLOAD:", payload);
       const res = await fetch("/api/cars", {
         method: "POST",
         headers: {
@@ -170,6 +173,7 @@ console.log("PAYLOAD:", payload);
             brand={formData.brand}
             model={formData.model}
             year={formData.year}
+            color={formData.color}
             onChange={handleChange}
           />
 

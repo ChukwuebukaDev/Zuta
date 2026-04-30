@@ -5,13 +5,15 @@ type Props = {
   brand: string;
   model: string;
   year: number;
-  onChange: (field: "brand" | "model" | "year", value: string) => void;
+  color?: string;
+  onChange: (field: "brand" | "model" | "year" | "color", value: string) => void;
 };
 
 export default function VehicleIdentity({
   brand,
   model,
   year,
+  color,
   onChange,
 }: Props) {
   const handleBrandChange = (value: string) => {
@@ -39,6 +41,13 @@ export default function VehicleIdentity({
         value={String(year)}
         placeholder="Select Year"
         onChange={(val) => onChange("year", val)}
+      />
+
+      <Dropdown
+        options={["Black", "White", "Silver", "Gray", "Blue", "Red", "Green", "Yellow", "Orange", "Brown", "Gold", "Beige", "Purple"]}
+        value={String(color)}
+        placeholder="Select Color"
+        onChange={(val) => onChange("color", val)}
       />
     </div>
   );

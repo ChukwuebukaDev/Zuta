@@ -4,6 +4,7 @@ import { z } from "zod";
 const carSchema = z.object({
   brand: z.string().min(1),
   model: z.string().min(1),
+  color: z.string().min(1),
   year: z.coerce.number().int().gte(1900).lte(new Date().getFullYear()),
   bodyType: z.string().min(1),
 
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
     }
 
     const data = result.data;
-console.log("IMAGES:", data.images);
+
     const car = await prisma.car.create({
       data: {
         slug: generateSlug(data.brand, data.model),
@@ -82,6 +83,7 @@ console.log("IMAGES:", data.images);
         transmission: data.transmission,
         fuelType: data.fuelType,
         drivetrain: data.drivetrain,
+        color: data.color,
 
         mileage: data.mileage,
         condition: data.condition,
