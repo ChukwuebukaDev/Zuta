@@ -6,6 +6,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+//
+// ENUMS
+//
+
 enum Transmission {
   MANUAL
   AUTOMATIC
@@ -29,49 +33,91 @@ enum Status {
   SOLD
 }
 
+//
+// MODELS
+//
+
+model User {
+  id       String  @id @default(cuid())
+  name     String
+  email    String  @unique
+  password String
+  phone    String? @db.VarChar(20)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cars Car[]
+
+  @@index([email])
+}
+
 model Car {
-  id              String   @id @default(cuid())
-  slug            String   @unique
-  title           String
-  brand           String
-  model           String
-  year            Int
-  color           String?
-  bodyType        String
-  transmission    Transmission
-  fuelType        FuelType
-  drivetrain      String
-  mileage         Int
-  condition       Condition
-  accidentHistory Boolean   @default(false)
-  serviceHistory  Boolean   @default(false)
-  price           Int
-  currency        String    @default("NGN")
-  negotiable      Boolean   @default(false)
-  thumbnail       String
-  status          Status    @default(AVAILABLE)
-  featured        Boolean   @default(false)
-  views           Int       @default(0)
-  sellerName      String
-  sellerPhone     String    @db.VarChar(20)
-  sellerEmail     String?
-  location        String
+  id   String @id @default(cuid())
+  slug String @unique
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  title       String
+  description String?
 
-  carImages       CarImage[]
+  brand String
+  model String
+  year  Int
+  color String?
+
+  bodyType     String
+  transmission Transmission
+  fuelType     FuelType
+  drivetrain   String
+
+  mileage   Int
+  condition Condition
+
+  accidentHistory Boolean @default(false)
+  serviceHistory  Boolean @default(false)
+
+  price      Int
+  currency   String  @default("NGN")
+  negotiable Boolean @default(false)
+
+  thumbnail String
+
+  status   Status  @default(AVAILABLE)
+  featured Boolean @default(false)
+  views    Int     @default(0)
+
+  
+  sellerName  String?
+  sellerPhone String? @db.VarChar(20)
+  sellerEmail String?
+
+  city    String
+  state   String
+  country String @default("Nigeria")
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  carImages CarImage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([price])
-  @@index([location])
+  @@index([city])
+  @@index([state])
   @@index([createdAt])
   @@index([status])
+  @@index([userId])
 }
 
 model CarImage {
-  id        String   @id @default(cuid())
-  url       String
-  carId     String
-  car       Car      @relation(fields: [carId], references: [id])
+  id  String @id @default(cuid())
+  url String
+
+  carId String
+  car   Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
+
+  @@index([carId])
 }

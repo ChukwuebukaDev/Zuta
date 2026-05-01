@@ -39,9 +39,9 @@ export default function CarCard({ cars }: CarsListProps) {
             <div className="p-5 space-y-3 flex flex-col flex-1">
               {/* Title */}
               <div className="">
-                <p className="font-semibold text-sm leading-tight line-clamp-1">
-                 {car.year} {car.brand} {car.model}
-                </p>
+               <p className="font-semibold text-sm md:text-base leading-tight line-clamp-2 md:line-clamp-1">
+  {car.year} {car.brand} {car.model}
+</p>
 
                 <span className="text-xs text-gray-500">
                   {car.transmission}
@@ -49,7 +49,7 @@ export default function CarCard({ cars }: CarsListProps) {
               </div>
 
               {/* Price (Dominant) */}
-              <p className="text-xl font-bold text-gray-900">
+              <p className="text-sm md:text-xl font-bold text-gray-900">
                 ₦{car.price.toLocaleString()}
               </p>
 

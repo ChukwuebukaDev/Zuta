@@ -159,7 +159,7 @@ export default function SelectMenu({
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Search..."
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black/10 focus:border-gray-300"
+                className="w-full px-2.5 py-1.5 text-sm border text-gray-600 border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black/10 focus:border-gray-300"
               />
             </div>
           )}

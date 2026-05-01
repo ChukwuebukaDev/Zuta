@@ -64,7 +64,7 @@ export default async function CarsPage({
 
       <main className="flex-1">
         {/* Wrap CarsFilter in the closeable sheet */}
-       <FilterSheet totalResults={cars.total} defaultOpen={true}>
+       <FilterSheet totalResults={cars.total} defaultOpen={false}>
           <CarsFilter />
         </FilterSheet>
         
