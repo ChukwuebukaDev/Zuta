@@ -10,6 +10,12 @@ generator client {
 // ENUMS
 //
 
+enum Role {
+  BUYER
+  DEALER
+  ADMIN
+}
+
 enum Transmission {
   MANUAL
   AUTOMATIC
@@ -33,9 +39,52 @@ enum Status {
   SOLD
 }
 
+enum DealerStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  SUSPENDED
+}
+
+enum RequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum DocType {
+  GOVT_ID
+  BUSINESS_CARD
+  CERTIFICATE
+}
+
 //
 // MODELS
 //
+
+model VerificationRequest {
+  id           String        @id @default(cuid())
+  status       RequestStatus @default(SUBMITTED)
+  legalName    String        // The "Anchor" for verification
+  adminNotes   String?       // Why was it rejected?
+  
+  documents    VerificationDocument[]
+  
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id])
+}
+
+
+model VerificationDocument {
+  id        String   @id @default(cuid())
+  type      DocType  // e.g., GOVT_ID, BUSINESS_CARD, REGISTRATION
+  url       String   // S3/Uploadthing link
+  
+  requestId String
+  request   VerificationRequest @relation(fields: [requestId], references: [id])
+}
+
 
 model User {
   id       String  @id @default(cuid())
@@ -43,13 +92,37 @@ model User {
   email    String  @unique
   password String
   phone    String? @db.VarChar(20)
-
+  role          Role      @default(BUYER)
+  isVerified    Boolean   @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   cars Car[]
-
+  dealerProfile DealerProfile?
+  verificationRequest VerificationRequest?
   @@index([email])
+}
+
+model DealerProfile {
+  id           String       @id @default(cuid())
+  businessName String
+  slug         String       @unique
+  status       DealerStatus @default(DRAFT)
+  
+  // Branding Assets
+  tagline      String?
+  bio          String?
+  logo         String?
+  banner       String?
+  
+  // Settings
+  website      String?
+  
+  userId       String       @unique
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 model Car {
