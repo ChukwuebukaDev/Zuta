@@ -1,24 +1,19 @@
 "use client";
-
 import Link from "next/link";
-import { useState, useEffect,useRef } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { ChevronDown, ArrowRight } from "lucide-react";
 
 interface NavListProps {
   variant: "desktop" | "mobile";
-  setIsMenuOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsMenuOpen?: (val: boolean) => void;
 }
 
 export default function NavList({ variant, setIsMenuOpen }: NavListProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-const menuRef = useRef<HTMLDivElement | null>(null);
+
   const links = [
-    {
-      name: "Home",
-    },
-    {
-      name: "Cars",
-    },
+    { name: "Home", link: "/" },
+    { name: "Cars", isMega: true },
     {
       name: "Parts",
       sub: [
@@ -28,202 +23,96 @@ const menuRef = useRef<HTMLDivElement | null>(null);
       ],
     },
     {
-      name: "Accessories",
+      name: "Services",
       sub: [
-        { name: "Interior", link: "/accessories?type=interior" },
-        { name: "Exterior", link: "/accessories?type=exterior" },
-      ],
-    },
-    {
-      name: "Services & Repairs",
-      sub: [
-        { name: "Mechanics", link: "/services-repairs?type=mechanic" },
-        { name: "Car Wash", link: "/services-repairs?type=carwash" },
+        { name: "Mechanics", link: "/services?type=mechanic" },
+        { name: "Car Wash", link: "/services?type=carwash" },
       ],
     },
   ];
 
-  const toggleDropdown = (name: string) => {
-    setOpenDropdown((prev) => (prev === name ? null : name));
-  };
-
-useEffect(() => {
-  const handleClickOutside = (e: MouseEvent) => {
-    if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-      setOpenDropdown(null);
-    }
-  };
-
-  document.addEventListener("mousedown", handleClickOutside);
-  return () =>
-    document.removeEventListener("mousedown", handleClickOutside);
-}, []);
-
-if (variant === "desktop") {
-  return (
-    <nav className="hidden md:flex items-center gap-8">
-      {links.map((li) => (
-        <div
-          key={li.name}
-          className="relative"
-          onMouseEnter={() => setOpenDropdown(li.name)}
-          onMouseLeave={() => setOpenDropdown(null)}
-        >
-          {/* Parent (hover trigger only) */}
-          <div className="flex items-center gap-1 cursor-pointer">
-            <span className="text-sm font-medium text-gray-700 hover:text-black">
-              {li.name}
-            </span>
-
-            <ChevronDown
-              size={16}
-              className={`transition-transform duration-300 ${
-                openDropdown === li.name ? "rotate-180" : ""
-              }`}
-            />
-          </div>
-
-          {/* ===================== CARS MEGA MENU ===================== */}
-          {openDropdown === li.name && li.name === "Cars" && (
-            <div className="absolute left-0 mt-0 w-100 bg-white rounded-2xl shadow-xl border border-gray-100 p-6 z-50">
-              <div className="grid grid-cols-3 gap-6">
-                
-                {/* Condition */}
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase mb-3">
-                    Condition
-                  </p>
-                  <div className="space-y-2">
-                    <Link href="/cars?condition=NEW" className="block text-sm hover:text-black">
-                      New Cars
-                    </Link>
-                    <Link href="/cars?condition=USED" className="block text-sm hover:text-black">
-                      Foreign Used
-                    </Link>
-                    <Link href="/cars?condition=USED" className="block text-sm hover:text-black">
-                      Nigerian Used
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Body Type */}
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase mb-3">
-                    Body Type
-                  </p>
-                  <div className="space-y-2">
-                    <Link href="/cars?type=suv" className="block text-sm hover:text-black">
-                      SUV
-                    </Link>
-                    <Link href="/cars?type=sedan" className="block text-sm hover:text-black">
-                      Sedan
-                    </Link>
-                    <Link href="/cars?type=truck" className="block text-sm hover:text-black">
-                      Truck
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Fuel */}
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase mb-3">
-                    Fuel Type
-                  </p>
-                  <div className="space-y-2">
-                    <Link href="/cars?fuel=ELECTRIC" className="block text-sm hover:text-black">
-                      Electric
-                    </Link>
-                    <Link href="/cars?fuel=PETROL" className="block text-sm hover:text-black">
-                      Petrol
-                    </Link>
-                    <Link href="/cars?fuel=HYBRID" className="block text-sm hover:text-black">
-                      Hybrid
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between">
-                <Link href="/cars" className="text-sm font-medium text-blue-600 hover:underline">
-                  View All Cars →
-                </Link>
-
-                <Link href="/saved-cars" className="text-sm text-gray-500 hover:text-black">
-                  Saved Cars
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* ===================== NORMAL DROPDOWNS ===================== */}
-          {openDropdown === li.name && li.name !== "Cars" && li.sub && (
-            <div className="absolute left-0 mt-0 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-              {li.sub.map((subItem) => (
-                <Link
-                  key={subItem.link}
-                  href={subItem.link}
-                  className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-black"
-                >
-                  {subItem.name}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-    </nav>
-  );
-}
-
-  /* ===================== MOBILE ===================== */
-  return (
-    <nav ref={menuRef} className="md:hidden bg-white border-t border-gray-100 shadow-lg">
-      <ul className="flex flex-col p-6 space-y-4">
+  if (variant === "desktop") {
+    return (
+      <nav className="flex items-center gap-6">
         {links.map((li) => (
-          <li key={li.name}>
-            <div
-              onClick={() => toggleDropdown(li.name)}
-              className="flex items-center justify-between cursor-pointer"
-            >
-              <span className="text-base font-medium text-gray-700">
+          <div
+            key={li.name}
+            className="relative py-4"
+            onMouseEnter={() => setOpenDropdown(li.name)}
+            onMouseLeave={() => setOpenDropdown(null)}
+          >
+            <div className="flex items-center gap-1 cursor-pointer group">
+              <span className="text-[14px] font-medium text-gray-600 group-hover:text-black transition-colors">
                 {li.name}
               </span>
-
-              <ChevronDown
-                size={18}
-                className={`transition-transform duration-300 ${
-                  openDropdown === li.name ? "rotate-180" : ""
-                }`}
-              />
+              {(li.sub || li.isMega) && <ChevronDown size={14} className={`transition-transform duration-300 ${openDropdown === li.name ? "rotate-180" : ""}`} />}
             </div>
 
-            {/* Cars (mobile simplified) */}
-            {openDropdown === li.name && li.name === "Cars" && (
-              <ul className="mt-2 ml-4 space-y-2 border-l pl-4">
-                <li><Link href="/cars?condition=NEW">New Cars</Link></li>
-                <li><Link href="/cars?condition=USED">Foreign Used</Link></li>
-                <li><Link href="/cars?type=suv">SUV</Link></li>
-                <li><Link href="/cars?fuel=ELECTRIC">Electric</Link></li>
-              </ul>
+            {/* Desktop Mega Menu for "Cars" */}
+            {openDropdown === li.name && li.isMega && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-[600px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 grid grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-2">
+                <div>
+                  <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Condition</h4>
+                  <ul className="space-y-3">
+                    <li><Link href="/cars?c=new" className="text-sm hover:text-blue-600">New Cars</Link></li>
+                    <li><Link href="/cars?c=used" className="text-sm hover:text-blue-600">Foreign Used</Link></li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Body Type</h4>
+                  <ul className="space-y-3">
+                    <li><Link href="/cars?t=suv" className="text-sm hover:text-blue-600">SUV</Link></li>
+                    <li><Link href="/cars?t=sedan" className="text-sm hover:text-blue-600">Sedan</Link></li>
+                  </ul>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 mb-2">Can't find it?</p>
+                  <Link href="/cars" className="text-sm font-bold flex items-center gap-2">View All <ArrowRight size={14}/></Link>
+                </div>
+              </div>
             )}
 
-            {/* Others */}
-            {openDropdown === li.name && li.sub && li.name !== "Cars" && (
-              <ul className="mt-2 ml-4 space-y-2 border-l pl-4">
-                {li.sub.map((subItem) => (
-                  <li key={subItem.link}>
-                    <Link
-                      href={subItem.link}
-                      onClick={() => setIsMenuOpen?.(false)}
-                      className="block text-sm text-gray-600 hover:text-black"
-                    >
-                      {subItem.name}
-                    </Link>
-                  </li>
+            {/* Standard Dropdown */}
+            {openDropdown === li.name && li.sub && (
+              <div className="absolute top-full left-0 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 animate-in fade-in slide-in-from-top-1">
+                {li.sub.map(s => (
+                  <Link key={s.link} href={s.link} className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-black">
+                    {s.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </nav>
+    );
+  }
+
+  return (
+    <nav className="w-full">
+      <ul className="space-y-1">
+        {links.map((li) => (
+          <li key={li.name} className="border-b border-gray-50 last:border-0">
+            <button
+              onClick={() => setOpenDropdown(openDropdown === li.name ? null : li.name)}
+              className="flex items-center justify-between w-full py-4 text-lg font-medium text-gray-800"
+            >
+              {li.name}
+              {(li.sub || li.isMega) && <ChevronDown className={`transition-transform duration-300 ${openDropdown === li.name ? "rotate-180" : ""}`} />}
+            </button>
+            
+            <div className={`overflow-hidden transition-all duration-300 ${openDropdown === li.name ? "max-h-96 opacity-100 mb-4" : "max-h-0 opacity-0"}`}>
+              <ul className="bg-gray-50 rounded-xl p-4 space-y-3">
+                {li.isMega ? (
+                   <>
+                     <li><Link href="/cars?c=new" onClick={() => setIsMenuOpen?.(false)}>New Cars</Link></li>
+                     <li><Link href="/cars?c=used" onClick={() => setIsMenuOpen?.(false)}>Used Cars</Link></li>
+                   </>
+                ) : li.sub?.map(s => (
+                  <li key={s.link}><Link href={s.link} onClick={() => setIsMenuOpen?.(false)} className="text-gray-600">{s.name}</Link></li>
                 ))}
               </ul>
-            )}
+            </div>
           </li>
         ))}
       </ul>
