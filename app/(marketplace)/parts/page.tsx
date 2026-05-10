@@ -1,6 +1,6 @@
 import { getParts } from "@/lib/engine/PartsEngine";
-import PartCard from "@/components/UI/Cards/PartsCard";
-import PartsFilter from "@/components/UI/Filter/PartsFilter";
+import PartCard from "@/components/ui/card/PartsCard";
+import PartsFilter from "@/components/ui/Filter/PartsFilter";
 import type { Part } from "@/types/parts/part";
 import { Suspense } from "react";
 

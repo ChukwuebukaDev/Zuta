@@ -1,7 +1,7 @@
 import { getCarBySlug } from "@/lib/engine/marketplace";
 import Link from "next/link";
 import { Metadata } from "next";
-import CarImageSlider from "@/components/UI/Wrapper/CarImageSlider";
+import CarImageSlider from "@/components/ui/Wrapper/CarImageSlider";
 import SaveCarButton from "@/components/SaveCar/SaveCarButton";
 import MapContainer from "@/map/MapContainer";
 

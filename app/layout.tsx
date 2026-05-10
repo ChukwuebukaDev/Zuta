@@ -1,8 +1,11 @@
 import "./globals.css";
 import { Toaster } from "sonner";
-import {Inter} from "next/font/google";
-import Providers from "./Providers";
+import {Inter, Geist } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: {
@@ -19,12 +22,12 @@ export default function RootLayout({
   return (
 
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" className={cn("font-sans", geist.variable)}>
         <body className={inter.className + " bg-gray-100 min-h-screen flex flex-col"}>
-          <Providers>
+        
             <main className="flex-1">{children}</main>
             <Toaster position="top-center" richColors />
-          </Providers>
+          
         </body>
       </html>
     </ClerkProvider>

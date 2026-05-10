@@ -68,6 +68,9 @@ model VerificationRequest {
   status       RequestStatus @default(SUBMITTED)
   legalName    String        // The "Anchor" for verification
   adminNotes   String?       // Why was it rejected?
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   
   documents    VerificationDocument[]
   

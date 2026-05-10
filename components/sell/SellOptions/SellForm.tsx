@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/UI/Controls/Button";
+import { Button } from "@/components/ui/controls/Button";
 import { toast } from "sonner";
 
 import VehicleIdentity from "../FormData/VehicleIdentity";

@@ -1,5 +1,5 @@
-import BrandSelect from "@/components/UI/Filter/cars/BrandSelect";
-import ModelSelect from "@/components/UI/Filter/cars/ModelSelect";
+import BrandSelect from "@/components/ui/Filter/cars/BrandSelect";
+import ModelSelect from "@/components/ui/Filter/cars/ModelSelect";
 import Dropdown from "@/utilities/Dropdown";
 type Props = {
   brand: string;

@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import CarCondition from "./cars/CarCondition";
-import BrandSelect from "@/components/UI/Filter/cars/BrandSelect";
-import ModelSelect from "@/components/UI/Filter/cars/ModelSelect";
+import BrandSelect from "@/components/ui/Filter/cars/BrandSelect";
+import ModelSelect from "@/components/ui/Filter/cars/ModelSelect";
 import { FilterFormProps, CarFilterFormState } from "@/types/car/cars.types";
 export default function FilterForm({
   filters,

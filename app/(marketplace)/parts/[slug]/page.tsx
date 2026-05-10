@@ -1,6 +1,6 @@
 import { getPartBySlug } from "@/lib/engine/PartsEngine";
 import Link from "next/link";
-import CarImageSlider from "@/components/UI/Wrapper/CarImageSlider";
+import CarImageSlider from "@/components/ui/Wrapper/CarImageSlider";
 
 type PartDetailsPageProps = {
   params: Promise<{ slug: string }>; // Next.js App Router requires this

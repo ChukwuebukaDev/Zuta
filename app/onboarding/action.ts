@@ -1,15 +1,16 @@
-"use server"
 
 import {prisma as db } from "@/lib/prisma" 
-import { auth } from "@clerk/nextjs" // Or your preferred auth library
+import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache"
 
 export async function submitVerification(data: {
   legalName: string,
   documents: { type: "GOVT_ID" | "BUSINESS_CARD", url: string }[]
 }) {
-  const { userId } = auth()
-  if (!userId) throw new Error("Unauthorized")
+  const { userId } =await auth()
+if (!userId) {
+    throw new Error("You must be logged in to submit a request.");
+  }
 
   try {
     await db.$transaction(async (tx) => {

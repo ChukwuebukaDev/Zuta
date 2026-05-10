@@ -1,5 +1,5 @@
-import MarketplaceHeader from "@/components/UI/Home/MarketplaceHeader";
-import MarketplaceFooter from "@/components/UI/Home/MarketplaceFooter";
+import MarketplaceHeader from "@/components/ui/Home/MarketplaceHeader";
+import MarketplaceFooter from "@/components/ui/Home/MarketplaceFooter";
 
 export default function MarketplaceLayout({
   children,

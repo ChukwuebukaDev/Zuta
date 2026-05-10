@@ -1,10 +1,10 @@
 import { getCars } from "@/lib/engine/marketplace";
 import Link from "next/link";
-import CarCard from "@/components/UI/Cards/CarCard";
-import CarsFilter from "@/components/UI/Filter/cars/CarsFilter";
-import FilterSheet from "@/components/UI/Filter/FilterSheet";
+import CarCard from "@/components/ui/card/CarCard";
+import CarsFilter from "@/components/ui/Filter/cars/CarsFilter";
+import FilterSheet from "@/components/ui/Filter/FilterSheet";
 import type { CarFilters } from "@/types/car/cars.types";
-import Pagination from "@/components/UI/Pagination/CarPagination";
+import Pagination from "@/components/ui/Pagination/CarPagination";
 
 export default async function CarsPage({
   searchParams,

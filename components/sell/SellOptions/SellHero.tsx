@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/UI/Controls/Button";
+import { Button } from "@/components/ui/controls/Button";
 
 export default function SellHero() {
   const scrollToSection = (id: string) => {
