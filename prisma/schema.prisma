@@ -1,5 +1,6 @@
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -90,20 +91,25 @@ model VerificationDocument {
 
 
 model User {
-  id       String  @id @default(cuid())
-  name     String
-  email    String  @unique
-  password String
-  phone    String? @db.VarChar(20)
-  role          Role      @default(BUYER)
-  isVerified    Boolean   @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String    @id @default(cuid())
+  name               String?
+  email              String?   @unique
+  password           String?
+  phone              String?
+  role               Role      @default(BUYER)
+  isVerified         Boolean   @default(false)
+  
+  legalName          String?   
+  onboardingComplete Boolean   @default(false)
+  idUrl              String?
+  cardUrl            String?
 
-  cars Car[]
-  dealerProfile DealerProfile?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  
+  cars               Car[]
+  dealerProfile      DealerProfile?
   verificationRequest VerificationRequest?
-  @@index([email])
 }
 
 model DealerProfile {

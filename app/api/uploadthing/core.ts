@@ -1,28 +1,24 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { auth } from "@clerk/nextjs/server";
- 
+
 const f = createUploadthing();
- 
+
 export const ourFileRouter = {
-  // Define an endpoint for dealer document uploads
   imageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
-    .middleware(async ({ req }) => {
-      // This code runs on your server before upload
+    .middleware(async () => {
       const { userId } = await auth();
- 
-      // If you throw, the user will not be able to upload
       if (!userId) throw new Error("Unauthorized");
- 
-      // Whatever is returned here is accessible in onUploadComplete as `metadata`
       return { userId };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      // This code runs on your server after upload
-      console.log("Upload complete for userId:", metadata.userId);
-      console.log("File URL", file.url);
- 
-      return { uploadedBy: metadata.userId };
+      // 1. Log this so you can see it in your TERMINAL
+      console.log("✅ SERVER: Upload complete for:", metadata.userId);
+      console.log("✅ SERVER: File URL:", file.url);
+
+      // 2. CRITICAL: Return an object. 
+      // Even if you don't save to DB here, you MUST return something.
+      return { uploadedBy: metadata.userId, url: file.url };
     }),
 } satisfies FileRouter;
- 
+
 export type OurFileRouter = typeof ourFileRouter;
