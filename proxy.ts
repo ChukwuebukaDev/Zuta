@@ -10,7 +10,7 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
-//   const { userId, sessionClaims } = await auth();
+  const { userId, sessionClaims } = await auth();
 //   // private routes
 //   if (request.nextUrl.pathname.startsWith("/admin")) {
 //   const role = sessionClaims?.metadata?.role;

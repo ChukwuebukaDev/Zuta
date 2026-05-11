@@ -20,8 +20,10 @@ export default async function OnboardingStatusPage() {
       legalName: true,
     },
   });
-
-  // 1. SUCCESS REDIRECT: If the admin approved you, don't show this page!
+if (!user?.isVerified) {
+    redirect("/onboarding/status");
+  }
+  
   if (user?.isVerified) {
     redirect("/dashboard");
   }

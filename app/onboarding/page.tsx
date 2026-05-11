@@ -5,19 +5,31 @@ import OnboardingForm from "@/components/forms/OnboardingForm"
 import { Car, Shield, Clock, Zap } from "lucide-react"
 
 export default async function OnboardingPage() {
+  // 1. Authenticate the session
   const { userId } = await auth()
-  const user = await currentUser()
+  const clerkUser = await currentUser()
 
-  if (!userId) redirect("/sign-in")
+  if (!userId) {
+    redirect("/sign-in")
+  }
 
-  const existingRequest = await db.verificationRequest.findUnique({
-    where: { userId },
-    select: { status: true }
+  const dbUser = await db.user.findUnique({
+    where: { id: userId },
+    select: { 
+      onboardingComplete: true, 
+      isVerified: true 
+    }
   })
 
-  if (existingRequest?.status === "APPROVED") redirect("/dashboard")
-  if (existingRequest?.status === "SUBMITTED") redirect("/onboarding/status")
+  if (dbUser?.isVerified) {
+    redirect("/dashboard")
+  }
 
+  if (dbUser?.onboardingComplete) {
+    redirect("/onboarding/status")
+  }
+
+  // 4. If they reach this point, they need to fill out the form
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black overflow-x-hidden">
       {/* Background Grid & Glows */}
@@ -44,7 +56,6 @@ export default async function OnboardingPage() {
           </div>
         </nav>
 
-        {/* Content Section */}
         <div className="px-4 py-12 md:py-20 lg:py-28">
           <div className="max-w-5xl mx-auto">
             
@@ -69,7 +80,7 @@ export default async function OnboardingPage() {
               </p>
             </div>
 
-            {/* Responsive Benefits Grid */}
+            {/* Benefits Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-10 md:mb-16">
               {[
                 { icon: Shield, label: "Verified Only", desc: "Premium buyer network" },
@@ -97,19 +108,9 @@ export default async function OnboardingPage() {
 
                 <OnboardingForm
                   userId={userId}
-                  userEmail={user?.emailAddresses[0].emailAddress || ""}
+                  userEmail={clerkUser?.emailAddresses[0].emailAddress || ""}
                 />
               </div>
-            </div>
-
-            {/* Trust Badges - Stacked on Mobile */}
-            <div className="mt-10 md:mt-16 flex flex-wrap justify-center items-center gap-4 md:gap-8 opacity-60">
-              {["Secure SSL", "GDPR Ready", "24/7 Support"].map((text) => (
-                <div key={text} className="flex items-center gap-2">
-                  <div className="w-1 h-1 bg-blue-500 rounded-full" />
-                  <span className="text-[10px] md:text-xs font-medium text-slate-400 uppercase tracking-widest">{text}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
