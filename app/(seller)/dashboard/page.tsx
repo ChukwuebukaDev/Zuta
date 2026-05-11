@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card/Card";
 import { Plus, Car, Eye, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
+import Link from "next/link";
 export default function DealerDashboard() {
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
@@ -10,9 +10,11 @@ export default function DealerDashboard() {
           <h1 className="text-3xl font-bold text-white">Your Showroom</h1>
           <p className="text-slate-400">Manage your listings and track your performance.</p>
         </div>
+        <Link href="/sell">
         <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
           <Plus size={18} /> List New Car
         </Button>
+        </Link>
       </div>
 
       {/* Stats Grid */}

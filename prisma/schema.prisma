@@ -7,9 +7,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
-//
-// ENUMS
-//
+// --- ENUMS ---
 
 enum Role {
   BUYER
@@ -60,53 +58,42 @@ enum DocType {
   CERTIFICATE
 }
 
-//
-// MODELS
-//
+// --- MODELS ---
 
 model VerificationRequest {
-  id           String        @id @default(cuid())
-  status       RequestStatus @default(SUBMITTED)
-  legalName    String        // The "Anchor" for verification
-  adminNotes   String?       // Why was it rejected?
-
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  
-  documents    VerificationDocument[]
-  
-  userId       String        @unique
-  user         User          @relation(fields: [userId], references: [id])
+  id         String                @id @default(cuid())
+  status     RequestStatus         @default(SUBMITTED)
+  legalName  String
+  adminNotes String?
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  documents  VerificationDocument[]
+  userId     String                @unique
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
 
 model VerificationDocument {
-  id        String   @id @default(cuid())
-  type      DocType  // e.g., GOVT_ID, BUSINESS_CARD, REGISTRATION
-  url       String   // S3/Uploadthing link
-  
+  id        String              @id @default(cuid())
+  type      DocType
+  url       String
   requestId String
-  request   VerificationRequest @relation(fields: [requestId], references: [id])
+  request   VerificationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 }
 
-
 model User {
-  id                 String    @id @default(cuid())
+  id                 String               @id @default(cuid())
   name               String?
-  email              String?   @unique
+  email              String?              @unique
   password           String?
   phone              String?
-  role               Role      @default(BUYER)
-  isVerified         Boolean   @default(false)
-  
-  legalName          String?   
-  onboardingComplete Boolean   @default(false)
+  role               Role                 @default(BUYER)
+  isVerified         Boolean              @default(false)
+  legalName          String?
+  onboardingComplete Boolean              @default(false)
   idUrl              String?
   cardUrl            String?
-
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
   cars               Car[]
   dealerProfile      DealerProfile?
   verificationRequest VerificationRequest?
@@ -117,72 +104,57 @@ model DealerProfile {
   businessName String
   slug         String       @unique
   status       DealerStatus @default(DRAFT)
-  
-  // Branding Assets
   tagline      String?
   bio          String?
   logo         String?
   banner       String?
-  
-  // Settings
   website      String?
-  
   userId       String       @unique
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
 
 model Car {
-  id   String @id @default(cuid())
-  slug String @unique
-
-  title       String
-  description String?
-
-  brand String
-  model String
-  year  Int
-  color String?
-
-  bodyType     String
-  transmission Transmission
-  fuelType     FuelType
-  drivetrain   String
-
-  mileage   Int
-  condition Condition
-
-  accidentHistory Boolean @default(false)
-  serviceHistory  Boolean @default(false)
-
-  price      Int
-  currency   String  @default("NGN")
-  negotiable Boolean @default(false)
-
-  thumbnail String
-
-  status   Status  @default(AVAILABLE)
-  featured Boolean @default(false)
-  views    Int     @default(0)
-
+  id              String       @id @default(cuid())
+  slug            String       @unique
+  title           String
+  description     String?      @db.Text
+  brand           String
+  model           String
+  year            Int
+  color           String       // Changed to required to match form
+  bodyType        String
+  transmission    Transmission
+  fuelType        FuelType
+  drivetrain      String
+  mileage         Int
+  condition       Condition
+  accidentHistory Boolean      @default(false)
+  serviceHistory  Boolean      @default(false)
+  price           Int
+  currency        String       @default("NGN")
+  negotiable      Boolean      @default(false)
+  thumbnail       String
+  status          Status       @default(AVAILABLE)
+  featured        Boolean      @default(false)
+  views           Int          @default(0)
   
-  sellerName  String?
-  sellerPhone String? @db.VarChar(20)
-  sellerEmail String?
+  // Seller Details
+  sellerName      String?
+  sellerPhone     String?      @db.VarChar(20)
+  sellerEmail     String?
 
-  city    String
-  state   String
-  country String @default("Nigeria")
+  // Location Fields (Option 1)
+  city            String
+  state           String
+  country         String       @default("Nigeria")
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  carImages CarImage[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  carImages       CarImage[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@index([price])
   @@index([city])
@@ -193,12 +165,10 @@ model Car {
 }
 
 model CarImage {
-  id  String @id @default(cuid())
-  url String
-
-  carId String
-  car   Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
-
+  id        String   @id @default(cuid())
+  url       String
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@index([carId])
