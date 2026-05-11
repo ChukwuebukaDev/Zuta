@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-// 1. Define which routes are "Public" (anyone can see them)
-// We want the landing page and sign-in/up to be public.
+// landing page and sign-in/up to be public.
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)', 
   '/sign-up(.*)',
@@ -10,7 +10,19 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
-  // 2. If the route is NOT public, protect it (redirects to login if not authenticated)
+//   const { userId, sessionClaims } = await auth();
+//   // private routes
+//   if (request.nextUrl.pathname.startsWith("/admin")) {
+//   const role = sessionClaims?.metadata?.role;
+// console.log("--- MIDDLEWARE AUTH CHECK ---");
+//   console.log("Path:", request.nextUrl.pathname);
+//   console.log("Detected Role:", role);
+//   console.log("Full Metadata:", JSON.stringify(sessionClaims?.metadata));
+//     if (role !== "admin") {
+//       const url = new URL("/", request.url);
+//       return NextResponse.redirect(url);
+//     }
+//   }
   if (!isPublicRoute(request)) {
     await auth.protect();
   }

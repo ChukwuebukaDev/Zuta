@@ -33,9 +33,6 @@ export default function OnboardingForm({ userId }: OnboardingFormProps) {
   const [legalName, setLegalName] = useState("");
   const [docs, setDocs] = useState<UploadedDocument[]>([]);
 
-  /* -------------------------------- */
-  /* Derived State                    */
-  /* -------------------------------- */
 
   const hasId = useMemo(() => docs.some((d) => d.type === "GOVT_ID"), [docs]);
   const hasCard = useMemo(() => docs.some((d) => d.type === "BUSINESS_CARD"), [docs]);
@@ -73,10 +70,6 @@ export default function OnboardingForm({ userId }: OnboardingFormProps) {
       setLoading(false);
     }
   }
-
-  /* -------------------------------- */
-  /* Upload Configuration             */
-  /* -------------------------------- */
 
   const getUploadConfig = (type: DocumentType) => ({
     endpoint: "imageUploader" as const,
@@ -172,7 +165,7 @@ export default function OnboardingForm({ userId }: OnboardingFormProps) {
       <Button
         onClick={onSubmit}
         disabled={!isComplete || loading}
-        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 h-16 text-white rounded-2xl shadow-xl transition-all disabled:opacity-20 font-black text-lg uppercase tracking-widest"
+        className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 h-16 text-white rounded-2xl shadow-xl transition-all disabled:opacity-20 font-black text-lg uppercase tracking-widest"
       >
         {loading ? (
           <div className="flex items-center gap-3">

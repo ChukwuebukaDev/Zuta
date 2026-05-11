@@ -1,23 +1,106 @@
-import { Clock, ShieldCheck } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { Clock, ShieldCheck, Car, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
-export default function OnboardingStatus() {
+export default async function OnboardingStatusPage() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  // Fetch the latest status from the database
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      isVerified: true,
+      onboardingComplete: true,
+      legalName: true,
+    },
+  });
+
+  // 1. SUCCESS REDIRECT: If the admin approved you, don't show this page!
+  if (user?.isVerified) {
+    redirect("/dashboard");
+  }
+
+  // 2. SAFETY REDIRECT: If they haven't even finished onboarding, send them back to the form
+  if (!user?.onboardingComplete) {
+    redirect("/onboarding");
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center shadow-2xl">
-        <div className="relative w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Clock className="text-blue-400 animate-pulse" size={40} />
-          <div className="absolute inset-0 bg-blue-500/10 rounded-full animate-ping" />
-        </div>
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+      <div className="max-w-md w-full space-y-8">
         
-        <h1 className="text-2xl font-bold text-white mb-2">Application Received</h1>
-        <p className="text-slate-400 text-sm mb-8 leading-relaxed">
-          Our team is currently reviewing your documents. This usually takes 24-48 hours. 
-          We'll upgrade your account to <span className="text-blue-400 font-bold">Premium Dealer</span> once verified.
-        </p>
+        {/* Animated Icon Section */}
+        <div className="relative flex justify-center">
+          <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+          <div className="relative bg-slate-900 border border-slate-800 p-6 rounded-3xl">
+            <Clock className="w-12 h-12 text-blue-400 animate-pulse" />
+          </div>
+        </div>
 
-        <div className="p-4 bg-slate-950/50 rounded-xl border border-slate-800 flex items-center gap-3 text-left">
-          <ShieldCheck className="text-emerald-500" size={20} />
-          <span className="text-xs text-slate-300">Your documents are encrypted and stored securely.</span>
+        {/* Text Content */}
+        <div className="space-y-4">
+          <h1 className="text-4xl font-bold tracking-tighter italic">
+            ZUTA<span className="text-blue-500">.</span>
+          </h1>
+          <h2 className="text-2xl font-semibold">Verification in Progress</h2>
+          <p className="text-slate-400 leading-relaxed">
+            Hello, <span className="text-white font-medium">{user.legalName}</span>. 
+            Our team is currently reviewing your dealer credentials. This usually takes 
+            less than 24 hours.
+          </p>
+        </div>
+
+        {/* Status Steps */}
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 text-left space-y-4">
+          <div className="flex items-center gap-4 text-emerald-500">
+            <div className="bg-emerald-500/10 p-2 rounded-full">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold">Documents Received</p>
+              <p className="text-xs text-slate-500">Identity and Business Card uploaded</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-blue-400">
+            <div className="bg-blue-500/10 p-2 rounded-full">
+              <Clock size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold">Pending Review</p>
+              <p className="text-xs text-slate-500">Our admins are verifying your details</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-slate-600">
+            <div className="bg-slate-800 p-2 rounded-full">
+              <Car size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold">Marketplace Access</p>
+              <p className="text-xs text-slate-500">Unlock your showroom after approval</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="pt-6 space-y-4">
+          <Link 
+            href="/" 
+            className="text-slate-400 hover:text-white text-sm flex items-center justify-center gap-2 transition-colors"
+          >
+            Return to Home <ChevronRight size={16} />
+          </Link>
+          
+          <div className="text-[10px] uppercase tracking-widest text-slate-700">
+            Zuta Luxury Motors • Secure Portal
+          </div>
         </div>
       </div>
     </div>
