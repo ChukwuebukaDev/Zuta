@@ -2,7 +2,6 @@ import { getCarBySlug } from "@/lib/engine/marketplace";
 import Link from "next/link";
 import { Metadata } from "next";
 import CarImageSlider from "@/components/ui/Wrapper/CarImageSlider";
-import SaveCarButton from "@/components/SaveCar/SaveCarButton";
 import MapContainer from "@/map/MapContainer";
 
 type Props = {
@@ -88,8 +87,6 @@ export default async function CarDetailsPage({ params }: Props) {
             <button className="px-6 py-3 rounded-full bg-black text-white font-medium hover:bg-gray-800 transition">
               Contact Seller
             </button>
-
-            <SaveCarButton slug={slug} />
           </div>
         </div>
       </div>

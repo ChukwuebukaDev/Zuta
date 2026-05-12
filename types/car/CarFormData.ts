@@ -10,7 +10,7 @@ import {
 export type CarFormData = {
   brand: string;
   model: string;
-  color?:string;
+  color: string;
   year: number;
   transmission: Transmission;
   fuelType: FuelType;
@@ -34,7 +34,7 @@ export type CarFormData = {
   sellerPhone: string;
   sellerEmail?: string;
 
-    country: string;
+  country: string;
   state: string;
   city: string;
 };
