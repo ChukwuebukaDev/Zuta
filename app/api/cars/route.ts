@@ -24,7 +24,9 @@ const carSchema = z.object({
   sellerName: z.string().min(1),
   sellerPhone: z.string().min(7).max(20),
   sellerEmail: z.string().email().optional().nullable(),
-  location: z.string().min(1), // Expected: "City, State"
+  city: z.string().min(1),
+  state: z.string().min(1),
+  country: z.string().min(1),
 });
 
 // Helper for SEO Slugs
@@ -55,12 +57,6 @@ export async function POST(req: Request) {
 
     const data = result.data;
 
-    // --- OPTION 1: Smart Location Splitting ---
-    // Takes "Lekki, Lagos" and splits into city/state
-    const locationParts = data.location.split(",").map((s) => s.trim());
-    const city = locationParts[0] || "Unknown";
-    const state = locationParts[1] || "Lagos";
-
     // Create the car in the database
     const car = await prisma.car.create({
       data: {
@@ -83,9 +79,9 @@ export async function POST(req: Request) {
         thumbnail: data.thumbnail,
         
         // Location Data
-        city,
-        state,
-        country: "Nigeria",
+        city: data.city,
+    state: data.state,
+    country: data.country,
 
         // Seller Data
         sellerName: data.sellerName,

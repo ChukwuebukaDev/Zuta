@@ -33,5 +33,8 @@ export type CarFormData = {
   sellerName: string;
   sellerPhone: string;
   sellerEmail?: string;
-  location: string;
+
+    country: string;
+  state: string;
+  city: string;
 };
