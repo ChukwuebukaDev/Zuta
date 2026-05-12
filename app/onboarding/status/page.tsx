@@ -20,17 +20,11 @@ export default async function OnboardingStatusPage() {
       legalName: true,
     },
   });
-if (!user?.isVerified) {
-    redirect("/onboarding/status");
-  }
+
+  if(!user) return;
   
   if (user?.isVerified) {
     redirect("/dashboard");
-  }
-
-  // 2. SAFETY REDIRECT: If they haven't even finished onboarding, send them back to the form
-  if (!user?.onboardingComplete) {
-    redirect("/onboarding");
   }
 
   return (

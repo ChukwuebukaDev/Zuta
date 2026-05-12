@@ -33,9 +33,17 @@ enum Condition {
   CERTIFIED
 }
 
+enum ListingStatus {
+  PENDING    
+  APPROVED   
+  REJECTED   
+  SOLD      
+}
+
 enum Status {
   AVAILABLE
   SOLD
+  PENDING
 }
 
 enum DealerStatus {
@@ -144,7 +152,7 @@ model Car {
   sellerName      String?
   sellerPhone     String?      @db.VarChar(20)
   sellerEmail     String?
-
+ listingStatus ListingStatus @default(PENDING)
   // Location Fields (Option 1)
   city            String
   state           String

@@ -25,7 +25,7 @@ export default async function OnboardingPage() {
     redirect("/dashboard")
   }
 
-  if (dbUser?.onboardingComplete) {
+  if (dbUser?.onboardingComplete && !dbUser?.isVerified) {
     redirect("/onboarding/status")
   }
 

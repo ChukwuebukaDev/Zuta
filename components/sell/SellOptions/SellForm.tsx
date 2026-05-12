@@ -139,14 +139,13 @@ export default function SellForm({
 
       toast.dismiss(loadingToast);
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Submission failed");
-      }
-
-      toast.success("Listing published successfully!");
-      router.push("/dashboard");
-      router.refresh();
+     if (res.ok) {
+  toast.success("Listing submitted for review!", {
+    description: "An administrator will verify the details within 24 hours.",
+    duration: 5000,
+  });
+  router.push("/dashboard");
+}
     } catch (error: any) {
       toast.error(error.message || "An unexpected error occurred");
     } finally {
