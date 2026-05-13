@@ -35,6 +35,13 @@ export type Car = {
   thumbnail: string;
   images: string[];
 
+  user?: {
+    name: string | null;
+    email: string | null;
+    imageUrl?: string | null; // Clerk image URL
+    isVerified?: boolean;
+  };
+
   status: string;
   featured: boolean;
   views: number;

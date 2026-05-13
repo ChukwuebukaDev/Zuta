@@ -59,7 +59,7 @@ export default async function CarsPage({
   return (
     <div className="max-w-7xl relative mx-auto px-4 md:px-6 lg:px-8 py-4">
       <div className="">
-        <h1 className="text-2xl text-center lg:text-3xl font-bold">{heading}</h1>
+        <h1 className="text-2xl text-center text-gray-600 lg:text-3xl font-bold">{heading}</h1>
       </div>
 
       <main className="flex-1">

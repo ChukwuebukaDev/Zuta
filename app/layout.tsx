@@ -6,6 +6,7 @@ import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/app/api/uploadthing/core";
 import { ClerkProvider } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
+import {ThemeProvider} from "@/components/ThemeProvider";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -28,7 +29,7 @@ export default function RootLayout({
       <html lang="en" className={cn("font-sans", geist.variable)}>
         <body className={inter.className + " bg-gray-100 min-h-screen flex flex-col"}>
         <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
-            <main className="flex-1">{children}</main>
+          <ThemeProvider> <main className="flex-1">{children}</main> </ThemeProvider>
             <Toaster position="top-center" richColors />
           
         </body>

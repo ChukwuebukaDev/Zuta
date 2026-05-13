@@ -30,7 +30,7 @@ export default async function SellerLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-[#050505] text-white">
-      {/* You can add a Sidebar or Navbar here later */}
+      {/* Navbar here later */}
       {children}
     </div>
   )

@@ -23,7 +23,7 @@ export default async function AdminPendingPage() {
   const { userId } = await auth();
   
   const user = await db.user.findUnique({ where: { id: userId as string } });
-  if (user?.role !== "ADMIN") redirect("/");
+  // if (user?.role !== "ADMIN") redirect("/");
 
   const pendingCars = (await db.car.findMany({
     where: { listingStatus: "PENDING" },
