@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { SlidersHorizontal, ChevronDown } from "lucide-react";
 
@@ -14,49 +15,46 @@ export default function FilterSheet({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="mb-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+    <div className="w-full mb-4">
+      {/* Header Panel */}
+      <div className="flex items-center justify-between mb-2 px-1">
         <button
           onClick={() => setOpen((prev) => !prev)}
           aria-expanded={open}
           aria-controls="filter-panel"
-          className="group flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium shadow-sm hover:shadow-md hover:bg-gray-50 transition-all"
+          className="group flex items-center gap-2 h-10 px-4 rounded-xl border border-slate-800 bg-zinc-900 text-xs font-medium text-slate-200 hover:text-white hover:bg-zinc-800 transition-all duration-200"
         >
-          <SlidersHorizontal className="w-4 h-4 text-gray-600 group-hover:text-black transition-colors" />
-          
-          <span className="text-gray-700 group-hover:text-black">
-            Filters
-          </span>
-
+          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 transition-colors" />
+          <span>Filters</span>
           <ChevronDown
-            className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${
-              open ? "rotate-180" : ""
+            className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 group-hover:text-slate-300 ${
+              open ? "rotate-180 text-blue-400" : ""
             }`}
           />
         </button>
 
         {totalResults !== undefined && (
-          <p className="text-sm text-gray-500">
-            <span className="font-medium text-gray-800">
+          <p className="text-xs text-slate-400">
+            <span className="font-semibold text-slate-200 bg-zinc-900 border border-slate-800/60 px-2 py-1 rounded-md mr-1">
               {totalResults.toLocaleString()}
             </span>{" "}
-            {totalResults === 1 ? "result" : "results"}
+            {totalResults === 1 ? "vehicle" : "vehicles"} available
           </p>
         )}
       </div>
 
-      {/* Panel */}
+      {/* Accordion Draw Panel */}
       <div
         id="filter-panel"
-        className={`grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        className={`grid transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] ${
           open
-            ? "grid-rows-[1fr] opacity-100 scale-y-100"
-            : "grid-rows-[0fr] opacity-0 scale-y-95"
+            ? "grid-rows-[1fr] opacity-100 translate-y-0"
+            : "grid-rows-[0fr] opacity-0 -translate-y-2 pointer-events-none"
         }`}
       >
         <div className="overflow-hidden">
-          <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50">
+          {/* Removed the extra card frame and background wrapper to stop vertical clutter */}
+          <div className="py-2">
             {children}
           </div>
         </div>

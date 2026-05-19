@@ -8,6 +8,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
 import {ThemeProvider} from "@/components/ThemeProvider";
 
+
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const inter = Inter({ subsets: ["latin"] });
@@ -26,10 +27,10 @@ export default function RootLayout({
   return (
 
     <ClerkProvider>
-      <html lang="en" className={cn("font-sans", geist.variable)}>
+      <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
         <body className={inter.className + " bg-gray-100 min-h-screen flex flex-col"}>
         <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
-          <ThemeProvider> <main className="flex-1">{children}</main> </ThemeProvider>
+           <main className="flex-1">{children}</main>
             <Toaster position="top-center" richColors />
           
         </body>

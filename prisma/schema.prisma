@@ -1,13 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model VerificationRequest {
+  id         String                 @id @default(cuid())
+  status     RequestStatus          @default(SUBMITTED)
+  legalName  String
+  adminNotes String?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  userId     String                 @unique
+  documents  VerificationDocument[]
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// --- ENUMS ---
+model VerificationDocument {
+  id        String              @id @default(cuid())
+  type      DocType
+  url       String
+  requestId String
+  request   VerificationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  name                String?
+  email               String?              @unique
+  password            String?
+  phone               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  isVerified          Boolean              @default(false)
+  role                Role                 @default(BUYER)
+  cardUrl             String?
+  idUrl               String?
+  legalName           String?
+  onboardingComplete  Boolean              @default(false)
+  cars                Car[]
+  dealerProfile       DealerProfile?
+  verificationRequest VerificationRequest?
+}
+
+model DealerProfile {
+  id           String       @id @default(cuid())
+  businessName String
+  slug         String       @unique
+  status       DealerStatus @default(DRAFT)
+  tagline      String?
+  bio          String?
+  logo         String?
+  banner       String?
+  website      String?
+  userId       String       @unique
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Car {
+  id              String        @id @default(cuid())
+  title           String
+  brand           String
+  model           String
+  year            Int
+  price           Int
+  mileage         Int
+  createdAt       DateTime      @default(now())
+  accidentHistory Boolean       @default(false)
+  bodyType        String
+  currency        String        @default("NGN")
+  drivetrain      String
+  featured        Boolean       @default(false)
+  negotiable      Boolean       @default(false)
+  sellerEmail     String?
+  sellerName      String?
+  sellerPhone     String?       @db.VarChar(20)
+  serviceHistory  Boolean       @default(false)
+  slug            String        @unique
+  thumbnail       String
+  updatedAt       DateTime      @updatedAt
+  views           Int           @default(0)
+  color           String
+  fuelType        FuelType
+  transmission    Transmission
+  condition       Condition
+  status          Status        @default(AVAILABLE)
+  city            String
+  country         String        @default("Nigeria")
+  description     String?
+  state           String
+  userId          String
+  listingStatus   ListingStatus @default(PENDING)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  carImages       CarImage[]
+
+  @@index([price])
+  @@index([city])
+  @@index([state])
+  @@index([createdAt])
+  @@index([status])
+  @@index([userId])
+}
+
+model CarImage {
+  id        String   @id @default(cuid())
+  url       String
+  carId     String
+  createdAt DateTime @default(now())
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId])
+}
 
 enum Role {
   BUYER
@@ -34,10 +142,10 @@ enum Condition {
 }
 
 enum ListingStatus {
-  PENDING    
-  APPROVED   
-  REJECTED   
-  SOLD      
+  PENDING
+  APPROVED
+  REJECTED
+  SOLD
 }
 
 enum Status {
@@ -64,120 +172,4 @@ enum DocType {
   GOVT_ID
   BUSINESS_CARD
   CERTIFICATE
-}
-
-// --- MODELS ---
-
-model VerificationRequest {
-  id         String                @id @default(cuid())
-  status     RequestStatus         @default(SUBMITTED)
-  legalName  String
-  adminNotes String?
-  createdAt  DateTime              @default(now())
-  updatedAt  DateTime              @updatedAt
-  documents  VerificationDocument[]
-  userId     String                @unique
-  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationDocument {
-  id        String              @id @default(cuid())
-  type      DocType
-  url       String
-  requestId String
-  request   VerificationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id                 String               @id @default(cuid())
-  name               String?
-  email              String?              @unique
-  password           String?
-  phone              String?
-  role               Role                 @default(BUYER)
-  isVerified         Boolean              @default(false)
-  legalName          String?
-  onboardingComplete Boolean              @default(false)
-  idUrl              String?
-  cardUrl            String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  cars               Car[]
-  dealerProfile      DealerProfile?
-  verificationRequest VerificationRequest?
-}
-
-model DealerProfile {
-  id           String       @id @default(cuid())
-  businessName String
-  slug         String       @unique
-  status       DealerStatus @default(DRAFT)
-  tagline      String?
-  bio          String?
-  logo         String?
-  banner       String?
-  website      String?
-  userId       String       @unique
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-}
-
-model Car {
-  id              String       @id @default(cuid())
-  slug            String       @unique
-  title           String
-  description     String?      @db.Text
-  brand           String
-  model           String
-  year            Int
-  color           String       // Changed to required to match form
-  bodyType        String
-  transmission    Transmission
-  fuelType        FuelType
-  drivetrain      String
-  mileage         Int
-  condition       Condition
-  accidentHistory Boolean      @default(false)
-  serviceHistory  Boolean      @default(false)
-  price           Int
-  currency        String       @default("NGN")
-  negotiable      Boolean      @default(false)
-  thumbnail       String
-  status          Status       @default(AVAILABLE)
-  featured        Boolean      @default(false)
-  views           Int          @default(0)
-  
-  // Seller Details
-  sellerName      String?
-  sellerPhone     String?      @db.VarChar(20)
-  sellerEmail     String?
- listingStatus ListingStatus @default(PENDING)
-  // Location Fields (Option 1)
-  city            String
-  state           String
-  country         String       @default("Nigeria")
-
-  userId          String
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  carImages       CarImage[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-
-  @@index([price])
-  @@index([city])
-  @@index([state])
-  @@index([createdAt])
-  @@index([status])
-  @@index([userId])
-}
-
-model CarImage {
-  id        String   @id @default(cuid())
-  url       String
-  carId     String
-  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@index([carId])
 }
