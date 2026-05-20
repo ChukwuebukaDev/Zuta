@@ -19,7 +19,7 @@ export function AuthButtons() {
         {/* We can still keep a link to a custom profile page if we want */}
         <Link 
           href="/dashboard" 
-          className="hidden md:block text-sm font-medium text-slate-400 hover:text-white transition"
+          className="hidden md:block text-sm font-medium text-slate-400 hover:text-gray-600 transition"
         >
           Dashboard
         </Link>
@@ -44,7 +44,7 @@ export function AuthButtons() {
   return (
     <div className="flex flex-col md:flex-row items-stretch gap-3">
       <Link 
-        className="px-5 py-2 rounded-xl border border-slate-800 text-sm font-semibold text-center text-white hover:bg-slate-900 transition" 
+        className="px-5 py-2 rounded-xl border border-slate-800 text-sm font-semibold text-center text-gray-600 hover:bg-slate-900 transition" 
         href="/sign-in"
       >
         Sign In

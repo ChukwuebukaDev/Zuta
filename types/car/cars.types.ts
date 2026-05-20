@@ -43,6 +43,7 @@ export type Car = {
   };
 
   status: string;
+  listingStatus: string;
   featured: boolean;
   views: number;
   sellerName: string;
