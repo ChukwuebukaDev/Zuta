@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef} from "react";
+import { useState, useRef } from "react";
 import CarImageSlider from "@/components/ui/Wrapper/CarImageSlider";
 import MapContainer from "@/map/MapContainer";
 import ContactSellerSection from "./ContactSellerSection"; 
@@ -22,10 +22,11 @@ export interface CarDetailsViewProps {
 
 export default function CarDetailsView({ car }: CarDetailsViewProps) {
   const [showChatDesk, setShowChatDesk] = useState(false);
+  const [isSaved, setIsSaved] = useState(false); // 👈 Track saved item status
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle"); // 👈 Track share popup status
   const chatSectionRef = useRef<HTMLDivElement>(null);
 
   const seller = car;
-
 
   const formattedSeller = {
     id: seller?.id || "unknown_seller",
@@ -49,6 +50,53 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
     }
   ];
 
+  // 1. Native Web Share API with Clipboard Fallback
+  const handleShareListing = async () => {
+    const shareData = {
+      title: `${car.year} ${car.brand} ${car.model} | Zuta`,
+      text: `Check out this clean ${car.brand} ${car.model} listed on Zuta Marketplace!`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log("Share sheet dismissed:", err);
+      }
+    } else {
+      // Fallback fallback clipboard write action
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareStatus("copied");
+        setTimeout(() => setShareStatus("idle"), 2500);
+      } catch (err) {
+        console.error("Could not copy listing link:", err);
+      }
+    }
+  };
+
+  // 2. Optimistic Favorite Save Action Handler
+  const handleToggleSaveListing = async () => {
+    const targetState = !isSaved;
+    setIsSaved(targetState); // Optimistic UI state flip immediately
+
+    try {
+      const response = await fetch("/api/cars/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ carId: car.id, save: targetState }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to persist bookmark");
+      }
+    } catch (err) {
+      console.error("Database save fallback occurred:", err);
+      setIsSaved(!targetState); // Revert state back if database write errors out
+    }
+  };
+
   const handleOpenChat = () => {
     setShowChatDesk(true);
     setTimeout(() => {
@@ -59,13 +107,40 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 pb-20 selection:bg-black selection:text-white">
       {/* --- Top Navigation --- */}
-      <nav className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+      <nav className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center relative">
         <Link href="/cars" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-black transition-all">
           <ChevronLeft size={14} strokeWidth={3} /> Back to showroom
         </Link>
-        <div className="flex gap-2">
-          <button className="p-3 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-colors shadow-sm"><Share2 size={16} /></button>
-          <button className="p-3 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-colors shadow-sm"><Heart size={16} /></button>
+        
+        <div className="flex gap-2 items-center relative">
+          {/* Clipboard Feedback HUD Toast Accent */}
+          {shareStatus === "copied" && (
+            <div className="absolute right-28 top-3 px-3 py-1.5 bg-black text-[9px] font-bold text-white uppercase tracking-widest rounded-lg shadow-md animate-in fade-in slide-in-from-right-3 duration-200">
+              Link Copied 📋
+            </div>
+          )}
+
+          {/* Share Trigger Element */}
+          <button 
+            onClick={handleShareListing}
+            aria-label="Share listing"
+            className="p-3 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:border-slate-400 text-slate-700 hover:text-black transition-colors shadow-sm active:scale-95"
+          >
+            <Share2 size={16} />
+          </button>
+
+          {/* Save/Favorite Trigger Element */}
+          <button 
+            onClick={handleToggleSaveListing}
+            aria-label={isSaved ? "Remove from saved inventory" : "Save to layout inventory"}
+            className={`p-3 border rounded-full transition-all duration-300 shadow-sm active:scale-95 ${
+              isSaved 
+                ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100" 
+                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-400"
+            }`}
+          >
+            <Heart size={16} className={isSaved ? "fill-red-500 stroke-[2.5]" : "transition-transform duration-200 hover:scale-110"} />
+          </button>
         </div>
       </nav>
 
@@ -137,6 +212,8 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
                   <ContactSellerSection 
                     seller={formattedSeller} 
                     otherListings={mockOtherListings} 
+                    carId={car.id}
+                    currentUserId={car?.id || "user_guest"}
                   />
                 </div>
               </section>
@@ -197,7 +274,6 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
   );
 }
 
-// Sub-components matching styles
 function QuickFeature({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="group p-6 rounded-3xl bg-white border border-slate-200 hover:border-black transition-all duration-300 shadow-sm hover:shadow-md">

@@ -44,6 +44,9 @@ model User {
   cars                Car[]
   dealerProfile       DealerProfile?
   verificationRequest VerificationRequest?
+  buyerConversations  Conversation[]       @relation("BuyerConversations")
+  sellerConversations Conversation[]       @relation("SellerConversations")
+  messages            Message[]
 }
 
 model DealerProfile {
@@ -63,41 +66,42 @@ model DealerProfile {
 }
 
 model Car {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   title           String
   brand           String
   model           String
   year            Int
   price           Int
   mileage         Int
-  createdAt       DateTime      @default(now())
-  accidentHistory Boolean       @default(false)
+  createdAt       DateTime       @default(now())
+  accidentHistory Boolean        @default(false)
   bodyType        String
-  currency        String        @default("NGN")
+  currency        String         @default("NGN")
   drivetrain      String
-  featured        Boolean       @default(false)
-  negotiable      Boolean       @default(false)
+  featured        Boolean        @default(false)
+  negotiable      Boolean        @default(false)
   sellerEmail     String?
   sellerName      String?
-  sellerPhone     String?       @db.VarChar(20)
-  serviceHistory  Boolean       @default(false)
-  slug            String        @unique
+  sellerPhone     String?        @db.VarChar(20)
+  serviceHistory  Boolean        @default(false)
+  slug            String         @unique
   thumbnail       String
-  updatedAt       DateTime      @updatedAt
-  views           Int           @default(0)
+  updatedAt       DateTime       @updatedAt
+  views           Int            @default(0)
   color           String
   fuelType        FuelType
   transmission    Transmission
   condition       Condition
-  status          Status        @default(AVAILABLE)
+  status          Status         @default(AVAILABLE)
   city            String
-  country         String        @default("Nigeria")
+  country         String         @default("Nigeria")
   description     String?
   state           String
   userId          String
-  listingStatus   ListingStatus @default(PENDING)
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingStatus   ListingStatus  @default(PENDING)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   carImages       CarImage[]
+  conversations   Conversation[]
 
   @@index([price])
   @@index([city])
@@ -115,6 +119,31 @@ model CarImage {
   car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@index([carId])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  carId     String
+  car       Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
+  buyerId   String
+  buyer     User      @relation("BuyerConversations", fields: [buyerId], references: [id])
+  sellerId  String
+  seller    User      @relation("SellerConversations", fields: [sellerId], references: [id])
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([carId, buyerId, sellerId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  sender         User         @relation(fields: [senderId], references: [id])
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  text           String
+  createdAt      DateTime     @default(now())
 }
 
 enum Role {

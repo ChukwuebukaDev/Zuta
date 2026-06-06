@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Star, ShieldCheck, MapPin, Calendar, Phone, Send, ExternalLink } from "lucide-react";
+import {  Star, ShieldCheck, MapPin, Calendar, Phone, Send } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { toast } from "sonner";
 import { SellerProfile, MessageItem, MiniListingCard } from "@/types/seller/contact.types";
 
 interface ContactSellerProps {
   seller: SellerProfile;
   otherListings: MiniListingCard[];
-  currentUserId?: string;
+  currentUserId: string;
+  carId: string; 
 }
 
-export default function ContactSellerSection({ seller, otherListings, currentUserId = "user_guest" }: ContactSellerProps) {
+export default function ContactSellerSection({ seller, otherListings, currentUserId, carId }: ContactSellerProps) {
   const [messages, setMessages] = useState<MessageItem[]>([
     {
       id: "init_1",
@@ -22,59 +24,101 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
     },
   ]);
   const [inputMessage, setInputMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll chat box to latest sent message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isSending) return;
 
-    const newMessage: MessageItem = {
-      id: `msg_${Date.now()}`,
-      senderId: currentUserId,
-      text: inputMessage,
-      timestamp: "1 min ago",
-    };
+    // Guard visitors who aren't logged into a Clerk session profile yet
+    if (currentUserId === "user_guest" || !currentUserId) {
+      toast.error("Please sign in to safely message sellers through Zuta Secure Desk.");
+      return;
+    }
 
-    setMessages((prev) => [...prev, newMessage]);
+    const temporaryText = inputMessage;
     setInputMessage("");
+    setIsSending(true);
 
-    // Mock auto-reply simulate conversation experience
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `reply_${Date.now()}`,
-          senderId: seller.id,
-          text: "Received! Let me check the availability with the lot supervisor and get back to you immediately.",
-          timestamp: "Just now",
-        },
-      ]);
-    }, 1500);
+    //print the buyer's text on screen immediately
+    const optimisticMessage: MessageItem = {
+      id: `temp_${Date.now()}`,
+      senderId: currentUserId,
+      text: temporaryText,
+      timestamp: "Sending...",
+    };
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    try {
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          carId,
+          sellerId: seller.id,
+          text: temporaryText,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const generatedMessage = await response.json();
+
+      // Replace message status with the saved data ledger timestamp
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === optimisticMessage.id
+            ? {
+                id: generatedMessage.id,
+                senderId: currentUserId,
+                text: generatedMessage.text,
+                timestamp: new Date(generatedMessage.createdAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              }
+            : m
+        )
+      );
+    } catch (err) {
+      console.error("Failed to route message securely:", err);
+      
+      // Explicitly check instance bounds for safe runtime text extraction
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Failed to drop message into secure routing matrix.";
+        
+      toast.error(errorMessage);
+      
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+      setInputMessage(temporaryText); // Return back into the text box input field
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-8 bg-zinc-950 text-slate-100 min-h-2/3">
+    <div className="w-full p-4 lg:p-8 bg-zinc-950 text-slate-100 rounded-[2.5rem]">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* LEFT COLUMN: Premium Chat Box Interaction Framework */}
-        <div className="lg:col-span-2 flex flex-col h-86 bg-zinc-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-          {/* Chat Box Header Context */}
+        {/* LEFT PANEL: Chat Window */}
+        <div className="lg:col-span-2 flex flex-col h-86 bg-zinc-900/60 border border-slate-800/80 rounded-2xl overflow-hidden">
           <div className="p-4 border-b border-slate-800/80 bg-zinc-900 flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
             <div>
-              <h3 className="text-sm font-semibold text-white flex items-center gap-1.5">
-                Direct Message with {seller.name}
+              <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                Zuta Secure Escrow Brokerage Desk with {seller.name}
               </h3>
-              <p className="text-xs text-slate-400">Typically responds within 15 minutes</p>
             </div>
           </div>
 
-          {/* Interactive Message Feed Panel */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-zinc-950/20">
             {messages.map((msg) => {
               const isMe = msg.senderId === currentUserId;
@@ -82,11 +126,11 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
                 <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[80%] rounded-2xl p-3 text-sm ${
                     isMe 
-                      ? "bg-blue-600 text-white rounded-br-none" 
+                      ? "bg-blue-600 text-white rounded-br-none font-medium" 
                       : "bg-slate-900 text-slate-200 border border-slate-800/60 rounded-bl-none"
                   }`}>
                     <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                    <span className="text-[10px] block mt-1 opacity-60 text-right">{msg.timestamp}</span>
+                    <span className="text-[9px] block mt-1 opacity-50 text-right uppercase tracking-tighter">{msg.timestamp}</span>
                   </div>
                 </div>
               );
@@ -94,114 +138,87 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
             <div ref={chatEndRef} />
           </div>
 
-          {/* Chat Submission Form Input Wrapper */}
           <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-800/80 bg-zinc-900">
             <div className="relative flex items-center">
               <input
                 type="text"
-                placeholder="Ask about availability, location, or negotiable price..."
+                disabled={isSending}
+                placeholder="Type your protective encrypted counter-offer here..."
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                className="w-full bg-zinc-950 border border-slate-800 focus:border-blue-500/80 rounded-xl py-3 pl-4 pr-12 text-sm text-white outline-none placeholder:text-slate-500 transition duration-150"
+                className="w-full bg-zinc-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-4 pr-12 text-sm text-white outline-none transition duration-150"
               />
               <button
                 type="submit"
-                disabled={!inputMessage.trim()}
-                className="absolute right-2 p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 transition duration-150"
+                disabled={!inputMessage.trim() || isSending}
+                className="absolute right-2 p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition duration-150"
               >
-                <Send size={16} />
+                <Send size={14} />
               </button>
             </div>
           </form>
         </div>
 
-        {/* RIGHT COLUMN: Seller Credentials Profile Card & Listings */}
+        {/* RIGHT PANEL: Sidebar Profile Specifications */}
         <div className="space-y-6">
-          {/* Main Verified Card Segment */}
           <div className="bg-zinc-900/60 border border-slate-800 rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-4">
-              <div className="relative w-14 h-14 rounded-full overflow-hidden border border-slate-700 bg-zinc-800">
-                <Image
-                  src={seller.avatarUrl || "/placeholder-avatar.png"}
-                  alt={seller.name}
-                  fill
-                  className="object-cover"
-                />
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-700 bg-zinc-800">
+                {seller.avatarUrl ? (
+                  <Image src={seller.avatarUrl} alt={seller.name} fill className="object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-bold text-slate-400 bg-zinc-800">
+                    {seller.name[0]}
+                  </div>
+                )}
               </div>
               <div>
-                <h4 className="font-semibold text-white text-base flex items-center gap-1.5">
+                <h4 className="font-bold text-white text-sm flex items-center gap-1.5 uppercase italic tracking-tight">
                   {seller.name}
-                  {seller.listingStatus && <ShieldCheck size={16} className="text-blue-400 fill-blue-400/10" />}
+                  {seller.listingStatus && <ShieldCheck size={14} className="text-blue-400 fill-blue-400/10" />}
                 </h4>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <Star size={14} className="text-amber-400 fill-amber-400" />
-                  <span className="text-xs font-medium text-slate-200">{seller.rating}</span>
-                  <span className="text-xs text-slate-500">({seller.totalReviews} reviews)</span>
+                  <Star size={12} className="text-amber-400 fill-amber-400" />
+                  <span className="text-xs font-bold text-slate-300">{seller.rating}</span>
                 </div>
               </div>
             </div>
 
-            <hr className="border-slate-800/80" />
+            <hr className="border-slate-800/60" />
 
-            {/* Quick Context Lines */}
-            <div className="space-y-2.5 text-xs text-slate-300">
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="text-slate-500" />
-                <span>{seller.location}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-slate-500" />
-                <span>Dealer since {seller.joinedDate}</span>
-              </div>
+            <div className="space-y-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+              <div className="flex items-center gap-2"><MapPin size={12} /> <span>{seller.location}</span></div>
+              <div className="flex items-center gap-2"><Calendar size={12} /> <span>Registered Account</span></div>
             </div>
 
-            {/* Direct Phone Reveal Trigger Action */}
             <a
               href={`tel:${seller.phoneNumber}`}
-              className="flex items-center justify-center gap-2 w-full h-11 bg-slate-900 hover:bg-slate-800/80 border border-slate-800 rounded-xl text-xs font-semibold text-slate-200 transition duration-150"
+              className="flex items-center justify-center gap-2 w-full h-12 bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-xl text-xs font-black uppercase tracking-widest text-slate-200 transition"
             >
-              <Phone size={14} />
-              <span>Call Seller ({seller.phoneNumber})</span>
+              <Phone size={12} />
+              <span>Call Via Proxy Line</span>
             </a>
           </div>
 
-          {/* Mini Portfolio Subgrid - "Other Listings by Dealership" */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center px-1">
-              <h5 className="text-xs font-bold text-slate-400 tracking-wider uppercase">Other Inventory</h5>
-              <Link href={`/dealers/${seller.id}`} className="text-xs text-blue-400 hover:underline flex items-center gap-1">
-                View All <ExternalLink size={10} />
+          {/* Sub-portfolio mapping */}
+          <div className="space-y-2">
+            <h5 className="text-[10px] font-black tracking-widest text-slate-500 uppercase px-1">Other Sibling Stock</h5>
+            {otherListings.map((listing) => (
+              <Link
+                key={listing.slug}
+                href={`/cars/${listing.slug}`}
+                className="flex gap-3 p-2 bg-zinc-900/30 border border-slate-900 hover:border-slate-800 rounded-xl transition group"
+              >
+                <div className="relative w-14 h-10 rounded-lg overflow-hidden bg-zinc-800 shrink-0">
+                  {listing.thumbnail && <Image src={listing.thumbnail} alt={listing.title} fill className="object-cover" />}
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <h6 className="text-xs font-bold text-slate-300 truncate group-hover:text-blue-400 transition-colors uppercase italic">{listing.title}</h6>
+                  <p className="text-xs font-black text-white mt-0.5">{listing.price}</p>
+                </div>
               </Link>
-            </div>
-
-            <div className="space-y-2">
-              {otherListings.map((listing) => (
-                <Link
-                  key={listing.slug}
-                  href={`/cars/${listing.slug}`}
-                  className="flex gap-3 p-2 bg-zinc-900/40 hover:bg-zinc-900 border border-slate-800/40 hover:border-slate-800 rounded-xl transition duration-150 group"
-                >
-                  <div className="relative w-16 h-12 rounded-lg overflow-hidden bg-zinc-800 shrink-0">
-                    <Image
-                      src={listing.thumbnail}
-                      alt={listing.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                    <h6 className="text-xs font-medium text-slate-200 group-hover:text-blue-400 truncate transition-colors">
-                      {listing.year} {listing.title}
-                    </h6>
-                    <p className="text-xs font-semibold text-white tracking-tight">
-                      {listing.price}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            ))}
           </div>
-
         </div>
 
       </div>

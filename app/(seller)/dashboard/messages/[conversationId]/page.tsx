@@ -1,0 +1,138 @@
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect, notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import Image from "next/image";
+import { ChevronLeft, ArrowUpRight, MessageCircle } from "lucide-react";
+import DashboardChatFeed from "../../DashboardChatFeed";
+
+interface MessageDetailsPageProps {
+  params: Promise<{ conversationId: string }> | { conversationId: string };
+}
+
+export default async function MessageDetailsPage({ params }: MessageDetailsPageProps) {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+
+  const resolvedParams = await params;
+  const { conversationId } = resolvedParams;
+
+ // Fetch complete conversation history with car specs and deep messaging ledgers
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    include: {
+      car: {
+        select: {
+          id: true,
+          brand: true,
+          model: true,
+          year: true,
+          price: true,
+          thumbnail: true,
+          slug: true,
+        },
+      },
+      buyer: { 
+        select: { 
+          id: true, 
+          name: true 
+        } 
+      },
+      seller: { 
+        select: { 
+          id: true, 
+          name: true 
+        } 
+      },
+      messages: {
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+
+  // Verify conversation exists and the active user is a legitimate participant
+  if (!conversation) notFound();
+  if (conversation.buyerId !== user.id && conversation.sellerId !== user.id) {
+    redirect("/dashboard/messages");
+  }
+
+  // Determine who the conversational counterpart is
+  const isUserBuyer = conversation.buyerId === user.id;
+  const chatPartner = isUserBuyer ? conversation.seller : conversation.buyer;
+
+  // Format message payload to comply safely with our frontend interface layout
+  const formattedMessages = conversation.messages.map((msg) => ({
+    id: msg.id,
+    senderId: msg.senderId,
+    text: msg.text,
+    timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  }));
+
+  return (
+    <div className="p-4 lg:p-8 space-y-6 max-w-5xl mx-auto bg-zinc-950 min-h-screen text-slate-100 rounded-3xl border border-slate-900">
+      {/* Top Breadcrumb Context Line */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/dashboard/messages"
+          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-colors"
+        >
+          <ChevronLeft size={16} /> Back to Messages
+        </Link>
+      </div>
+
+      {/* Embedded Context Header Header: Vehicle Metadata + Chat Partner Profile */}
+      <div className="p-4 rounded-2xl bg-zinc-900/40 border border-slate-900 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
+        <div className="flex items-center gap-4">
+          <div className="relative w-16 h-12 rounded-xl overflow-hidden bg-zinc-800 border border-slate-800 shrink-0">
+            {conversation.car.thumbnail && (
+              <Image
+                src={conversation.car.thumbnail}
+                alt={conversation.car.model}
+                fill
+                className="object-cover"
+              />
+            )}
+          </div>
+          <div>
+            <h1 className="text-sm font-black uppercase italic tracking-tight text-white">
+              {conversation.car.year} {conversation.car.brand} {conversation.car.model}
+            </h1>
+            <p className="text-xs text-slate-400 mt-0.5 font-medium">
+              Negotiation Desk with <span className="text-blue-400 font-bold">{chatPartner?.name || "Verified Dealer"}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 self-end sm:self-center">
+          <div className="text-right sm:text-right">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Listing Value</p>
+            <p className="text-base font-black text-white italic tracking-tighter">
+              ₦{conversation.car.price.toLocaleString()}
+            </p>
+          </div>
+          <Link
+            href={`/cars/${conversation.car.slug}`}
+            className="p-3 bg-zinc-900 hover:bg-zinc-800 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white rounded-xl transition duration-150"
+            title="View original vehicle listing detail page"
+          >
+            <ArrowUpRight size={16} />
+          </Link>
+        </div>
+      </div>
+
+      {/* Main Interactive Interactive Client Component Chat Window */}
+      <div className="rounded-2xl overflow-hidden border border-slate-900 bg-zinc-900/20">
+        <DashboardChatFeed
+          initialMessages={formattedMessages}
+          conversationId={conversation.id}
+          currentUserId={user.id}
+          carId={conversation.car.id}
+          sellerId={conversation.sellerId}
+        />
+      </div>
+    </div>
+  );
+}

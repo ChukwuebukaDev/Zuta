@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card/Card";
-import { Plus, Car,Clock, CheckCircle, PackageSearch, Tag } from "lucide-react";
+import { Plus, Car, Clock, CheckCircle, PackageSearch, Tag, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
@@ -40,18 +40,22 @@ const getStatusClasses = (status: InventoryCar['listingStatus']) => {
 };
 
 // --- Sub-components ---
-function StatCard({ title, value, icon, colorClass }: { title: string; value: string; icon: React.ReactNode; colorClass: string }) {
-  return (
-    <Card className="p-6 bg-slate-900/30 border-slate-800 rounded-2xl backdrop-blur-sm group transition-all">
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-xl bg-black ${colorClass} transition-transform group-hover:scale-105`}>{icon}</div>
-        <div>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{title}</p>
-          <p className="text-3xl font-black italic text-white">{value}</p>
+function StatCard({ title, value, icon, colorClass, href }: { title: string; value: string; icon: React.ReactNode; colorClass: string; href?: string }) {
+  const CardContent = (
+    <Card className="p-6 bg-slate-900/30 border-slate-800 rounded-2xl backdrop-blur-sm group transition-all hover:bg-slate-900/50 cursor-pointer">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className={`p-3 rounded-xl bg-black ${colorClass} transition-transform group-hover:scale-105`}>{icon}</div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{title}</p>
+            <p className="text-3xl font-black italic text-white">{value}</p>
+          </div>
         </div>
       </div>
     </Card>
   );
+
+  return href ? <Link href={href}>{CardContent}</Link> : CardContent;
 }
 
 function InventoryCarCard({ car }: { car: InventoryCar }) {
@@ -74,7 +78,7 @@ function InventoryCarCard({ car }: { car: InventoryCar }) {
       <div className="p-5 space-y-3">
         <div>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{car.year} • {car.fuelType.toLowerCase()}</p>
-          <h4 className="text-lg font-bold text-white uppercase group-hover:text-blue-500 transition-colors">{car.brand} {car.model}</h4>
+          <h4 className="text-lg font-bold text-white uppercase group-hover:text-blue-400 transition-colors">{car.brand} {car.model}</h4>
         </div>
 
         <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-slate-800 text-[11px] text-slate-400">
@@ -93,10 +97,21 @@ function InventoryCarCard({ car }: { car: InventoryCar }) {
 export default async function DealerDashboard() {
   const { userId } = await auth();
 
+  // 1. Fetch Inventory Listings
   const myCars = await db.car.findMany({
     where: { userId: userId as string },
     orderBy: { createdAt: 'desc' },
   }) as unknown as InventoryCar[];
+
+  // 2. Fetch Active Conversation Count (Where dealer is either buyer or seller)
+  const conversationCount = await db.conversation.count({
+    where: {
+      OR: [
+        { buyerId: userId as string },
+        { sellerId: userId as string }
+      ]
+    }
+  });
 
   const pendingCount = myCars.filter(c => c.listingStatus === "PENDING").length;
   const approvedCount = myCars.filter(c => c.listingStatus === "APPROVED").length;
@@ -115,10 +130,20 @@ export default async function DealerDashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Grid expanded to 4 items on desktop viewports */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Live" value={String(approvedCount)} icon={<CheckCircle size={20}/>} colorClass="text-green-500" />
         <StatCard title="Review" value={String(pendingCount)} icon={<Clock size={20}/>} colorClass="text-yellow-500" />
-        <StatCard title="Total" value={String(myCars.length)} icon={<Car size={20}/>} colorClass="text-blue-500" />
+        <StatCard title="Total Cars" value={String(myCars.length)} icon={<Car size={20}/>} colorClass="text-blue-500" />
+        
+        {/* Dynamic Connected Chat Counter Card */}
+        <StatCard 
+          title="Offers & Chat" 
+          value={String(conversationCount)} 
+          icon={<MessageSquare size={20}/>} 
+          colorClass="text-purple-500 group-hover:text-purple-400" 
+          href="/dashboard/messages" // 👈 Links straight into mailbox route
+        />
       </div>
 
       {myCars.length === 0 ? (
