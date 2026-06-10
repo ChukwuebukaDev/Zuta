@@ -6,7 +6,6 @@ import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/app/api/uploadthing/core";
 import { ClerkProvider } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
-import {ThemeProvider} from "@/components/ThemeProvider";
 
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});

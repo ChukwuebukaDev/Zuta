@@ -6,6 +6,7 @@ import Image from "next/image";
 
 export default async function MailboxPage() {
   const user = await currentUser();
+
   if (!user) redirect("/sign-in");
 
   // Fetch all conversations where the logged-in user is either the buyer OR the seller

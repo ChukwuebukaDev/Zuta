@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card/Card";
-import { Plus, Car, Clock, CheckCircle, PackageSearch, Tag, MessageSquare } from "lucide-react";
+import { Plus, Car, Clock, CheckCircle, PackageSearch, Tag, MessageSquare, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
@@ -60,34 +60,46 @@ function StatCard({ title, value, icon, colorClass, href }: { title: string; val
 
 function InventoryCarCard({ car }: { car: InventoryCar }) {
   return (
-    <Card className="relative bg-slate-900/30 border border-slate-800/50 rounded-2xl overflow-hidden backdrop-blur-sm group hover:border-slate-700 transition-all">
-      <div className={`absolute top-3 right-3 z-10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border ${getStatusClasses(car.listingStatus)}`}>
-        {car.listingStatus === 'PENDING' ? 'Under Review' : car.listingStatus}
-      </div>
-
-      <div className="relative aspect-[16/10] overflow-hidden">
-        <Image 
-          src={car.thumbnail} 
-          alt={`${car.brand} ${car.model}`}
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-      </div>
-
-      <div className="p-5 space-y-3">
-        <div>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{car.year} • {car.fuelType.toLowerCase()}</p>
-          <h4 className="text-lg font-bold text-white uppercase group-hover:text-blue-400 transition-colors">{car.brand} {car.model}</h4>
+    <Card className="relative bg-slate-900/30 border border-slate-800/50 rounded-2xl overflow-hidden backdrop-blur-sm group hover:border-slate-700 transition-all flex flex-col justify-between">
+      <div>
+        <div className={`absolute top-3 right-3 z-10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border ${getStatusClasses(car.listingStatus)}`}>
+          {car.listingStatus === 'PENDING' ? 'Under Review' : car.listingStatus}
         </div>
 
-        <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-slate-800 text-[11px] text-slate-400">
-          <Tag size={12} className="text-blue-500"/> {car.transmission.toLowerCase()}
-          <span className="mx-1 text-slate-700">|</span>
-          {car.mileage.toLocaleString()} km
+        <div className="relative aspect-[16/10] overflow-hidden">
+          <Image 
+            src={car.thumbnail} 
+            alt={`${car.brand} ${car.model}`}
+            fill
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
         </div>
 
-        <p className="text-xl font-black text-white">{formatPrice(car.price)}</p>
+        <div className="p-5 pb-0 space-y-3">
+          <div>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{car.year} • {car.fuelType.toLowerCase()}</p>
+            <h4 className="text-lg font-bold text-white uppercase group-hover:text-blue-400 transition-colors">{car.brand} {car.model}</h4>
+          </div>
+
+          <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-slate-800 text-[11px] text-slate-400">
+            <Tag size={12} className="text-blue-500"/> {car.transmission.toLowerCase()}
+            <span className="mx-1 text-slate-700">|</span>
+            {car.mileage.toLocaleString()} km
+          </div>
+        </div>
+      </div>
+
+      {/* --- Action & Price Footer Section --- */}
+      <div className="p-5 pt-4 mt-4 border-t border-slate-900 flex justify-between items-center bg-black/10">
+        <p className="text-xl font-black text-white tracking-tighter">{formatPrice(car.price)}</p>
+        
+        <Link href={`/dashboard/inventory/${car.id}/edit`}>
+          <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-900 border border-slate-800 hover:border-slate-600 text-[11px] font-bold uppercase tracking-wider text-slate-300 hover:text-white rounded-xl transition duration-150 active:scale-95">
+            <Pencil size={12} className="text-slate-400" />
+            Edit Spec
+          </button>
+        </Link>
       </div>
     </Card>
   );
@@ -142,7 +154,7 @@ export default async function DealerDashboard() {
           value={String(conversationCount)} 
           icon={<MessageSquare size={20}/>} 
           colorClass="text-purple-500 group-hover:text-purple-400" 
-          href="/dashboard/messages" // 👈 Links straight into mailbox route
+          href="/dashboard/messages"
         />
       </div>
 

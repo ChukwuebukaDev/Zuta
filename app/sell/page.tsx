@@ -38,7 +38,7 @@ async function SellFormContainer() {
     <SellForm
       defaultEmail={defaultEmail}
       defaultName={defaultName}
-      defaultPhone={user?.phoneNumbers[0]?.phoneNumber || ""}
+      defaultPhone={defaultPhone}
     />
   );
 }

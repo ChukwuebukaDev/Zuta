@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import {  Star, ShieldCheck, MapPin, Calendar, Phone, Send } from "lucide-react";
+import { Star, ShieldCheck, MapPin, Calendar, Phone, Send } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -12,6 +12,15 @@ interface ContactSellerProps {
   otherListings: MiniListingCard[];
   currentUserId: string;
   carId: string; 
+}
+
+// 1. Declare explicit structure tracking backend polling items cleanly
+interface PrismaMessageIncoming {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  text: string;
+  createdAt: string | Date;
 }
 
 export default function ContactSellerSection({ seller, otherListings, currentUserId, carId }: ContactSellerProps) {
@@ -27,15 +36,65 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
   const [isSending, setIsSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Keep track of the rolling dynamic conversation context container ID
+  const activeConversationIdRef = useRef<string | null>(null);
+  const lastCheckedRef = useRef<string>(new Date().toISOString());
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-const handleSendMessage = async (e: React.FormEvent) => {
+  // --- Dynamic Sync Engine Polling Loop ---
+  useEffect(() => {
+    const pollForCounterOffers = async () => {
+      // Do not poll if a messaging track tunnel hasn't been established yet
+      if (!activeConversationIdRef.current) return;
+
+      try {
+        const queryParams = `?conversationId=${activeConversationIdRef.current}&lastChecked=${encodeURIComponent(lastCheckedRef.current)}`;
+        const response = await fetch(`/api/messages/poll${queryParams}`);
+        
+        if (!response.ok) return;
+
+        const rawData: unknown = await response.json();
+        
+        if (Array.isArray(rawData)) {
+          const typedMessages = rawData as PrismaMessageIncoming[];
+          
+          if (typedMessages.length > 0) {
+            const incomingPackets: MessageItem[] = typedMessages.map((msg) => ({
+              id: msg.id,
+              senderId: msg.senderId,
+              text: msg.text,
+              timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            }));
+
+            setMessages((prev) => {
+              const existingIds = new Set(prev.map((m) => m.id));
+              const uniqueIncoming = incomingPackets.filter((m) => !existingIds.has(m.id));
+              return [...prev, ...uniqueIncoming];
+            });
+
+            const finalRecord = typedMessages[typedMessages.length - 1];
+            lastCheckedRef.current = new Date(finalRecord.createdAt).toISOString();
+          }
+        }
+      } catch (err) {
+        console.warn("Public polling interval skipped temporarily:", err);
+      }
+    };
+
+    const syncHeartbeat = setInterval(pollForCounterOffers, 4000);
+    return () => clearInterval(syncHeartbeat);
+  }, []);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || isSending) return;
 
-    // Guard visitors who aren't logged into a Clerk session profile yet
     if (currentUserId === "user_guest" || !currentUserId) {
       toast.error("Please sign in to safely message sellers through Zuta Secure Desk.");
       return;
@@ -45,7 +104,6 @@ const handleSendMessage = async (e: React.FormEvent) => {
     setInputMessage("");
     setIsSending(true);
 
-    //print the buyer's text on screen immediately
     const optimisticMessage: MessageItem = {
       id: `temp_${Date.now()}`,
       senderId: currentUserId,
@@ -71,7 +129,11 @@ const handleSendMessage = async (e: React.FormEvent) => {
 
       const generatedMessage = await response.json();
 
-      // Replace message status with the saved data ledger timestamp
+      // Lock conversation tracking ID reference pointer on first successful push payload
+      if (generatedMessage.conversationId) {
+        activeConversationIdRef.current = generatedMessage.conversationId;
+      }
+
       setMessages((prev) =>
         prev.map((m) =>
           m.id === optimisticMessage.id
@@ -87,10 +149,11 @@ const handleSendMessage = async (e: React.FormEvent) => {
             : m
         )
       );
+
+      lastCheckedRef.current = new Date(generatedMessage.createdAt).toISOString();
     } catch (err) {
       console.error("Failed to route message securely:", err);
       
-      // Explicitly check instance bounds for safe runtime text extraction
       const errorMessage = err instanceof Error 
         ? err.message 
         : "Failed to drop message into secure routing matrix.";
@@ -98,7 +161,7 @@ const handleSendMessage = async (e: React.FormEvent) => {
       toast.error(errorMessage);
       
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
-      setInputMessage(temporaryText); // Return back into the text box input field
+      setInputMessage(temporaryText);
     } finally {
       setIsSending(false);
     }

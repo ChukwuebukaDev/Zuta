@@ -18,6 +18,14 @@ interface DashboardChatFeedProps {
   sellerId: string;
 }
 
+interface PrismaMessagePayload {
+    id: string;
+    conversationId: string;
+    senderId: string;
+    text: string;
+    createdAt: string | Date;
+  }
+
 export default function DashboardChatFeed({
   initialMessages,
   conversationId,
@@ -29,10 +37,58 @@ export default function DashboardChatFeed({
   const [inputMessage, setInputMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Track the exact historical sync line to look forward from
+  const lastCheckedRef = useRef<string>(new Date().toISOString());
 
+  // Automatically scroll down when new data entries pop onto the feed
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+useEffect(() => {
+    const pollForNewMessages = async () => {
+      try {
+        const queryParams = `?conversationId=${conversationId}&lastChecked=${encodeURIComponent(lastCheckedRef.current)}`;
+        const response = await fetch(`/api/messages/poll${queryParams}`);
+        
+        if (!response.ok) return;
+
+        const rawData: unknown = await response.json();
+        
+        // Guard checking that the response payload is safely formatted as an array
+        if (Array.isArray(rawData)) {
+          const typedMessages = rawData as PrismaMessagePayload[];
+          
+          if (typedMessages.length > 0) {
+            const incomingPackets: ChatMessage[] = typedMessages.map((msg) => ({
+              id: msg.id,
+              senderId: msg.senderId,
+              text: msg.text,
+              timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            }));
+
+            setMessages((prev) => {
+              const existingIds = new Set(prev.map((m) => m.id));
+              const uniqueIncoming = incomingPackets.filter((m) => !existingIds.has(m.id));
+              return [...prev, ...uniqueIncoming];
+            });
+
+            const finalRecord = typedMessages[typedMessages.length - 1];
+            lastCheckedRef.current = new Date(finalRecord.createdAt).toISOString();
+          }
+        }
+      } catch (err) {
+        console.warn("Polling interval skipped temporarily:", err);
+      }
+    };
+
+    const syncInterval = setInterval(pollForNewMessages, 4000);
+    return () => clearInterval(syncInterval);
+  }, [conversationId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +135,9 @@ export default function DashboardChatFeed({
             : m
         )
       );
+
+      // Advance the tracking sync pointer forward following our successful push mutation
+      lastCheckedRef.current = new Date(data.createdAt).toISOString();
     } catch (err) {
       console.error("Dashboard router trace failed:", err);
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));

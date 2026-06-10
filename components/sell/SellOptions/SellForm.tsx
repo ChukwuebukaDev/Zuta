@@ -70,7 +70,7 @@ export default function SellForm({
     serviceHistory: false,
     currency: "NGN",
     sellerName: defaultName || "",
-    sellerPhone: defaultPhone || "08087561986",
+    sellerPhone: defaultPhone || "",
     sellerEmail: defaultEmail || "",
   };
 
@@ -126,11 +126,11 @@ export default function SellForm({
         thumbnail: thumbnailUrl,
         images: imageUrls,
         sellerName: defaultName || "Verified Dealer",
-        sellerPhone: defaultPhone || formData.sellerPhone || "08087561986",
+        sellerPhone: defaultPhone || formData.sellerPhone || "080-xx-xx-xxxx",
         sellerEmail: defaultEmail || "",
       };
 
-      // 4. API Request
+      
       const res = await fetch("/api/cars", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,8 +146,11 @@ export default function SellForm({
   });
   router.push("/dashboard");
 }
-    } catch (error: any) {
-      toast.error(error.message || "An unexpected error occurred");
+    } catch (error) {
+      const errorMessage = error instanceof Error 
+      ? error.message 
+      : "Internal Server Error";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
