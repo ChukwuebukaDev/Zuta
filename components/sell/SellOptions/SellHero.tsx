@@ -16,6 +16,7 @@ export default function SellHero() {
 
   return (
     <section className="relative h-screen w-full flex items-center justify-center text-white overflow-hidden">
+    
       <div className="absolute inset-0 -z-20">
         <Image
           src="/images/sell-hero-background.png"
@@ -29,7 +30,7 @@ export default function SellHero() {
       <div className="absolute inset-0 bg-linear-to-b from-black/70 via-black/60 to-black/80 -z-10" />
       <Link
         href="/"
-        className="absolute top-8 left-8 flex items-center gap-2 text-sm text-gray-200 hover:text-white transition"
+        className="fixed top-8 left-8 flex items-center gap-2 text-sm text-gray-200 hover:text-white transition"
       >
         <ArrowLeft size={18} />
         Back to Marketplace

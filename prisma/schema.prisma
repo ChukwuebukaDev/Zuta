@@ -116,6 +116,7 @@ model CarImage {
   url       String
   carId     String
   createdAt DateTime @default(now())
+  angle     ImageAngle @default(OPTIONAL)
   car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@index([carId])
@@ -144,6 +145,16 @@ model Message {
   senderId       String
   text           String
   createdAt      DateTime     @default(now())
+}
+
+enum ImageAngle {
+  FRONT
+  REAR
+  LEFT
+  RIGHT
+  INTERIOR
+  UNDERNEATH
+  OPTIONAL
 }
 
 enum Role {

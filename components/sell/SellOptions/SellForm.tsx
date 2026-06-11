@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState} from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/controls/Button";
 import { toast } from "sonner";
 import { Loader2, Mail, MapPin, ShieldCheck } from "lucide-react";
 import { optimizeImage } from "@/utilities/imageOptimzer";
+
 // Form Sections
 import VehicleIdentity from "../FormData/VehicleIdentity";
 import VehicleSpecs from "../FormData/VehicleSpecs";
@@ -44,7 +45,7 @@ export default function SellForm({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. Initialize UploadThing hooks for our specific routes
+  // Initialize UploadThing hooks
   const { startUpload: uploadThumb } = useUploadThing("carThumbnail");
   const { startUpload: uploadGallery } = useUploadThing("carGallery");
 
@@ -59,7 +60,7 @@ export default function SellForm({
     price: 0,
     negotiable: false,
     thumbnail: null,
-    images: [],
+    images: [], // Structurally tracked via positions 0-5
     country: "Nigeria",
     state: "",
     city: "",
@@ -87,87 +88,116 @@ export default function SellForm({
     e.preventDefault();
     if (isSubmitting) return;
 
-    // --- Validation ---
-    if (!formData.thumbnail || formData.images.length === 0) {
-      return toast.error("Please upload the required vehicle media.");
+    // 1. Core Structural Validation Check
+    if (!formData.thumbnail) {
+      return toast.error("Please upload a Main Showroom Cover Image.");
     }
+
+    // Verify that the first 6 indices are completely populated by files
+    const mandatoryAngles = ["Front", "Rear", "Left Side", "Right Side", "Interior", "Underneath"];
+    for (let i = 0; i < 6; i++) {
+      if (!formData.images[i]) {
+        return toast.error(`Inspection Blueprint incomplete: Missing your "${mandatoryAngles[i]}" photo.`);
+      }
+    }
+
     if (!formData.city || !formData.state) {
       return toast.error("Please select a complete showroom location.");
     }
 
     try {
       setIsSubmitting(true);
-      const loadingToast = toast.loading("Syncing assets with Zuta Cloud...");
+      const loadingToast = toast.loading("Syncing inspection assets with Zuta Cloud...");
 
+      // 2. Safe Image Optimization with type safety filters
       const compressedThumb = await optimizeImage(formData.thumbnail!);
+      
       const compressedGallery = await Promise.all(
-        formData.images.map((file) => optimizeImage(file)),
+        formData.images.map(async (file) => {
+          if (!file) return null;
+          return await optimizeImage(file);
+        })
       );
+
+      // Filter out any dangling empty frames safely before shipping across network bounds
+      const activeGalleryFiles = compressedGallery.filter((file): file is File => file !== null);
+
+      // Execute upload parallel batches
       const [thumbRes, galleryRes] = await Promise.all([
         uploadThumb([compressedThumb]),
-        uploadGallery(compressedGallery),
+        uploadGallery(activeGalleryFiles),
       ]);
 
       const thumbnailUrl = thumbRes?.[0]?.url;
       const imageUrls = galleryRes?.map((file) => file.url) || [];
 
-      if (!thumbnailUrl)
-        throw new Error("Thumbnail upload failed. Please try again.");
+      if (!thumbnailUrl) {
+        throw new Error("Thumbnail upload failed. Connection timed out.");
+      }
 
+      // 3. Construct Data Payload matching Zod API boundaries
       const payload = {
-        ...formData,
-
+        brand: formData.brand,
+        model: formData.model,
+        color: formData.color,
         year: Number(formData.year),
         mileage: Number(formData.mileage),
         price: Number(formData.price),
+        bodyType: formData.bodyType,
+        drivetrain: formData.drivetrain,
         transmission: normalizeTransmission(formData.transmission),
         fuelType: normalizeFuel(formData.fuelType),
-        condition: formData.condition?.toUpperCase(),
+        condition: formData.condition?.toUpperCase() || "USED",
+        accidentHistory: Boolean(formData.accidentHistory),
+        serviceHistory: Boolean(formData.serviceHistory),
+        negotiable: Boolean(formData.negotiable),
         thumbnail: thumbnailUrl,
-        images: imageUrls,
-        sellerName: defaultName || "Verified Dealer",
-        sellerPhone: defaultPhone || formData.sellerPhone || "080-xx-xx-xxxx",
-        sellerEmail: defaultEmail || "",
+        images: imageUrls, // Order is safely maintained 0 through 5
+        sellerName: formData.sellerName || "Verified Dealer",
+        sellerPhone: formData.sellerPhone,
+        sellerEmail: formData.sellerEmail || null,
+        city: formData.city,
+        state: formData.state,
+        country: formData.country,
       };
 
-      
-      const res = await fetch("/api/cars", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => {
+          reject(new Error("Request timed out. Check your internet connection."));
+        }, 30000),
+      );
+
+      const res: Response = await Promise.race([
+        fetch("/api/cars", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }),
+        timeout,
+      ]);
 
       toast.dismiss(loadingToast);
 
-     if (res.ok) {
-  toast.success("Listing submitted for review!", {
-    description: "An administrator will verify the details within 24 hours.",
-    duration: 5000,
-  });
-  router.push("/dashboard");
-}
+      if (res.ok) {
+        toast.success("Listing submitted for review!", {
+          description: "Zuta administrators will verify inspection logs within 24 hours.",
+          duration: 5000,
+        });
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        const errText = await res.text();
+        throw new Error(errText || "Database rejected form payload data properties.");
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error 
-      ? error.message 
-      : "Internal Server Error";
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
-  useEffect(() => {
-    if (isSubmitting) {
-      const timer = setTimeout(() => {
-        if (isSubmitting) {
-          setIsSubmitting(false);
-          toast.error(
-            "Request timed out. Check your internet or DB connection.",
-          );
-        }
-      }, 30000); // 30 second safety valve
-      return () => clearTimeout(timer);
-    }
-  }, [isSubmitting]);
+
   return (
     <section className="bg-[#050505] text-white py-12 px-4 md:px-8">
       <div className="max-w-4xl mx-auto">
@@ -182,7 +212,7 @@ export default function SellForm({
         </header>
 
         {isSubmitting && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-3xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-3xl">
             <div className="text-center">
               <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-6" />
               <p className="text-2xl font-black tracking-[0.4em] uppercase animate-pulse">
@@ -219,6 +249,7 @@ export default function SellForm({
             />
           </div>
 
+          {/* Price Section */}
           <div className="bg-slate-900/30 p-8 rounded-[2.5rem] border border-slate-800/50 backdrop-blur-sm relative z-20">
             <PriceSection
               price={formData.price}
@@ -227,6 +258,7 @@ export default function SellForm({
             />
           </div>
 
+          {/* Core Structured Media Perspective Matrix Component Slot */}
           <PhotoUploader
             thumbnail={formData.thumbnail}
             images={formData.images}
@@ -235,6 +267,7 @@ export default function SellForm({
             }
           />
 
+          {/* Seller Data Info Block */}
           <div className="bg-slate-900/30 p-8 rounded-[2.5rem] border border-slate-800/50 backdrop-blur-sm relative z-10">
             <SellerSection
               country={formData.country}

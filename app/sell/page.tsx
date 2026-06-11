@@ -9,6 +9,7 @@ export default function SellPage() {
   // Fetching the user server-side for security and SEO
   return (
     <main className="bg-black">
+      
       <SellHero />
       <SellBenefits />
 
