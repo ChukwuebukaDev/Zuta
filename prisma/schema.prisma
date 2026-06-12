@@ -29,6 +29,7 @@ model VerificationDocument {
 
 model User {
   id                  String               @id @default(cuid())
+  savedCarIds         String[]
   name                String?
   email               String?              @unique
   password            String?

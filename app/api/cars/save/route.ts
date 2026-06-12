@@ -15,13 +15,11 @@ export async function POST(req: Request) {
       return new NextResponse("Missing Car ID", { status: 400 });
     }
 
-    // Assuming a schema mapping like user.savedCars or a explicit SavedListing table model:
     if (save) {
-      // Logic example: link relation record
       await prisma.user.update({
         where: { id: user.id },
         data: {
-          savedCarIds: { push: carId } // Custom database setup variation adaptation
+          savedCarIds: { push: carId } 
         }
       });
     } else {

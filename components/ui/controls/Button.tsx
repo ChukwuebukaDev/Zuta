@@ -17,15 +17,18 @@ const buttonVariants = cva(
         default: "bg-white text-black hover:bg-white/90",
         outline:
           "border border-white/20 bg-transparent text-white hover:bg-white/10",
+          ghost: "bg-transparent hover:bg-white/10 text-white",
       },
       size: {
         default: "h-10 px-4",
         lg: "h-12 px-8 text-base",
+        sm: "h-8 px-3 text-xs",
       },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
+      
     },
   },
 );

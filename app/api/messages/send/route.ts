@@ -2,95 +2,154 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
+const MAX_MESSAGE_LENGTH = 2000;
+
 export async function POST(req: Request) {
   try {
+    // 1. Authenticate user profile session via Clerk
     const user = await currentUser();
+
     if (!user) {
-      return new NextResponse("Unauthorized. Please log in to message sellers.", { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized. Please log in to message sellers." },
+        { status: 401 }
+      );
     }
 
+    // Parse body safely
     const body = await req.json().catch(() => null);
-    if (!body) {
-      return new NextResponse("Invalid request body payload", { status: 400 });
+
+    if (!body || typeof body !== "object") {
+      return NextResponse.json(
+        { error: "Invalid request payload layout received." },
+        { status: 400 }
+      );
     }
 
     const { carId, text } = body;
-    // We intentionally ignore the incoming body's sellerId to guarantee security
 
-    if (!carId || !text || !text.trim()) {
-      return new NextResponse("Missing required fields: carId and text are mandatory.", { status: 400 });
+    // 2. Strict Input Content Validations
+    if (typeof carId !== "string" || !carId.trim()) {
+      return NextResponse.json({ error: "Invalid or missing carId." }, { status: 400 });
     }
 
-    // 1. Fetch the vehicle directly to grab the real seller ID registered in your database
-    const car = await prisma.car.findUnique({
+    if (typeof text !== "string") {
+      return NextResponse.json({ error: "Message text must be a valid string value." }, { status: 400 });
+    }
+
+    const cleanText = text.trim();
+
+    if (!cleanText) {
+      return NextResponse.json({ error: "Message content cannot be blank." }, { status: 400 });
+    }
+
+    if (cleanText.length > MAX_MESSAGE_LENGTH) {
+      return NextResponse.json(
+        { error: `Message content limits exceeded: max ${MAX_MESSAGE_LENGTH} characters.` },
+        { status: 400 }
+      );
+    }
+
+    // 3. Server-Side Identity & Existing Conversation Resolution
+    const carListing = await prisma.car.findUnique({
       where: { id: carId },
-      select: {
-        id: true,
-        userId: true,   // 👈 Change this to match your schema's actual relation key (userId or sellerId)
-        // sellerId: true 
-      }
+      select: { userId: true },
     });
 
-    if (!car) {
-      return new NextResponse("This car listing no longer exists in the Zuta catalog.", { status: 404 });
+    if (!carListing) {
+      return NextResponse.json(
+        { error: "This car listing no longer exists on our servers." },
+        { status: 404 }
+      );
     }
 
-    // 2. Identify the true, secure target owner account id string
-    const actualSellerId = car.userId; // or car.sellerId depending on your exact schema
+    const targetSellerId = carListing.userId;
 
-    if (!actualSellerId) {
-      return new NextResponse("This listing is not securely mapped to a valid dealer profile.", { status: 400 });
+    if (!targetSellerId) {
+      return NextResponse.json(
+        { error: "Listing integrity exception: target map lacks a verified dealer owner." },
+        { status: 400 }
+      );
     }
 
-    // 3. Block self-talk messaging pipelines
-    if (user.id === actualSellerId) {
-      return new NextResponse("Action Denied: You cannot message yourself about your own listing.", { status: 400 });
-    }
-
-    // 4. Find or Create Conversation using the verified DB parameters
-    let conversation = await prisma.conversation.findUnique({
+    // ⚙️ SMART CHECK: Look for an existing conversation room before blocking the request
+    const existingConversation = await prisma.conversation.findFirst({
       where: {
-        carId_buyerId_sellerId: {
-          carId,
-          buyerId: user.id,
-          sellerId: actualSellerId
-        }
+        carId,
+        OR: [
+          { buyerId: user.id },
+          { sellerId: user.id }
+        ]
       }
     });
 
-    if (!conversation) {
-      conversation = await prisma.conversation.create({
-        data: {
+    // If NO conversation exists yet, this is a brand new chat initialization attempt
+    if (!existingConversation) {
+      // Prevent a seller from starting a brand new thread on their own asset
+      if (targetSellerId === user.id) {
+        return NextResponse.json(
+          { error: "Security Restriction: You cannot launch negotiations or message your own listing." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Determine the true participant mappings for the upsert query block
+    // If the room exists, keep its historical roles intact. If not, the current user is the buyer.
+    const finalBuyerId = existingConversation ? existingConversation.buyerId : user.id;
+    const finalSellerId = existingConversation ? existingConversation.sellerId : targetSellerId;
+
+    // Double check that the sender is actually authorized to post in this room
+    if (user.id !== finalBuyerId && user.id !== finalSellerId) {
+      return NextResponse.json({ error: "Unauthorized: You are not a participant in this chat room." }, { status: 403 });
+    }
+
+    // 4. Execute Atomic Relational Database Transactions
+    const savedMessage = await prisma.$transaction(async (tx) => {
+      const conversation = await tx.conversation.upsert({
+        where: {
+          carId_buyerId_sellerId: {
+            carId,
+            buyerId: finalBuyerId,
+            sellerId: finalSellerId,
+          },
+        },
+        update: {
+          updatedAt: new Date(),
+        },
+        create: {
           carId,
-          buyerId: user.id,
-          sellerId: actualSellerId
+          buyerId: finalBuyerId,
+          sellerId: finalSellerId,
+        },
+      });
+
+      // Append the new message entry directly inside the isolated room
+      return tx.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderId: user.id,
+          text: cleanText,
+        },
+        select: {
+          id: true,
+          conversationId: true,
+          senderId: true,
+          text: true,
+          createdAt: true,
         }
       });
-    }
-
-    // 5. Securely save message payload entry record
-    const message = await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
-        senderId: user.id,
-        text: text.trim()
-      }
     });
 
-    return NextResponse.json(message);
+    return NextResponse.json(savedMessage, { status: 201 });
 
   } catch (error) {
-    console.error("[ZUTA_MESSAGE_ROUTER_CRASH]:", error);
-    const internalDetails = error instanceof Error ? error.message : String(error);
-    return new NextResponse(
-      JSON.stringify({ 
-        error: "Internal Server Error", 
-        trace: internalDetails 
-      }), 
-      { 
-        status: 500, 
-        headers: { "Content-Type": "application/json" } 
-      }
+    console.error("[ZUTA_MESSAGE_ROUTE_ERROR]:", error);
+
+    const errorDetails = error instanceof Error ? error.message : "Internal Server Error";
+    return NextResponse.json(
+      { error: "Secure Desk was unable to route transaction message.", details: errorDetails },
+      { status: 500 }
     );
   }
-}    
+}
