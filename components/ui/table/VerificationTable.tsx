@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { verifyUser } from "@/app/_actions/admin";
 import { toast } from "sonner";
-import { Check, X, ExternalLink, ShieldCheck, ShieldAlert } from "lucide-react";
+import { ExternalLink, ShieldCheck, ShieldAlert } from "lucide-react";
 
 export function VerificationTable({ users }: { users: any[] }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
