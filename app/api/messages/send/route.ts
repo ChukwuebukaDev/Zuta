@@ -6,17 +6,15 @@ const MAX_MESSAGE_LENGTH = 2000;
 
 export async function POST(req: Request) {
   try {
-    // 1. Authenticate user profile session via Clerk
-    const user = await currentUser();
+    const clerkUser = await currentUser();
 
-    if (!user) {
+    if (!clerkUser) {
       return NextResponse.json(
         { error: "Unauthorized. Please log in to message sellers." },
         { status: 401 }
       );
     }
 
-    // Parse body safely
     const body = await req.json().catch(() => null);
 
     if (!body || typeof body !== "object") {
@@ -72,13 +70,30 @@ export async function POST(req: Request) {
       );
     }
 
-    // ⚙️ SMART CHECK: Look for an existing conversation room before blocking the request
+    //  Ensure Clerk User exists in our local Prisma database
+    // Extract primary email if available from Clerk
+    const userEmail = clerkUser.emailAddresses[0]?.emailAddress || null;
+    const fullName = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Zuta User";
+
+    const dbUser = await prisma.user.upsert({
+      where: { id: clerkUser.id },
+      update: {}, // If they exist, do nothing
+      create: {
+        id: clerkUser.id, // Keep the IDs completely unified
+        email: userEmail,
+        name: fullName,
+        role: "BUYER", // Default fallback role for new users
+        onboardingComplete: false,
+      },
+    });
+
+    //Look for an existing conversation room using verified dbUser.id
     const existingConversation = await prisma.conversation.findFirst({
       where: {
         carId,
         OR: [
-          { buyerId: user.id },
-          { sellerId: user.id }
+          { buyerId: dbUser.id },
+          { sellerId: dbUser.id }
         ]
       }
     });
@@ -86,7 +101,7 @@ export async function POST(req: Request) {
     // If NO conversation exists yet, this is a brand new chat initialization attempt
     if (!existingConversation) {
       // Prevent a seller from starting a brand new thread on their own asset
-      if (targetSellerId === user.id) {
+      if (targetSellerId === dbUser.id) {
         return NextResponse.json(
           { error: "Security Restriction: You cannot launch negotiations or message your own listing." },
           { status: 400 }
@@ -95,12 +110,11 @@ export async function POST(req: Request) {
     }
 
     // Determine the true participant mappings for the upsert query block
-    // If the room exists, keep its historical roles intact. If not, the current user is the buyer.
-    const finalBuyerId = existingConversation ? existingConversation.buyerId : user.id;
+    const finalBuyerId = existingConversation ? existingConversation.buyerId : dbUser.id;
     const finalSellerId = existingConversation ? existingConversation.sellerId : targetSellerId;
 
     // Double check that the sender is actually authorized to post in this room
-    if (user.id !== finalBuyerId && user.id !== finalSellerId) {
+    if (dbUser.id !== finalBuyerId && dbUser.id !== finalSellerId) {
       return NextResponse.json({ error: "Unauthorized: You are not a participant in this chat room." }, { status: 403 });
     }
 
@@ -128,7 +142,7 @@ export async function POST(req: Request) {
       return tx.message.create({
         data: {
           conversationId: conversation.id,
-          senderId: user.id,
+          senderId: dbUser.id,
           text: cleanText,
         },
         select: {

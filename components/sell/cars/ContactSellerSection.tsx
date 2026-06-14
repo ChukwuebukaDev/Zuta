@@ -14,7 +14,6 @@ interface ContactSellerProps {
   carId: string; 
 }
 
-// 1. Declare explicit structure tracking backend polling items cleanly
 interface PrismaMessageIncoming {
   id: string;
   conversationId: string;
@@ -34,9 +33,16 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // ⚡ Reactive States for Layout Rules & Locks
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [canMessage, setCanMessage] = useState(true);
+  const [whoseTurn, setWhoseTurn] = useState<"YOU" | "THEM">("YOU");
+  const [consecutiveCount, setConsecutiveCount] = useState(0);
 
-  // Keep track of the rolling dynamic conversation context container ID
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // Backstage parameters used cleanly within async event listeners/polling timeouts
   const activeConversationIdRef = useRef<string | null>(null);
   const lastCheckedRef = useRef<string>(new Date().toISOString());
 
@@ -44,10 +50,64 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // 👁️ 1. Pre-Flight GET Engine: Runs on Mount to restore ongoing thread history
+  useEffect(() => {
+    const checkExistingConversation = async () => {
+      if (!currentUserId || currentUserId === "user_guest") return;
+
+      try {
+        const response = await fetch(`/api/messages?carId=${carId}`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        // If a thread history exists on Supabase server matrices, restore it cleanly
+        if (data.exists && data.conversationId) {
+          activeConversationIdRef.current = data.conversationId;
+          setConversationId(data.conversationId); // Safe UI Render Synchronization
+          setCanMessage(data.canMessage);
+          setWhoseTurn(data.whoseTurn);
+          setConsecutiveCount(data.consecutiveCount);
+
+          if (data.messages && data.messages.length > 0) {
+            const parsedMessages: MessageItem[] = data.messages.map((msg: any) => ({
+              id: msg.id,
+              senderId: msg.senderId,
+              text: msg.text,
+              timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            }));
+
+            // Keep the initial greeting at top, then append historical text blocks
+            setMessages([
+              {
+                id: "init_1",
+                senderId: seller.id,
+                text: `Hello! Thanks for your interest in this vehicle. Let me know if you want to schedule an inspection or ask any questions!`,
+                timestamp: "Just now",
+              },
+              ...parsedMessages
+            ]);
+
+            // Synchronize the timestamp checkpoint marker to the newest message
+            const lastMsg = data.messages[data.messages.length - 1];
+            lastCheckedRef.current = new Date(lastMsg.createdAt).toISOString();
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load pre-flight conversation framework context:", err);
+      }
+    };
+
+    checkExistingConversation();
+  }, [carId, currentUserId, seller.id]);
+
+
   // --- Dynamic Sync Engine Polling Loop ---
   useEffect(() => {
     const pollForCounterOffers = async () => {
-      // Do not poll if a messaging track tunnel hasn't been established yet
       if (!activeConversationIdRef.current) return;
 
       try {
@@ -80,6 +140,15 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
 
             const finalRecord = typedMessages[typedMessages.length - 1];
             lastCheckedRef.current = new Date(finalRecord.createdAt).toISOString();
+
+            // Re-trigger validation checks via GET following an external message receipt
+            const stateCheck = await fetch(`/api/messages?carId=${carId}`);
+            if (stateCheck.ok) {
+              const freshData = await stateCheck.json();
+              setCanMessage(freshData.canMessage);
+              setWhoseTurn(freshData.whoseTurn);
+              setConsecutiveCount(freshData.consecutiveCount);
+            }
           }
         }
       } catch (err) {
@@ -89,11 +158,12 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
 
     const syncHeartbeat = setInterval(pollForCounterOffers, 4000);
     return () => clearInterval(syncHeartbeat);
-  }, []);
+  }, [carId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim() || isSending) return;
+    // Enforce UI block metrics
+    if (!inputMessage.trim() || isSending || !canMessage) return;
 
     if (currentUserId === "user_guest" || !currentUserId) {
       toast.error("Please sign in to safely message sellers through Zuta Secure Desk.");
@@ -129,9 +199,9 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
 
       const generatedMessage = await response.json();
 
-      // Lock conversation tracking ID reference pointer on first successful push payload
       if (generatedMessage.conversationId) {
         activeConversationIdRef.current = generatedMessage.conversationId;
+        setConversationId(generatedMessage.conversationId); // Safe UI Render Synchronization
       }
 
       setMessages((prev) =>
@@ -151,6 +221,16 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
       );
 
       lastCheckedRef.current = new Date(generatedMessage.createdAt).toISOString();
+
+      // Fire GET logic post-POST execution to adjust turn metrics and lock states
+      const postCheck = await fetch(`/api/messages?carId=${carId}`);
+      if (postCheck.ok) {
+        const postData = await postCheck.json();
+        setCanMessage(postData.canMessage);
+        setWhoseTurn(postData.whoseTurn);
+        setConsecutiveCount(postData.consecutiveCount);
+      }
+
     } catch (err) {
       console.error("Failed to route message securely:", err);
       
@@ -173,13 +253,27 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
         
         {/* LEFT PANEL: Chat Window */}
         <div className="lg:col-span-2 flex flex-col h-86 bg-zinc-900/60 border border-slate-800/80 rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-slate-800/80 bg-zinc-900 flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
-            <div>
+          <div className="p-4 border-b border-slate-800/80 bg-zinc-900 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-white">
                 Zuta Secure Escrow Brokerage Desk with {seller.name}
               </h3>
             </div>
+            
+            {/* 💡 Dynamic Status Tracker Banner (Fixed: Uses state instead of ref value) */}
+            {conversationId && (
+              <div className="text-[10px] uppercase font-black tracking-wider flex items-center gap-3">
+                <span className={whoseTurn === "YOU" ? "text-amber-400" : "text-slate-400"}>
+                  {whoseTurn === "YOU" ? "● Your Turn" : "○ Awaiting Reply"}
+                </span>
+                {consecutiveCount > 0 && (
+                  <span className="text-slate-500 border-l border-slate-800 pl-3">
+                    Unreplied: {consecutiveCount}/3
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-zinc-950/20">
@@ -205,15 +299,19 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
             <div className="relative flex items-center">
               <input
                 type="text"
-                disabled={isSending}
-                placeholder="Type your protective encrypted counter-offer here..."
+                disabled={isSending || !canMessage} 
+                placeholder={
+                  canMessage 
+                    ? "Type your protective encrypted counter-offer here..." 
+                    : "Input locked. Wait for the seller to reply to unlock thread slots."
+                }
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                className="w-full bg-zinc-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-4 pr-12 text-sm text-white outline-none transition duration-150"
+                className="w-full bg-zinc-950 border border-slate-800 focus:border-blue-500 rounded-xl py-3 pl-4 pr-12 text-sm text-white outline-none transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
               />
               <button
                 type="submit"
-                disabled={!inputMessage.trim() || isSending}
+                disabled={!inputMessage.trim() || isSending || !canMessage}
                 className="absolute right-2 p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition duration-150"
               >
                 <Send size={14} />
