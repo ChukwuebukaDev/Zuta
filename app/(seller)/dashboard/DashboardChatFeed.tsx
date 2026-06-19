@@ -8,6 +8,7 @@ interface ChatMessage {
   senderId: string;
   text: string;
   timestamp: string;
+  rawCreatedAt?: string;
 }
 
 interface DashboardChatFeedProps {
@@ -15,49 +16,59 @@ interface DashboardChatFeedProps {
   conversationId: string;
   currentUserId: string;
   carId: string;
-  sellerId: string;
+  recipientId: string;
 }
 
 interface PrismaMessagePayload {
-    id: string;
-    conversationId: string;
-    senderId: string;
-    text: string;
-    createdAt: string | Date;
-  }
+  id: string;
+  conversationId: string;
+  senderId: string;
+  text: string;
+  createdAt: string | Date;
+}
 
 export default function DashboardChatFeed({
   initialMessages,
   conversationId,
   currentUserId,
   carId,
-  sellerId,
+  recipientId,
 }: DashboardChatFeedProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputMessage, setInputMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  // Track the exact historical sync line to look forward from
-  const lastCheckedRef = useRef<string>(new Date().toISOString());
+  const lastCheckedRef = useRef<string>("");
 
-  // Automatically scroll down when new data entries pop onto the feed
+
+
+
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-useEffect(() => {
+
+  useEffect(() => {
+    if (!conversationId) return;
+    
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const pollForNewMessages = async () => {
       try {
-        const queryParams = `?conversationId=${conversationId}&lastChecked=${encodeURIComponent(lastCheckedRef.current)}`;
-        const response = await fetch(`/api/messages/poll${queryParams}`);
-        
-        if (!response.ok) return;
+        const params = new URLSearchParams({
+          conversationId: conversationId,
+          lastChecked: lastCheckedRef.current
+        });
+
+        const response = await fetch(`/api/messages/poll?${params.toString()}`);
+        if (!response.ok || !isMounted) return;
 
         const rawData: unknown = await response.json();
         
-        // Guard checking that the response payload is safely formatted as an array
-        if (Array.isArray(rawData)) {
+        // Final guard verifying user hasn't skipped to another chat during network call
+        if (Array.isArray(rawData) && isMounted) {
           const typedMessages = rawData as PrismaMessagePayload[];
           
           if (typedMessages.length > 0) {
@@ -65,6 +76,7 @@ useEffect(() => {
               id: msg.id,
               senderId: msg.senderId,
               text: msg.text,
+              rawCreatedAt: new Date(msg.createdAt).toISOString(),
               timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -83,69 +95,80 @@ useEffect(() => {
         }
       } catch (err) {
         console.warn("Polling interval skipped temporarily:", err);
+      } finally {
+        // Schedule next poll execution recursively only if still on this active screen
+        if (isMounted) {
+          timeoutId = setTimeout(pollForNewMessages, 4000);
+        }
       }
     };
 
-    const syncInterval = setInterval(pollForNewMessages, 4000);
-    return () => clearInterval(syncInterval);
+    // Kickstart sequence
+    timeoutId = setTimeout(pollForNewMessages, 4000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [conversationId]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || isSending) return;
 
-    const temporaryText = inputMessage;
-    setInputMessage("");
-    setIsSending(true);
 
-    const optimisticMsg: ChatMessage = {
-      id: `dash_temp_${Date.now()}`,
-      senderId: currentUserId,
-      text: temporaryText,
-      timestamp: "Sending...",
-    };
-    setMessages((prev) => [...prev, optimisticMsg]);
+const handleSendMessage = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!inputMessage.trim() || isSending) return;
 
-    try {
-      const response = await fetch("/api/messages/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          carId,
-          sellerId,
-          text: temporaryText,
-        }),
-      });
+  const temporaryText = inputMessage;
+  setInputMessage("");
+  setIsSending(true);
 
-      if (!response.ok) throw new Error(await response.text());
-      const data = await response.json();
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === optimisticMsg.id
-            ? {
-                id: data.id,
-                senderId: currentUserId,
-                text: data.text,
-                timestamp: new Date(data.createdAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-              }
-            : m
-        )
-      );
-
-      // Advance the tracking sync pointer forward following our successful push mutation
-      lastCheckedRef.current = new Date(data.createdAt).toISOString();
-    } catch (err) {
-      console.error("Dashboard router trace failed:", err);
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
-      setInputMessage(temporaryText);
-    } finally {
-      setIsSending(false);
-    }
+  const optimisticMsg: ChatMessage = {
+    id: `dash_temp_${Date.now()}`,
+    senderId: currentUserId,
+    text: temporaryText,
+    timestamp: "Sending...",
   };
+  setMessages((prev) => [...prev, optimisticMsg]);
+
+  try {
+    const response = await fetch("/api/messages/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        conversationId, 
+        text: temporaryText,
+      }),
+    });
+
+    if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === optimisticMsg.id
+          ? {
+              id: data.id,
+              senderId: currentUserId,
+              text: data.text,
+              rawCreatedAt: new Date(data.createdAt).toISOString(),
+              timestamp: new Date(data.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            }
+          : m
+      )
+    );
+
+    lastCheckedRef.current = new Date(data.createdAt).toISOString();
+  } catch (err) {
+    console.error("Dashboard router trace failed:", err);
+    setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
+    setInputMessage(temporaryText);
+  } finally {
+    setIsSending(false);
+  }
+};
 
   return (
     <div className="flex flex-col h-[550px]">

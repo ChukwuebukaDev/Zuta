@@ -3,7 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ArrowUpRight, MessageCircle } from "lucide-react";
+import { ChevronLeft, ArrowUpRight } from "lucide-react";
 import DashboardChatFeed from "../../DashboardChatFeed";
 
 interface MessageDetailsPageProps {
@@ -17,7 +17,6 @@ export default async function MessageDetailsPage({ params }: MessageDetailsPageP
   const resolvedParams = await params;
   const { conversationId } = resolvedParams;
 
- // Fetch complete conversation history with car specs and deep messaging ledgers
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
     include: {
@@ -60,11 +59,11 @@ export default async function MessageDetailsPage({ params }: MessageDetailsPageP
   const isUserBuyer = conversation.buyerId === user.id;
   const chatPartner = isUserBuyer ? conversation.seller : conversation.buyer;
 
-  // Format message payload to comply safely with our frontend interface layout
   const formattedMessages = conversation.messages.map((msg) => ({
     id: msg.id,
     senderId: msg.senderId,
     text: msg.text,
+    rawCreatedAt: new Date(msg.createdAt).toISOString(),
     timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
@@ -83,7 +82,7 @@ export default async function MessageDetailsPage({ params }: MessageDetailsPageP
         </Link>
       </div>
 
-      {/* Embedded Context Header Header: Vehicle Metadata + Chat Partner Profile */}
+      {/* Embedded Context Header: Vehicle Metadata + Chat Partner Profile */}
       <div className="p-4 rounded-2xl bg-zinc-900/40 border border-slate-900 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
         <div className="flex items-center gap-4">
           <div className="relative w-16 h-12 rounded-xl overflow-hidden bg-zinc-800 border border-slate-800 shrink-0">
@@ -107,7 +106,7 @@ export default async function MessageDetailsPage({ params }: MessageDetailsPageP
         </div>
 
         <div className="flex items-center gap-4 self-end sm:self-center">
-          <div className="text-right sm:text-right">
+          <div className="text-right">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Listing Value</p>
             <p className="text-base font-black text-white italic tracking-tighter">
               ₦{conversation.car.price.toLocaleString()}
@@ -123,14 +122,15 @@ export default async function MessageDetailsPage({ params }: MessageDetailsPageP
         </div>
       </div>
 
-      {/* Main Interactive Interactive Client Component Chat Window */}
+      {/* Main Interactive Client Component Chat Window */}
       <div className="rounded-2xl overflow-hidden border border-slate-900 bg-zinc-900/20">
         <DashboardChatFeed
+          key={conversation.id} 
           initialMessages={formattedMessages}
           conversationId={conversation.id}
           currentUserId={user.id}
           carId={conversation.car.id}
-          sellerId={conversation.sellerId}
+          recipientId={chatPartner?.id || ""}
         />
       </div>
     </div>

@@ -143,8 +143,8 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
       {/* --- MODAL OVERLAY --- */}
       {showChatDesk && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl max-h-[90vh] bg-zinc-950 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-            <button onClick={() => setShowChatDesk(false)} className="absolute top-6 right-6 p-2 bg-zinc-900 text-white rounded-full hover:bg-zinc-800 z-10">
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-zinc-950 rounded-[2.5rem] shadow-2xl overflow-scroll flex flex-col animate-in zoom-in-95 duration-200">
+            <button onClick={() => setShowChatDesk(false)} className="absolute top-0 right-0 p-2 bg-red-900 text-white rounded-full hover:bg-red-800 z-10">
               <X size={20} />
             </button>
       

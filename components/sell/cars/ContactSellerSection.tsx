@@ -36,11 +36,9 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
 
   const hasConversation = messages.length > 1;
 
-  // Auto Scroll to Bottom on New Messages
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
+useEffect(()=>{
+   console.log('seller',seller.id);
+},[])
   useEffect(() => {
     let isMounted = true;
 
@@ -155,7 +153,7 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
       timestamp: "Sending...",
     };
     setMessages((prev) => [...prev, optimisticMessage]);
-
+   
     try {
       const response = await fetch("/api/messages/send", {
         method: "POST",

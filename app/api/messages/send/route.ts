@@ -20,10 +20,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
     }
 
-    const { carId, text } = body as { carId?: string; text?: string };
+    const { carId, conversationId, text } = body as { carId?: string; conversationId?: string; text?: string };
 
-    if (typeof carId !== "string" || !carId.trim()) {
-      return NextResponse.json({ error: "Invalid carId." }, { status: 400 });
+    if ((typeof carId !== "string" || !carId.trim()) && (typeof conversationId !== "string" || !conversationId.trim())) {
+      return NextResponse.json({ error: "Provide either carId or conversationId." }, { status: 400 });
     }
 
     if (typeof text !== "string" || !text.trim()) {
@@ -47,26 +47,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Complete account setup before messaging." }, { status: 403 });
     }
 
-    // Fetch the listing to determine the REAL seller securely
-    const listing = await prisma.car.findUnique({
-      where: { id: carId },
-      select: { userId: true },
-    });
+    let targetConversationId = conversationId;
 
-    if (!listing) {
-      return NextResponse.json({ error: "Listing not found." }, { status: 404 });
-    }
+    // SCENARIO A: Replying directly to an ongoing chat from the Dashboard Feed
+    if (targetConversationId) {
+      const activeConversation = await prisma.conversation.findUnique({
+        where: { id: targetConversationId },
+        select: { buyerId: true, sellerId: true },
+      });
 
-    const sellerId = listing.userId;
+      if (!activeConversation) {
+        return NextResponse.json({ error: "Conversation channel not found." }, { status: 404 });
+      }
 
-    // Prevent users from messaging their own cars
-    if (sellerId === dbUser.id) {
-      return NextResponse.json({ error: "Cannot message your own listing." }, { status: 400 });
-    }
+      // Security check: Verify user is a legitimate participant in this conversation
+      if (activeConversation.buyerId !== dbUser.id && activeConversation.sellerId !== dbUser.id) {
+        return NextResponse.json({ error: "Forbidden access to this conversation desk." }, { status: 403 });
+      }
+    } 
+    // SCENARIO B: First-time setup initiated by a buyer from a product details card
+    else if (carId) {
+      const listing = await prisma.car.findUnique({
+        where: { id: carId },
+        select: { userId: true },
+      });
 
-    const result = await prisma.$transaction(async (tx) => {
-      // Find or create conversation using the structurally guaranteed seller ID
-      const conversation = await tx.conversation.upsert({
+      if (!listing) {
+        return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+      }
+
+      const sellerId = listing.userId;
+
+      // Prevent users from starting an inquiry chat with their own cars
+      if (sellerId === dbUser.id) {
+        return NextResponse.json({ error: "Cannot message your own listing." }, { status: 400 });
+      }
+
+      // Atomically locate or initiate the conversation model structure
+      const conv = await prisma.conversation.upsert({
         where: {
           carId_buyerId_sellerId: {
             carId,
@@ -82,7 +100,12 @@ export async function POST(req: Request) {
         },
         select: { id: true },
       });
+      
+      targetConversationId = conv.id;
+    }
 
+    // Process messaging execution securely inside a controlled transaction sequence
+    const result = await prisma.$transaction(async (tx) => {
       // Rate limit check
       const oneMinuteAgo = new Date(Date.now() - 60_000);
       const recentCount = await tx.message.count({
@@ -98,7 +121,7 @@ export async function POST(req: Request) {
 
       // Turn enforcement check
       const lastMessage = await tx.message.findFirst({
-        where: { conversationId: conversation.id },
+        where: { conversationId: targetConversationId },
         orderBy: { createdAt: "desc" },
         select: { senderId: true },
       });
@@ -107,10 +130,10 @@ export async function POST(req: Request) {
         throw new TurnLockError();
       }
 
-      // Safe to create message
+      // Create message 
       return tx.message.create({
         data: {
-          conversationId: conversation.id,
+          conversationId: targetConversationId!,
           senderId: dbUser.id,
           text: cleanText,
         },
@@ -121,6 +144,12 @@ export async function POST(req: Request) {
           createdAt: true,
         },
       });
+    });
+
+    // Touch conversation to update timestamps outside the critical section tracking sequence
+    await prisma.conversation.update({
+      where: { id: targetConversationId },
+      data: { updatedAt: new Date() }
     });
 
     return NextResponse.json(result, { status: 201 });
