@@ -11,7 +11,7 @@ interface ContactSellerProps {
   seller: SellerProfile;
   otherListings: MiniListingCard[];
   currentUserId: string;
-  carId: string; 
+  carId: string;
 }
 
 interface PrismaMessageIncoming {
@@ -23,89 +23,77 @@ interface PrismaMessageIncoming {
 }
 
 export default function ContactSellerSection({ seller, otherListings, currentUserId, carId }: ContactSellerProps) {
-  const [messages, setMessages] = useState<MessageItem[]>([
-    {
-      id: "init_1",
-      senderId: seller.id,
-      text: `Hello! Thanks for your interest in this vehicle. Let me know if you want to schedule an inspection or ask any questions!`,
-      timestamp: "Just now",
-    },
-  ]);
+  const [messages, setMessages] = useState<MessageItem[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
-  
-  // ⚡ Reactive States for Layout Rules & Locks
-  const [conversationId, setConversationId] = useState<string | null>(null);
   const [canMessage, setCanMessage] = useState(true);
   const [whoseTurn, setWhoseTurn] = useState<"YOU" | "THEM">("YOU");
   const [consecutiveCount, setConsecutiveCount] = useState(0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  
-  // Backstage parameters used cleanly within async event listeners/polling timeouts
   const activeConversationIdRef = useRef<string | null>(null);
   const lastCheckedRef = useRef<string>(new Date().toISOString());
 
+  const hasConversation = messages.length > 1;
+
+  // Auto Scroll to Bottom on New Messages
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 👁️ 1. Pre-Flight GET Engine: Runs on Mount to restore ongoing thread history
   useEffect(() => {
+    let isMounted = true;
+
+    // Flush active states cleanly without causing state race conditions
+    activeConversationIdRef.current = null;
+    lastCheckedRef.current = new Date().toISOString();
+    
+    setMessages([
+      {
+        id: "init_1",
+        senderId: seller.id,
+        text: `Hello! Thanks for your interest in this vehicle. Let me know if you want to schedule an inspection or ask any questions!`,
+        timestamp: "Just now",
+      },
+    ]);
+
     const checkExistingConversation = async () => {
       if (!currentUserId || currentUserId === "user_guest") return;
 
       try {
-        const response = await fetch(`/api/messages?carId=${carId}`);
+        const response = await fetch(`/api/messages/${carId}`);
         if (!response.ok) return;
 
         const data = await response.json();
 
-        // If a thread history exists on Supabase server matrices, restore it cleanly
-        if (data.exists && data.conversationId) {
+        if (isMounted && data.exists) {
           activeConversationIdRef.current = data.conversationId;
-          setConversationId(data.conversationId); // Safe UI Render Synchronization
-          setCanMessage(data.canMessage);
-          setWhoseTurn(data.whoseTurn);
-          setConsecutiveCount(data.consecutiveCount);
+          setCanMessage(data.canMessage ?? true);
+          setWhoseTurn(data.whoseTurn ?? "YOU");
+          setConsecutiveCount(data.consecutiveCount ?? 0);
 
-          if (data.messages && data.messages.length > 0) {
-            const parsedMessages: MessageItem[] = data.messages.map((msg: any) => ({
-              id: msg.id,
-              senderId: msg.senderId,
-              text: msg.text,
-              timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-            }));
+          const parsedMessages = data.messages.map((msg: PrismaMessageIncoming) => ({
+            id: msg.id,
+            senderId: msg.senderId,
+            text: msg.text,
+            timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          }));
 
-            // Keep the initial greeting at top, then append historical text blocks
-            setMessages([
-              {
-                id: "init_1",
-                senderId: seller.id,
-                text: `Hello! Thanks for your interest in this vehicle. Let me know if you want to schedule an inspection or ask any questions!`,
-                timestamp: "Just now",
-              },
-              ...parsedMessages
-            ]);
-
-            // Synchronize the timestamp checkpoint marker to the newest message
-            const lastMsg = data.messages[data.messages.length - 1];
-            lastCheckedRef.current = new Date(lastMsg.createdAt).toISOString();
-          }
+          setMessages((prev) => [prev[0], ...parsedMessages]);
         }
       } catch (err) {
-        console.error("Failed to load pre-flight conversation framework context:", err);
+        console.error("Fetch error restoring session window:", err);
       }
     };
 
     checkExistingConversation();
+
+    return () => {
+      isMounted = false;
+    };
   }, [carId, currentUserId, seller.id]);
 
-
-  // --- Dynamic Sync Engine Polling Loop ---
+  // Polling Streamer Framework (Decoupled from dependency chains to prevent memory leaks)
   useEffect(() => {
     const pollForCounterOffers = async () => {
       if (!activeConversationIdRef.current) return;
@@ -113,42 +101,34 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
       try {
         const queryParams = `?conversationId=${activeConversationIdRef.current}&lastChecked=${encodeURIComponent(lastCheckedRef.current)}`;
         const response = await fetch(`/api/messages/poll${queryParams}`);
-        
         if (!response.ok) return;
 
         const rawData: unknown = await response.json();
-        
-        if (Array.isArray(rawData)) {
+
+        if (Array.isArray(rawData) && rawData.length > 0) {
           const typedMessages = rawData as PrismaMessageIncoming[];
-          
-          if (typedMessages.length > 0) {
-            const incomingPackets: MessageItem[] = typedMessages.map((msg) => ({
-              id: msg.id,
-              senderId: msg.senderId,
-              text: msg.text,
-              timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-            }));
+          lastCheckedRef.current = new Date(typedMessages[typedMessages.length - 1].createdAt).toISOString();
 
-            setMessages((prev) => {
-              const existingIds = new Set(prev.map((m) => m.id));
-              const uniqueIncoming = incomingPackets.filter((m) => !existingIds.has(m.id));
-              return [...prev, ...uniqueIncoming];
-            });
+          const incomingPackets: MessageItem[] = typedMessages.map((msg) => ({
+            id: msg.id,
+            senderId: msg.senderId,
+            text: msg.text,
+            timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          }));
 
-            const finalRecord = typedMessages[typedMessages.length - 1];
-            lastCheckedRef.current = new Date(finalRecord.createdAt).toISOString();
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const uniqueIncoming = incomingPackets.filter((m) => !existingIds.has(m.id));
+            return [...prev, ...uniqueIncoming];
+          });
 
-            // Re-trigger validation checks via GET following an external message receipt
-            const stateCheck = await fetch(`/api/messages?carId=${carId}`);
-            if (stateCheck.ok) {
-              const freshData = await stateCheck.json();
-              setCanMessage(freshData.canMessage);
-              setWhoseTurn(freshData.whoseTurn);
-              setConsecutiveCount(freshData.consecutiveCount);
-            }
+          // Fetch fresh contextual thread states following external payloads
+          const stateCheck = await fetch(`/api/messages/${carId}`);
+          if (stateCheck.ok) {
+            const freshData = await stateCheck.json();
+            setCanMessage(freshData.canMessage);
+            setWhoseTurn(freshData.whoseTurn);
+            setConsecutiveCount(freshData.consecutiveCount);
           }
         }
       } catch (err) {
@@ -162,13 +142,7 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Enforce UI block metrics
     if (!inputMessage.trim() || isSending || !canMessage) return;
-
-    if (currentUserId === "user_guest" || !currentUserId) {
-      toast.error("Please sign in to safely message sellers through Zuta Secure Desk.");
-      return;
-    }
 
     const temporaryText = inputMessage;
     setInputMessage("");
@@ -186,60 +160,52 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
       const response = await fetch("/api/messages/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          carId,
-          sellerId: seller.id,
-          text: temporaryText,
-        }),
+        body: JSON.stringify({ carId, sellerId: seller.id, text: temporaryText }),
       });
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        if (response.status === 403 || response.status === 429) {
+          toast.warning(data.error || "Action restricted.");
+          
+          const refresh = await fetch(`/api/messages/${carId}`);
+          if (refresh.ok) {
+            const status = await refresh.json();
+            setCanMessage(status.canMessage);
+            setWhoseTurn(status.whoseTurn);
+          }
+          setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+          setInputMessage(temporaryText);
+          return;
+        }
+        throw new Error(data.error || "Failed to send message.");
       }
 
-      const generatedMessage = await response.json();
-
-      if (generatedMessage.conversationId) {
-        activeConversationIdRef.current = generatedMessage.conversationId;
-        setConversationId(generatedMessage.conversationId); // Safe UI Render Synchronization
-      }
+      if (data.conversationId) activeConversationIdRef.current = data.conversationId;
 
       setMessages((prev) =>
         prev.map((m) =>
           m.id === optimisticMessage.id
             ? {
-                id: generatedMessage.id,
-                senderId: currentUserId,
-                text: generatedMessage.text,
-                timestamp: new Date(generatedMessage.createdAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
+                ...m,
+                id: data.id,
+                timestamp: new Date(data.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
               }
             : m
         )
       );
 
-      lastCheckedRef.current = new Date(generatedMessage.createdAt).toISOString();
+      lastCheckedRef.current = new Date(data.createdAt).toISOString();
 
-      // Fire GET logic post-POST execution to adjust turn metrics and lock states
-      const postCheck = await fetch(`/api/messages?carId=${carId}`);
+      const postCheck = await fetch(`/api/messages/${carId}`);
       if (postCheck.ok) {
-        const postData = await postCheck.json();
-        setCanMessage(postData.canMessage);
-        setWhoseTurn(postData.whoseTurn);
-        setConsecutiveCount(postData.consecutiveCount);
+        const p = await postCheck.json();
+        setCanMessage(p.canMessage);
+        setWhoseTurn(p.whoseTurn);
       }
-
     } catch (err) {
-      console.error("Failed to route message securely:", err);
-      
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : "Failed to drop message into secure routing matrix.";
-        
-      toast.error(errorMessage);
-      
+      console.error("Message Routing Error:", err);
+      toast.error(err instanceof Error ? err.message : "Connection failed.");
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
       setInputMessage(temporaryText);
     } finally {
@@ -252,7 +218,7 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* LEFT PANEL: Chat Window */}
-        <div className="lg:col-span-2 flex flex-col h-86 bg-zinc-900/60 border border-slate-800/80 rounded-2xl overflow-hidden">
+        <div className="lg:col-span-2 flex flex-col h-[500px] bg-zinc-900/60 border border-slate-800/80 rounded-2xl overflow-hidden">
           <div className="p-4 border-b border-slate-800/80 bg-zinc-900 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
@@ -261,8 +227,7 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
               </h3>
             </div>
             
-            {/* 💡 Dynamic Status Tracker Banner (Fixed: Uses state instead of ref value) */}
-            {conversationId && (
+            {hasConversation && (
               <div className="text-[10px] uppercase font-black tracking-wider flex items-center gap-3">
                 <span className={whoseTurn === "YOU" ? "text-amber-400" : "text-slate-400"}>
                   {whoseTurn === "YOU" ? "● Your Turn" : "○ Awaiting Reply"}
@@ -299,7 +264,7 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
             <div className="relative flex items-center">
               <input
                 type="text"
-                disabled={isSending || !canMessage} 
+                disabled={isSending || !canMessage}
                 placeholder={
                   canMessage 
                     ? "Type your protective encrypted counter-offer here..." 
@@ -329,7 +294,7 @@ export default function ContactSellerSection({ seller, otherListings, currentUse
                   <Image src={seller.avatarUrl} alt={seller.name} fill className="object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center font-bold text-slate-400 bg-zinc-800">
-                    {seller.name[0]}
+                    {seller.name ? seller.name[0] : "S"}
                   </div>
                 )}
               </div>

@@ -3,142 +3,111 @@ import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 const MAX_MESSAGE_LENGTH = 2000;
+const MAX_MESSAGES_PER_MINUTE = 10;
+
+class TurnLockError extends Error {}
+class RateLimitError extends Error {}
 
 export async function POST(req: Request) {
   try {
     const clerkUser = await currentUser();
-
     if (!clerkUser) {
-      return NextResponse.json(
-        { error: "Unauthorized. Please log in to message sellers." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized access sign in to continue." }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => null);
-
+    const body: unknown = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
-      return NextResponse.json(
-        { error: "Invalid request payload layout received." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
     }
 
-    const { carId, text } = body;
+    const { carId, text } = body as { carId?: string; text?: string };
 
-    // 2. Strict Input Content Validations
     if (typeof carId !== "string" || !carId.trim()) {
-      return NextResponse.json({ error: "Invalid or missing carId." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid carId." }, { status: 400 });
     }
 
-    if (typeof text !== "string") {
-      return NextResponse.json({ error: "Message text must be a valid string value." }, { status: 400 });
+    if (typeof text !== "string" || !text.trim()) {
+      return NextResponse.json({ error: "Invalid message." }, { status: 400 });
     }
 
-    const cleanText = text.trim();
-
-    if (!cleanText) {
-      return NextResponse.json({ error: "Message content cannot be blank." }, { status: 400 });
-    }
-
-    if (cleanText.length > MAX_MESSAGE_LENGTH) {
+    const cleanText = text.replace(/\s+/g, " ").trim();
+    if (cleanText.length === 0 || cleanText.length > MAX_MESSAGE_LENGTH) {
       return NextResponse.json(
-        { error: `Message content limits exceeded: max ${MAX_MESSAGE_LENGTH} characters.` },
+        { error: `Message must be between 1 and ${MAX_MESSAGE_LENGTH} characters.` },
         { status: 400 }
       );
     }
 
-    // 3. Server-Side Identity & Existing Conversation Resolution
-    const carListing = await prisma.car.findUnique({
+    const dbUser = await prisma.user.findUnique({
+      where: { id: clerkUser.id },
+      select: { id: true },
+    });
+
+    if (!dbUser) {
+      return NextResponse.json({ error: "Complete account setup before messaging." }, { status: 403 });
+    }
+
+    // Fetch the listing to determine the REAL seller securely
+    const listing = await prisma.car.findUnique({
       where: { id: carId },
       select: { userId: true },
     });
 
-    if (!carListing) {
-      return NextResponse.json(
-        { error: "This car listing no longer exists on our servers." },
-        { status: 404 }
-      );
+    if (!listing) {
+      return NextResponse.json({ error: "Listing not found." }, { status: 404 });
     }
 
-    const targetSellerId = carListing.userId;
+    const sellerId = listing.userId;
 
-    if (!targetSellerId) {
-      return NextResponse.json(
-        { error: "Listing integrity exception: target map lacks a verified dealer owner." },
-        { status: 400 }
-      );
+    // Prevent users from messaging their own cars
+    if (sellerId === dbUser.id) {
+      return NextResponse.json({ error: "Cannot message your own listing." }, { status: 400 });
     }
 
-    //  Ensure Clerk User exists in our local Prisma database
-    // Extract primary email if available from Clerk
-    const userEmail = clerkUser.emailAddresses[0]?.emailAddress || null;
-    const fullName = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Zuta User";
-
-    const dbUser = await prisma.user.upsert({
-      where: { id: clerkUser.id },
-      update: {}, // If they exist, do nothing
-      create: {
-        id: clerkUser.id, // Keep the IDs completely unified
-        email: userEmail,
-        name: fullName,
-        role: "BUYER", // Default fallback role for new users
-        onboardingComplete: false,
-      },
-    });
-
-    //Look for an existing conversation room using verified dbUser.id
-    const existingConversation = await prisma.conversation.findFirst({
-      where: {
-        carId,
-        OR: [
-          { buyerId: dbUser.id },
-          { sellerId: dbUser.id }
-        ]
-      }
-    });
-
-    // If NO conversation exists yet, this is a brand new chat initialization attempt
-    if (!existingConversation) {
-      // Prevent a seller from starting a brand new thread on their own asset
-      if (targetSellerId === dbUser.id) {
-        return NextResponse.json(
-          { error: "Security Restriction: You cannot launch negotiations or message your own listing." },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Determine the true participant mappings for the upsert query block
-    const finalBuyerId = existingConversation ? existingConversation.buyerId : dbUser.id;
-    const finalSellerId = existingConversation ? existingConversation.sellerId : targetSellerId;
-
-    // Double check that the sender is actually authorized to post in this room
-    if (dbUser.id !== finalBuyerId && dbUser.id !== finalSellerId) {
-      return NextResponse.json({ error: "Unauthorized: You are not a participant in this chat room." }, { status: 403 });
-    }
-
-    // 4. Execute Atomic Relational Database Transactions
-    const savedMessage = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
+      // Find or create conversation using the structurally guaranteed seller ID
       const conversation = await tx.conversation.upsert({
         where: {
           carId_buyerId_sellerId: {
             carId,
-            buyerId: finalBuyerId,
-            sellerId: finalSellerId,
+            buyerId: dbUser.id,
+            sellerId,
           },
         },
-        update: {
-          updatedAt: new Date(),
-        },
+        update: { updatedAt: new Date() },
         create: {
           carId,
-          buyerId: finalBuyerId,
-          sellerId: finalSellerId,
+          buyerId: dbUser.id,
+          sellerId,
+        },
+        select: { id: true },
+      });
+
+      // Rate limit check
+      const oneMinuteAgo = new Date(Date.now() - 60_000);
+      const recentCount = await tx.message.count({
+        where: {
+          senderId: dbUser.id,
+          createdAt: { gte: oneMinuteAgo },
         },
       });
 
-      // Append the new message entry directly inside the isolated room
+      if (recentCount >= MAX_MESSAGES_PER_MINUTE) {
+        throw new RateLimitError();
+      }
+
+      // Turn enforcement check
+      const lastMessage = await tx.message.findFirst({
+        where: { conversationId: conversation.id },
+        orderBy: { createdAt: "desc" },
+        select: { senderId: true },
+      });
+
+      if (lastMessage?.senderId === dbUser.id) {
+        throw new TurnLockError();
+      }
+
+      // Safe to create message
       return tx.message.create({
         data: {
           conversationId: conversation.id,
@@ -148,22 +117,26 @@ export async function POST(req: Request) {
         select: {
           id: true,
           conversationId: true,
-          senderId: true,
           text: true,
           createdAt: true,
-        }
+        },
       });
     });
 
-    return NextResponse.json(savedMessage, { status: 201 });
-
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    console.error("[ZUTA_MESSAGE_ROUTE_ERROR]:", error);
+    if (error instanceof TurnLockError) {
+      return NextResponse.json(
+        { error: "It is not your turn to send a message in this conversation." },
+        { status: 403 }
+      );
+    }
 
-    const errorDetails = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      { error: "Secure Desk was unable to route transaction message.", details: errorDetails },
-      { status: 500 }
-    );
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: "Too many messages. Try again shortly." }, { status: 429 });
+    }
+
+    console.error("[MESSAGE_ROUTE_ERROR]", error);
+    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
 }
