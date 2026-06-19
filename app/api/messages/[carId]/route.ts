@@ -4,18 +4,20 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: Request,
-  { params }: { params: { carId: string } }
+  { params }: { params: Promise<{ carId: string }> } // ✅ Changed to Promise
 ) {
  
   try {
     const clerkUser = await currentUser();
     console.log("GET /api/messages/[carId] - Current User:", clerkUser);    
-    console.log("GET /api/messages/[carId] - Car ID:", params.carId);
+    
+    // ✅ Extract carId by awaiting the params promise
+    const { carId } = await params;
+    console.log("GET /api/messages/[carId] - Car ID:", carId);
+
     if (!clerkUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { carId } = params;
 
     // 1. Find the conversation for this car and the current user
     const conversation = await prisma.conversation.findFirst({
@@ -38,7 +40,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-    conversation,
+      conversation,
       exists: true,
       conversationId: conversation.id,
       messages: conversation.messages,
