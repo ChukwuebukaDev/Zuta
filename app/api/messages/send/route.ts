@@ -10,11 +10,13 @@ class RateLimitError extends Error {}
 
 export async function POST(req: Request) {
   try {
+    // 1. Authentication
     const clerkUser = await currentUser();
     if (!clerkUser) {
-      return NextResponse.json({ error: "Unauthorized access sign in to continue." }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized access. Sign in to continue." }, { status: 401 });
     }
 
+    // 2. Body Parser Guard
     const body: unknown = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
@@ -38,6 +40,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // 3. Sync Clerk user with Database Profile
     const dbUser = await prisma.user.findUnique({
       where: { id: clerkUser.id },
       select: { id: true },
@@ -48,8 +51,9 @@ export async function POST(req: Request) {
     }
 
     let targetConversationId = conversationId;
+    let needsTimestampUpdate = false;
 
-    // SCENARIO A: Replying directly to an ongoing chat from the Dashboard Feed
+    // SCENARIO A: Existing Conversation Channel
     if (targetConversationId) {
       const activeConversation = await prisma.conversation.findUnique({
         where: { id: targetConversationId },
@@ -60,12 +64,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Conversation channel not found." }, { status: 404 });
       }
 
-      // Security check: Verify user is a legitimate participant in this conversation
       if (activeConversation.buyerId !== dbUser.id && activeConversation.sellerId !== dbUser.id) {
         return NextResponse.json({ error: "Forbidden access to this conversation desk." }, { status: 403 });
       }
+      
+      // Only existing chats need an explicit conversation timestamp touch later
+      needsTimestampUpdate = true;
     } 
-    // SCENARIO B: First-time setup initiated by a buyer from a product details card
+    // SCENARIO B: First-time setup initiated by buyer
     else if (carId) {
       const listing = await prisma.car.findUnique({
         where: { id: carId },
@@ -78,12 +84,11 @@ export async function POST(req: Request) {
 
       const sellerId = listing.userId;
 
-      // Prevent users from starting an inquiry chat with their own cars
       if (sellerId === dbUser.id) {
         return NextResponse.json({ error: "Cannot message your own listing." }, { status: 400 });
       }
 
-      // Atomically locate or initiate the conversation model structure
+      // Upsert atomically handles the creation/update timeline
       const conv = await prisma.conversation.upsert({
         where: {
           carId_buyerId_sellerId: {
@@ -104,10 +109,11 @@ export async function POST(req: Request) {
       targetConversationId = conv.id;
     }
 
-    // Process messaging execution securely inside a controlled transaction sequence
+    // 4. Critical Section Execution (Transactions)
     const result = await prisma.$transaction(async (tx) => {
-      // Rate limit check
       const oneMinuteAgo = new Date(Date.now() - 60_000);
+      
+      // Rate limit evaluation
       const recentCount = await tx.message.count({
         where: {
           senderId: dbUser.id,
@@ -119,18 +125,23 @@ export async function POST(req: Request) {
         throw new RateLimitError();
       }
 
-      // Turn enforcement check
-      const lastMessage = await tx.message.findFirst({
-        where: { conversationId: targetConversationId },
-        orderBy: { createdAt: "desc" },
-        select: { senderId: true },
-      });
+      // Turn enforcement using raw PostgreSQL/MySQL lock for true serializability protection
+      // This prevents parallel button-mashing bypasses
+      const lastMessages = await tx.$queryRaw<{ senderId: string }[]>`
+        SELECT "senderId" FROM "Message" 
+        WHERE "conversationId" = ${targetConversationId} 
+        ORDER BY "createdAt" DESC 
+        LIMIT 1 
+        FOR UPDATE
+      `;
+
+      const lastMessage = lastMessages[0];
 
       if (lastMessage?.senderId === dbUser.id) {
         throw new TurnLockError();
       }
 
-      // Create message 
+      // Secure payload deployment
       return tx.message.create({
         data: {
           conversationId: targetConversationId!,
@@ -146,13 +157,16 @@ export async function POST(req: Request) {
       });
     });
 
-    // Touch conversation to update timestamps outside the critical section tracking sequence
-    await prisma.conversation.update({
-      where: { id: targetConversationId },
-      data: { updatedAt: new Date() }
-    });
+    // 5. Update parent metadata only if it wasn't already updated by the Scenario B upsert
+    if (needsTimestampUpdate) {
+      await prisma.conversation.update({
+        where: { id: targetConversationId },
+        data: { updatedAt: new Date() }
+      }).catch(err => console.error("Non-blocking conversation timestamp touch failed:", err));
+    }
 
     return NextResponse.json(result, { status: 201 });
+
   } catch (error) {
     if (error instanceof TurnLockError) {
       return NextResponse.json(

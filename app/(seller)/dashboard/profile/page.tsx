@@ -1,0 +1,212 @@
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { MapPin, Calendar, Heart, MessageSquare, ShieldCheck, Store } from "lucide-react";
+import ProfileTabs from "@/components/dashboard/ProfileTabs";
+
+export default async function ProfilePage() {
+  const clerkUser = await currentUser();
+  if (!clerkUser) redirect("/sign-in");
+
+  // 1. Fetch complete user profile along with relational hooks for BOTH roles
+  let user = await prisma.user.findUnique({
+    where: { id: clerkUser.id },
+    include: {
+      dealerProfile: true, // 💡 Added to read dealership parameters if seller
+      buyerConversations: {
+        include: {
+          car: {
+            select: {
+              id: true,
+              brand: true,
+              model: true,
+              year: true,
+              price: true,
+              thumbnail: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+      },
+      sellerConversations: { // 💡 Added to read inbound client conversations for sellers
+        include: {
+          car: {
+            select: {
+              id: true,
+              brand: true,
+              model: true,
+              year: true,
+              price: true,
+              thumbnail: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+      },
+    },
+  });
+
+  // 💡 AUTO-SYNC: Sync record safely across architectures if missing on database ledger
+  if (!user) {
+    // Read Clerk metadata fallback if setup exists
+    const clerkRole = (clerkUser.publicMetadata?.role as string | undefined)?.toUpperCase();
+    const resolvedRole = clerkRole === "DEALER" || clerkRole === "SELLER" ? "DEALER" : "BUYER";
+
+    user = await prisma.user.create({
+      data: {
+        id: clerkUser.id,
+        name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Verified User",
+        email: clerkUser.emailAddresses[0]?.emailAddress || "",
+        role: resolvedRole,
+        onboardingComplete: true,
+        savedCarIds: [],
+      },
+      include: {
+        dealerProfile: true,
+        buyerConversations: {
+          include: { car: { select: { id: true, brand: true, model: true, year: true, price: true, thumbnail: true } } },
+          orderBy: { updatedAt: "desc" },
+        },
+        sellerConversations: {
+          include: { car: { select: { id: true, brand: true, model: true, year: true, price: true, thumbnail: true } } },
+          orderBy: { updatedAt: "desc" },
+        },
+      },
+    });
+  }
+
+  const isSeller = user.role === "DEALER";
+
+  // 2. Fetch inventory or bookmarks based on dynamic user context
+  let displayCars = [];
+  if (isSeller) {
+    // Fetch cars belonging to this specific user/dealer listing pipeline
+    displayCars = await prisma.car.findMany({
+      where: { userId: user.id },
+      select: {
+        id: true,
+        brand: true,
+        model: true,
+        year: true,
+        price: true,
+        thumbnail: true,
+        slug: true,
+        mileage: true,
+        transmission: true,
+        status: true, // Let sellers see AVAILABLE/SOLD context badges
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } else {
+    // Fetch standard buyer scalar bookmarks selection block
+    displayCars = user.savedCarIds.length > 0
+      ? await prisma.car.findMany({
+          where: { id: { in: user.savedCarIds } },
+          select: {
+            id: true,
+            brand: true,
+            model: true,
+            year: true,
+            price: true,
+            thumbnail: true,
+            slug: true,
+            mileage: true,
+            transmission: true,
+          },
+        })
+      : [];
+  }
+
+  // 3. Configure layout content based on target profile type
+  const profileData = {
+    name: isSeller && user.dealerProfile?.businessName ? user.dealerProfile.businessName : (user.name || "Verified User"),
+    email: user.email || "",
+    avatarUrl: isSeller && user.dealerProfile?.logo ? user.dealerProfile.logo : clerkUser.imageUrl,
+    joinedDate: new Date(user.createdAt).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    }),
+    location: "Nigeria",
+    isVerified: user.isVerified,
+    tagline: isSeller ? user.dealerProfile?.tagline : null,
+  };
+
+  // Funnel incoming/outgoing interaction streams based on active profile context
+  const activeChats = isSeller ? user.sellerConversations : user.buyerConversations;
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-slate-100 p-4 lg:p-8 max-w-6xl mx-auto space-y-8">
+      
+      {/* Dynamic Profile Identity Panel */}
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-zinc-900/40 border border-slate-900 p-6 md:p-10 flex flex-col md:flex-row items-center gap-6 justify-between shadow-xl">
+        <div className={`absolute top-0 right-0 w-96 h-96 ${isSeller ? 'bg-emerald-600/5' : 'bg-blue-600/5'} rounded-full blur-[120px] pointer-events-none`} />
+        
+        <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+          <div className="relative w-28 h-28 rounded-3xl overflow-hidden border-2 border-slate-800 bg-zinc-950 shrink-0">
+            <img
+              src={profileData.avatarUrl}
+              alt={profileData.name}
+              className="object-cover w-full h-full"
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <h1 className="text-2xl md:text-3xl font-black uppercase italic tracking-tight text-white">
+                {profileData.name}
+              </h1>
+              
+              <span className={`inline-flex items-center gap-1 border px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                isSeller 
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                  : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+              }`}>
+                {isSeller ? <Store size={12} /> : <ShieldCheck size={12} />}
+                {isSeller ? "Authorized Dealer" : "Verified Buyer"}
+              </span>
+            </div>
+            
+            {profileData.tagline ? (
+              <p className="text-xs text-slate-400 font-bold italic">&quot;{profileData.tagline}&quot;</p>
+            ) : (
+              <p className="text-sm text-slate-400 font-medium">{profileData.email}</p>
+            )}
+            
+            <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs text-slate-500 font-semibold">
+              <span className="flex items-center gap-1"><MapPin size={14} /> {profileData.location}</span>
+              <span className="flex items-center gap-1"><Calendar size={14} /> Member since {profileData.joinedDate}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Metric Display Panels */}
+        <div className="grid grid-cols-2 gap-3 w-full md:w-auto shrink-0">
+          <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[110px]">
+            {isSeller ? (
+              <Store className="mx-auto text-emerald-500 mb-1" size={18} />
+            ) : (
+              <Heart className="mx-auto text-rose-500 mb-1" size={18} />
+            )}
+            <span className="block text-xl font-black italic tracking-tight">{displayCars.length}</span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
+              {isSeller ? "My Inventory" : "Saved Cars"}
+            </span>
+          </div>
+          <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[110px]">
+            <MessageSquare className="mx-auto text-blue-500 mb-1" size={18} />
+            <span className="block text-xl font-black italic tracking-tight">{activeChats.length}</span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
+              {isSeller ? "Client Leads" : "Open Desks"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive Tabs Layout Area */}
+      <ProfileTabs 
+        displayCars={displayCars} 
+        activeChats={activeChats} 
+        userRole={user.role} 
+      />
+    </div>
+  );
+}

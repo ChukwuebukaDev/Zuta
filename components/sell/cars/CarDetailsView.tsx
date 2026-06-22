@@ -131,13 +131,13 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
           </section>
         </div>
 
-        <aside className="lg:col-span-4">
+        {seller.userId !== currentUserId && (<aside className="lg:col-span-4">
           <div className="sticky top-10 p-8 rounded-[3rem] bg-white border border-slate-200 shadow-sm space-y-6">
             <Button onClick={() => setShowChatDesk(true)} className="w-full h-16 rounded-2xl bg-black text-white font-black uppercase tracking-widest flex items-center gap-2">
               <MessageSquare size={14} /> Contact Seller
             </Button>
           </div>
-        </aside>
+        </aside>)}
       </main>
 
       {/* --- MODAL OVERLAY --- */}

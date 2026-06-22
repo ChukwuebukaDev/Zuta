@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card/Card";
-import { Plus, Car, Clock, CheckCircle, PackageSearch, Tag, MessageSquare, Pencil } from "lucide-react";
+import { Plus, Car, Clock, CheckCircle, PackageSearch, Tag, MessageSquare, Pencil, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
@@ -108,7 +108,9 @@ function InventoryCarCard({ car }: { car: InventoryCar }) {
 // --- Main Page ---
 export default async function DealerDashboard() {
   const { userId } = await auth();
-
+if (!userId) {
+    return;
+  }
   // 1. Fetch Inventory Listings
   const myCars = await db.car.findMany({
     where: { userId: userId as string },
@@ -116,6 +118,15 @@ export default async function DealerDashboard() {
   }) as unknown as InventoryCar[];
 
   // 2. Fetch Active Conversation Count (Where dealer is either buyer or seller)
+  const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { 
+        name: true,
+      }
+    });
+
+    const name = user?.name.slice(0,user?.name.indexOf(' '));
+
   const conversationCount = await db.conversation.count({
     where: {
       OR: [
@@ -147,6 +158,7 @@ export default async function DealerDashboard() {
         <StatCard title="Live" value={String(approvedCount)} icon={<CheckCircle size={20}/>} colorClass="text-green-500" />
         <StatCard title="Review" value={String(pendingCount)} icon={<Clock size={20}/>} colorClass="text-yellow-500" />
         <StatCard title="Total Cars" value={String(myCars.length)} icon={<Car size={20}/>} colorClass="text-blue-500" />
+        <StatCard title="My Profile" value={name as string} icon={<User size={28}/>} colorClass="text-blue-500" href="/dashboard/profile" />
         
         {/* Dynamic Connected Chat Counter Card */}
         <StatCard 

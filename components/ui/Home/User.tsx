@@ -5,46 +5,55 @@ import { useUser, UserButton } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 
 export function AuthButtons() {
-  const { isLoaded, isSignedIn } = useUser();
-
-  // 1. Loading State (Prevents layout shift)
+  const { isLoaded, isSignedIn, user } = useUser();
   if (!isLoaded) {
     return <Loader2 className="w-5 h-5 animate-spin text-slate-500" />;
   }
 
-  // 2. Authenticated State
   if (isSignedIn) {
+
+    const userRole = (user?.publicMetadata?.role as string | undefined)?.toLowerCase();
+    
+    const isSeller = userRole === "dealer" || userRole === "seller";
+
     return (
       <div className="flex items-center gap-4">
-        {/* We can still keep a link to a custom profile page if we want */}
-        <Link 
-          href="/dashboard" 
-          className="hidden md:block text-sm font-medium text-slate-400 hover:text-gray-600 transition"
-        >
-          Dashboard
-        </Link>
+        {isSeller && (
+          <Link 
+            href="/dashboard" 
+            className="hidden md:block text-sm font-medium text-slate-400 hover:text-slate-200 transition"
+          >
+            Seller Dashboard
+          </Link>
+        )}
+
+        {!isSeller && (
+          <Link 
+            href="/dashboard/profile" 
+            className="hidden md:block text-sm font-medium text-slate-400 hover:text-slate-200 transition"
+          >
+            My Profile
+          </Link>
+        )}
         
-        {/* Clerk's managed profile dropdown */}
         <UserButton 
-           
           appearance={{
             elements: {
               avatarBox: "w-9 h-9 border border-slate-700 hover:scale-105 transition",
-              userButtonPopoverCard: "bg-slate-900 border border-slate-800",
+              userButtonPopoverCard: "bg-slate-900 border border-slate-800 text-white",
               userButtonOuterIdentifier: "text-white font-medium"
             }
           }}
-          showName={false} // Set to true if you want the name next to the bubble
+          showName={false}
         />
       </div>
     );
   }
 
-  // 3. Unauthenticated State
   return (
     <div className="flex flex-col md:flex-row items-stretch gap-3">
       <Link 
-        className="px-5 py-2 rounded-xl border border-slate-800 text-sm font-semibold text-center text-gray-600 hover:bg-slate-900 transition" 
+        className="px-5 py-2 rounded-xl border border-slate-800 text-sm font-semibold text-center text-slate-400 hover:bg-slate-900 hover:text-white transition" 
         href="/sign-in"
       >
         Sign In
