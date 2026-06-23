@@ -16,7 +16,7 @@ export const ourFileRouter = {
       return { uploadedBy: metadata.userId, url: file.url };
     }),
 
-  // --- NEW: CAR LISTING THUMBNAIL ---
+  // listing new car
   carThumbnail: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
     .middleware(async () => {
       const { userId } = await auth();
