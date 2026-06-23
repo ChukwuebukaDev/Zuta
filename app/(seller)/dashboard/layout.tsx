@@ -23,7 +23,7 @@ export default async function SellerLayout({ children }: { children: React.React
     }
   });
 
-  if (user?.role === "BUYER" || metadataRole === "buyer") {
+  if (user?.role === "BUYER" || metadataRole === "buyer" || metadataRole === "admin" ) {
     return (
       <div className="min-h-screen bg-[#050505] text-white">
         {children}

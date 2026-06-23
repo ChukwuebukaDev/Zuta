@@ -7,29 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model VerificationRequest {
-  id         String                 @id @default(cuid())
-  status     RequestStatus          @default(SUBMITTED)
-  legalName  String
-  adminNotes String?
-  createdAt  DateTime               @default(now())
-  updatedAt  DateTime               @updatedAt
-  userId     String                 @unique
-  documents  VerificationDocument[]
-  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationDocument {
-  id        String              @id @default(cuid())
-  type      DocType
-  url       String
-  requestId String
-  request   VerificationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-}
-
 model User {
   id                  String               @id @default(cuid())
-  savedCarIds         String[]
   name                String?
   email               String?              @unique
   password            String?
@@ -42,28 +21,52 @@ model User {
   idUrl               String?
   legalName           String?
   onboardingComplete  Boolean              @default(false)
+  savedCarIds         String[]
   cars                Car[]
-  dealerProfile       DealerProfile?
-  verificationRequest VerificationRequest?
   buyerConversations  Conversation[]       @relation("BuyerConversations")
   sellerConversations Conversation[]       @relation("SellerConversations")
+  dealerProfile       DealerProfile?
   messages            Message[]
+  verificationRequest VerificationRequest?
 }
 
 model DealerProfile {
   id           String       @id @default(cuid())
   businessName String
   slug         String       @unique
-  status       DealerStatus @default(DRAFT)
+  phone        String?
   tagline      String?
   bio          String?
   logo         String?
   banner       String?
   website      String?
+  status       DealerStatus @default(DRAFT)
   userId       String       @unique
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationRequest {
+  id              String                 @id @default(cuid())
+  legalName       String
+  businessAddress String?
+  cacNumber       String?                @unique
+  status          RequestStatus          @default(SUBMITTED)
+  adminNotes      String?
+  userId          String                 @unique
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  documents       VerificationDocument[]
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationDocument {
+  id        String              @id @default(cuid())
+  type      DocType
+  url       String
+  requestId String
+  request   VerificationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 }
 
 model Car {
@@ -113,12 +116,12 @@ model Car {
 }
 
 model CarImage {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   url       String
   carId     String
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
   angle     ImageAngle @default(OPTIONAL)
-  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  car       Car        @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@index([carId])
 }
@@ -126,26 +129,26 @@ model CarImage {
 model Conversation {
   id        String    @id @default(cuid())
   carId     String
-  car       Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
   buyerId   String
-  buyer     User      @relation("BuyerConversations", fields: [buyerId], references: [id])
   sellerId  String
-  seller    User      @relation("SellerConversations", fields: [sellerId], references: [id])
-  messages  Message[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  buyer     User      @relation("BuyerConversations", fields: [buyerId], references: [id])
+  car       Car       @relation(fields: [carId], references: [id], onDelete: Cascade)
+  seller    User      @relation("SellerConversations", fields: [sellerId], references: [id])
+  messages  Message[]
 
   @@unique([carId, buyerId, sellerId])
 }
 
 model Message {
   id             String       @id @default(cuid())
-  sender         User         @relation(fields: [senderId], references: [id])
   conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   senderId       String
   text           String
   createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id])
 }
 
 enum ImageAngle {
@@ -212,5 +215,5 @@ enum RequestStatus {
 enum DocType {
   GOVT_ID
   BUSINESS_CARD
-  CERTIFICATE
+  CAC_CERTIFICATE
 }

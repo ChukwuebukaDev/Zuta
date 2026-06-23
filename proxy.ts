@@ -9,7 +9,8 @@ const isPublicRoute = createRouteMatcher([
   '/cars',
   '/cars/(.*)',
   '/api/uploadthing(.*)',
-  '/api/messages/send'
+  '/api/messages/send',
+  "/api/webhooks/clerk(.*)"
 ]);
 
 // Explicitly target your isolated administration dashboard routes

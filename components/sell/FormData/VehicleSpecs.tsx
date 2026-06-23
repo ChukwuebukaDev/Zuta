@@ -1,6 +1,6 @@
 "use client";
 
-import { Gauge, Settings2, Fuel, Drill, Car, History, Activity } from "lucide-react";
+import { Gauge, Settings2, Activity } from "lucide-react";
 import Dropdown from "@/utilities/Dropdown";
 import { CarFormData } from "@/types/car/CarFormData";
 import {
@@ -49,9 +49,9 @@ export default function VehicleSpecs({
           <input
             type="number"
             placeholder="Mileage (km)"
-            value={mileage || ""} // Prevents uncontrolled warning
+            value={mileage || ""} 
             onChange={(e) => onChange("mileage", Number(e.target.value))}
-            className="w-full p-4 pl-12 rounded-xl bg-black border border-slate-800 focus:border-blue-500/50 outline-none text-white transition-all appearance-none"
+            className="w-full p-4 pl-12 h-14 rounded-xl bg-black border border-slate-800 focus:border-blue-500/50 outline-none text-white transition-all appearance-none text-sm"
           />
         </div>
 
@@ -104,30 +104,75 @@ export default function VehicleSpecs({
             onChange={(val) => onChange("condition", val as CarCondition)}
           />
         </div>
+      </div>
 
-        {/* Accident History */}
-        <div className="relative">
-          <Dropdown
-            options={["Yes", "No"]}
-            value={accidentHistory === undefined ? "" : accidentHistory ? "Yes" : "No"}
-            placeholder="Accident History"
-            onChange={(val) => onChange("accidentHistory", val === 'Yes')}
-          />
+      {/* Binary Choice Grid Section */}
+      <div className="grid md:grid-cols-2 gap-6 pt-2">
+        {/* Accident History Choice Card */}
+        <div className="space-y-3">
+          <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+            Has this vehicle been in any documented accidents?
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => onChange("accidentHistory", true)}
+              className={`h-14 rounded-xl font-bold uppercase tracking-wider text-xs border transition-all ${
+                accidentHistory === true
+                  ? "border-red-500/40 bg-red-500/10 text-red-400 shadow-lg"
+                  : "border-slate-800 bg-black/40 text-slate-400 hover:border-slate-700"
+              }`}
+            >
+              Yes, it has history
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("accidentHistory", false)}
+              className={`h-14 rounded-xl font-bold uppercase tracking-wider text-xs border transition-all ${
+                accidentHistory === false
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-lg"
+                  : "border-slate-800 bg-black/40 text-slate-400 hover:border-slate-700"
+              }`}
+            >
+              No, entirely clean
+            </button>
+          </div>
         </div>
 
-        {/* Service History */}
-        <div className="relative">
-          <Dropdown
-            options={["Yes", "No"]}
-            value={serviceHistory === undefined ? "" : serviceHistory ? "Yes" : "No"}
-            placeholder="Service History"
-            onChange={(val) => onChange("serviceHistory", val === 'Yes')}
-          />
+        {/* Service History Choice Card */}
+        <div className="space-y-3">
+          <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+            Is the vehicle's full service history available?
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => onChange("serviceHistory", true)}
+              className={`h-14 rounded-xl font-bold uppercase tracking-wider text-xs border transition-all ${
+                serviceHistory === true
+                  ? "border-blue-500/40 bg-blue-500/10 text-blue-400 shadow-lg"
+                  : "border-slate-800 bg-black/40 text-slate-400 hover:border-slate-700"
+              }`}
+            >
+              Yes, fully logged
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("serviceHistory", false)}
+              className={`h-14 rounded-xl font-bold uppercase tracking-wider text-xs border transition-all ${
+                serviceHistory === false
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-400 shadow-lg"
+                  : "border-slate-800 bg-black/40 text-slate-400 hover:border-slate-700"
+              }`}
+            >
+              No, incomplete
+            </button>
+          </div>
         </div>
       </div>
       
       {/* Small design hint for the dealer */}
-      <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-tighter px-2">
+      <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-tighter px-2 pt-2">
         <Activity size={12} className="text-blue-500" />
         Ensure all technical data is verified via the vehicle's logbook.
       </div>

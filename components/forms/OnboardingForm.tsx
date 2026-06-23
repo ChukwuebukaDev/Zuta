@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "@clerk/nextjs";
 import { UploadButton } from "@/lib/uploadthing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +12,25 @@ import {
   Loader2,
   FileText,
   CreditCard,
+  Building2,
+  MapPin,
+  Tag
 } from "lucide-react";
+
+// Explicit Uploadthing Response Typing
+interface UploadthingFileResponse {
+  name: string;
+  size: number;
+  key: string;
+  url: string;
+  serverData: unknown;
+}
 
 interface OnboardingFormProps {
   userId: string;
   userEmail: string;
+  avatarUrl: string;
+  phone?:string;
 }
 
 type DocumentType = "GOVT_ID" | "BUSINESS_CARD";
@@ -25,21 +40,27 @@ interface UploadedDocument {
   url: string;
 }
 
-export default function OnboardingForm({ userId }: OnboardingFormProps) {
+export default function OnboardingForm({ userId}: OnboardingFormProps) {
   const router = useRouter();
+  const { session } = useSession();
 
   const [loading, setLoading] = useState(false);
   const [uploadingType, setUploadingType] = useState<DocumentType | null>(null);
-  const [legalName, setLegalName] = useState("");
+  
+  const [businessName, setBusinessName] = useState("");
+  const [cacNumber, setCacNumber] = useState("");
+  const [businessAddress, setBusinessAddress] = useState("");
+  const [tagline, setTagline] = useState("");
   const [docs, setDocs] = useState<UploadedDocument[]>([]);
-
-
+  const [phone,setPhone] = useState("");
   const hasId = useMemo(() => docs.some((d) => d.type === "GOVT_ID"), [docs]);
   const hasCard = useMemo(() => docs.some((d) => d.type === "BUSINESS_CARD"), [docs]);
 
-  // Validation: Name must be 3+ chars, and both docs must be uploaded
-  const isValidName = legalName.trim().length >= 3;
-  const isComplete = isValidName && hasId && hasCard;
+  const isValidName = businessName.trim().length >= 3;
+  const isValidCac = cacNumber.trim().length >= 6; 
+  const isValidAddress = businessAddress.trim().length >= 10;
+  
+  const isComplete = isValidName && isValidCac && isValidAddress && hasId && hasCard;
 
   async function onSubmit() {
     if (!isComplete || loading) return;
@@ -51,34 +72,42 @@ export default function OnboardingForm({ userId }: OnboardingFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
-          legalName: legalName.trim(),
+          businessName: businessName.trim(),
+          phone: phone.trim(),
+          cacNumber: cacNumber.trim(),
+          businessAddress: businessAddress.trim(),
+          tagline: tagline.trim() || undefined,
           documents: docs,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = (await response.json().catch(() => ({}))) as { message?: string };
         throw new Error(errorData.message || "Submission failed");
       }
 
-      toast.success("Application submitted successfully!");
+      toast.success("Dealership application submitted successfully!");
+      
+      // 💡 Sync client session with the updated backend metadata role instantaneously
+      await session?.reload();
+      
       router.push("/onboarding/status");
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message || "Database connection error");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Database connection error";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   }
 
+  // 💡 Explicitly typed config generator to fix functional "any" callbacks
   const getUploadConfig = (type: DocumentType) => ({
     endpoint: "imageUploader" as const,
-
     onUploadBegin: () => {
       setUploadingType(type);
     },
-
-    onClientUploadComplete: (res: any) => {
+    onClientUploadComplete: (res: UploadthingFileResponse[] | undefined) => {
       const url = res?.[0]?.url;
       if (!url) return;
 
@@ -88,23 +117,19 @@ export default function OnboardingForm({ userId }: OnboardingFormProps) {
       });
 
       setUploadingType(null);
-      toast.success(`${type === "GOVT_ID" ? "Identity" : "Business"} file verified`);
+      toast.success(`${type === "GOVT_ID" ? "Identity Proof" : "Business Document"} file verified`);
     },
-
     onUploadError: (error: Error) => {
       setUploadingType(null);
       toast.error(`Upload Error: ${error.message}`);
     },
-
     content: {
       button() {
         if (uploadingType === type) return <Loader2 className="animate-spin" size={16} />;
-        const exists = type === "GOVT_ID" ? hasId : hasCard;
-        return exists ? "Change File" : "Choose File";
+        return (type === "GOVT_ID" ? hasId : hasCard) ? "Change File" : "Choose File";
       },
       allowedContent: "Images only • Max 4MB",
     },
-
     appearance: {
       button: "bg-blue-600 hover:bg-blue-700 text-xs font-bold px-4 h-9 rounded-lg transition-all",
       allowedContent: "text-[10px] text-slate-500 uppercase mt-2 font-medium",
@@ -112,73 +137,129 @@ export default function OnboardingForm({ userId }: OnboardingFormProps) {
   });
 
   return (
-    <div className="space-y-8">
-      {/* Business Name Input */}
-      <div className="space-y-3">
-        <label className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-          Legal Business / Individual Name
+    <div className="space-y-6">
+      {/* 1. Dealership Identity Fields Split */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <Building2 size={14} /> Registered Dealership Name
+          </label>
+          <Input
+            placeholder="e.g. Zuta Luxury Motors"
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+            className="bg-slate-950/50 border-slate-800 text-white h-12 text-sm focus:ring-blue-600 rounded-xl"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <FileText size={14} /> RC / CAC Registration Number
+          </label>
+          <Input
+            placeholder="e.g. RC-1234567"
+            value={cacNumber}
+            onChange={(e) => setCacNumber(e.target.value)}
+            className="bg-slate-950/50 border-slate-800 text-white h-12 text-sm focus:ring-blue-600 rounded-xl"
+          />
+        </div>
+      </div>
+    <div>
+      <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+        <MapPin size={14} /> Business Contact Phone Number
+      </label>
+      <Input
+        placeholder="e.g. +234 801 234 5678"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        className="bg-slate-950/50 border-slate-800 text-white h-12 text-sm focus:ring-blue-600 rounded-xl"
+      />
+    </div>
+      {/* 2. Dealership Slogan / Tagline */}
+      <div className="space-y-2">
+        <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <Tag size={14} /> Business Slogan / Tagline (Optional)
         </label>
         <Input
-          placeholder="e.g. Zuta Luxury Motors"
-          value={legalName}
-          onChange={(e) => setLegalName(e.target.value)}
-          className="bg-slate-950/50 border-slate-800 text-white h-14 text-lg focus:ring-blue-600"
+          placeholder="e.g. Driven by Excellence, Defined by Luxury"
+          value={tagline}
+          onChange={(e) => setTagline(e.target.value)}
+          className="bg-slate-950/50 border-slate-800 text-white h-12 text-sm focus:ring-blue-600 rounded-xl"
         />
       </div>
 
-      {/* Upload Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* 3. Physical Showroom Address */}
+      <div className="space-y-2">
+        <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <MapPin size={14} /> Showroom / Office Physical Address
+        </label>
+        <textarea
+          placeholder="e.g. Plot 14, Kingsway Road, Ikoyi, Lagos, Nigeria"
+          value={businessAddress}
+          onChange={(e) => setBusinessAddress(e.target.value)}
+          className="w-full bg-slate-950/50 border border-slate-800 p-4 text-white min-h-[80px] text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-600 rounded-xl resize-none"
+        />
+      </div>
+
+      {/* 4. Upload Cards Selection Area */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
         {/* Government ID Card */}
         <div className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-4 ${
-          hasId ? "border-emerald-500/50 bg-emerald-500/5" : "border-slate-800 bg-slate-900/40"
+          hasId ? "border-emerald-500/30 bg-emerald-500/5" : "border-slate-800/80 bg-slate-950/40"
         }`}>
-          <div className={`p-3 rounded-full ${hasId ? "bg-emerald-500/20 text-emerald-500" : "bg-slate-800 text-slate-400"}`}>
-            <FileText size={24} />
+          <div className={`p-3 rounded-xl ${hasId ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-900 text-slate-500"}`}>
+            <FileText size={20} />
           </div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Government ID</p>
+          <div className="text-center">
+            <p className="text-xs font-black text-white uppercase tracking-wider">Representative ID</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Driver&qout;s License or Int&qout;l Passport</p>
+          </div>
           <UploadButton {...getUploadConfig("GOVT_ID")} />
           {hasId && (
-            <div className="flex items-center gap-2 text-emerald-500 text-sm font-bold animate-in zoom-in">
-              <CheckCircle2 size={18} /> Ready
+            <div className="flex items-center gap-1 text-emerald-400 text-xs font-black uppercase tracking-wider animate-in zoom-in">
+              <CheckCircle2 size={14} /> Ready
             </div>
           )}
         </div>
 
-        {/* Business Card Upload */}
+        {/* Corporate Proof / Utility */}
         <div className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-4 ${
-          hasCard ? "border-emerald-500/50 bg-emerald-500/5" : "border-slate-800 bg-slate-900/40"
+          hasCard ? "border-emerald-500/30 bg-emerald-500/5" : "border-slate-800/80 bg-slate-950/40"
         }`}>
-          <div className={`p-3 rounded-full ${hasCard ? "bg-emerald-500/20 text-emerald-500" : "bg-slate-800 text-slate-400"}`}>
-            <CreditCard size={24} />
+          <div className={`p-3 rounded-xl ${hasCard ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-900 text-slate-500"}`}>
+            <CreditCard size={20} />
           </div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Business Card</p>
+          <div className="text-center">
+            <p className="text-xs font-black text-white uppercase tracking-wider">Business Verification</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">CAC Certificate or Business Card</p>
+          </div>
           <UploadButton {...getUploadConfig("BUSINESS_CARD")} />
           {hasCard && (
-            <div className="flex items-center gap-2 text-emerald-500 text-sm font-bold animate-in zoom-in">
-              <CheckCircle2 size={18} /> Ready
+            <div className="flex items-center gap-1 text-emerald-400 text-xs font-black uppercase tracking-wider animate-in zoom-in">
+              <CheckCircle2 size={14} /> Ready
             </div>
           )}
         </div>
       </div>
 
-      {/* Main Action Button */}
+      {/* Main Form Action Handler */}
       <Button
         onClick={onSubmit}
         disabled={!isComplete || loading}
-        className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 h-16 text-white rounded-2xl shadow-xl transition-all disabled:opacity-20 font-black text-lg uppercase tracking-widest"
+        className="w-full bg-blue-600 hover:bg-blue-500 text-white h-14 rounded-xl shadow-xl transition-all disabled:opacity-10 font-black text-xs uppercase tracking-widest mt-4"
       >
         {loading ? (
-          <div className="flex items-center gap-3">
-            <Loader2 className="animate-spin" size={24} />
-            <span>Processing Application...</span>
+          <div className="flex items-center gap-2 justify-center">
+            <Loader2 className="animate-spin" size={18} />
+            <span>Processing Application Credentials...</span>
           </div>
         ) : (
-          "Submit Application"
+          "Submit Dealership Application"
         )}
       </Button>
 
-      <p className="text-center text-[10px] text-slate-600 uppercase tracking-widest">
-        Secure Identity Verification • Powered by Zuta
+      <p className="text-center text-[9px] text-slate-600 uppercase tracking-widest">
+        Secure Corporate Identity Check • Powered by Zuta
       </p>
     </div>
   );

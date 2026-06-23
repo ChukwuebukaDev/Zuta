@@ -15,10 +15,18 @@ export function AuthButtons() {
     const userRole = (user?.publicMetadata?.role as string | undefined)?.toLowerCase();
     
     const isSeller = userRole === "dealer" || userRole === "seller";
+    const admin = userRole === "admin" || userRole === "superadmin";
 
     return (
       <div className="flex items-center gap-4">
-        {isSeller && (
+
+        {admin &&  <Link 
+            href="/admin-dashboard" 
+            className="hidden md:block text-sm font-medium text-slate-400 hover:text-slate-200 transition"
+          >
+            Admin Dashboard
+          </Link>}
+        {isSeller && !admin && (
           <Link 
             href="/dashboard" 
             className="hidden md:block text-sm font-medium text-slate-400 hover:text-slate-200 transition"
@@ -27,7 +35,7 @@ export function AuthButtons() {
           </Link>
         )}
 
-        {!isSeller && (
+        {!isSeller && !admin && (
           <Link 
             href="/dashboard/profile" 
             className="hidden md:block text-sm font-medium text-slate-400 hover:text-slate-200 transition"
@@ -35,6 +43,8 @@ export function AuthButtons() {
             My Profile
           </Link>
         )}
+
+        
         
         <UserButton 
           appearance={{

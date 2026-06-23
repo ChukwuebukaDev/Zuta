@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { MapPin, Calendar, Heart, MessageSquare, ShieldCheck, Store } from "lucide-react";
 import ProfileTabs from "@/components/dashboard/ProfileTabs";
+import Link from "next/link";
 
 export default async function ProfilePage() {
   const clerkUser = await currentUser();
@@ -12,7 +13,7 @@ export default async function ProfilePage() {
   let user = await prisma.user.findUnique({
     where: { id: clerkUser.id },
     include: {
-      dealerProfile: true, // 💡 Added to read dealership parameters if seller
+      dealerProfile: true, //  Added to read dealership parameters if seller
       buyerConversations: {
         include: {
           car: {
@@ -28,7 +29,7 @@ export default async function ProfilePage() {
         },
         orderBy: { updatedAt: "desc" },
       },
-      sellerConversations: { // 💡 Added to read inbound client conversations for sellers
+      sellerConversations: { //  Added to read inbound client conversations for sellers
         include: {
           car: {
             select: {
@@ -46,7 +47,7 @@ export default async function ProfilePage() {
     },
   });
 
-  // 💡 AUTO-SYNC: Sync record safely across architectures if missing on database ledger
+ 
   if (!user) {
     // Read Clerk metadata fallback if setup exists
     const clerkRole = (clerkUser.publicMetadata?.role as string | undefined)?.toUpperCase();
@@ -199,8 +200,12 @@ export default async function ProfilePage() {
             </span>
           </div>
         </div>
+        
+    
       </div>
-
+{!isSeller && (<div className="p-4 rounded-2xl bg-zinc-900/40 hover:bg-zinc-800 border border-slate-900 text-center text-sm text-slate-400 font-medium italic">
+             <Link className="block" href='/sell'>Become a Dealer</Link>
+        </div>)}
       {/* Interactive Tabs Layout Area */}
       <ProfileTabs 
         displayCars={displayCars} 

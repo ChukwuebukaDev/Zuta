@@ -1,38 +1,49 @@
-import { auth, currentUser } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
-import { prisma as db } from "@/lib/prisma"
-import OnboardingForm from "@/components/forms/OnboardingForm"
-import { Car, Shield, Clock, Zap } from "lucide-react"
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { prisma as db } from "@/lib/prisma";
+import OnboardingForm from "@/components/forms/OnboardingForm";
+import { Car, Shield, Clock, Zap } from "lucide-react";
 
 export default async function OnboardingPage() {
-  // 1. Authenticate the session
-  const { userId } = await auth()
-  const clerkUser = await currentUser()
+  const { userId } = await auth();
+  const clerkUser = await currentUser();
 
-  if (!userId) {
-    redirect("/sign-in")
+  if (!userId || !clerkUser) {
+    redirect("/sign-in");
   }
 
   const dbUser = await db.user.findUnique({
     where: { id: userId },
     select: { 
+      role: true,
       onboardingComplete: true, 
       isVerified: true 
     }
-  })
-
-  if (dbUser?.isVerified) {
-    redirect("/dashboard")
+  });
+if(dbUser?.role === 'ADMIN'){
+  redirect('/admin-dashboard')
+}
+  // If they already completed onboarding and are completely verified, send them to the dashboard
+  if (dbUser?.isVerified && dbUser?.role === "DEALER") {
+    redirect("/dashboard");
   }
 
+  // If they filled out the form but the admin desk hasn't approved them yet, show the status hold page
   if (dbUser?.onboardingComplete && !dbUser?.isVerified) {
-    redirect("/onboarding/status")
+    redirect("/onboarding/status");
   }
 
-  // 4. If they reach this point, they need to fill out the form
+  //  Fallback/Preset structural defaults directly from Clerk payload structures
+  const userPayload = {
+    id: userId,
+    email: clerkUser.emailAddresses[0]?.emailAddress || "",
+    defaultName: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "",
+    avatarUrl: clerkUser.imageUrl || ""
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black overflow-x-hidden">
-      {/* Background Grid & Glows */}
+      {/* Background Grid Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 opacity-[0.03] md:opacity-5" style={{
           backgroundImage: `linear-gradient(0deg, transparent 24%, rgba(59, 130, 246, 0.2) 25%, rgba(59, 130, 246, 0.2) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.2) 75%, rgba(59, 130, 246, 0.2) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(59, 130, 246, 0.2) 25%, rgba(59, 130, 246, 0.2) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.2) 75%, rgba(59, 130, 246, 0.2) 76%, transparent 77%, transparent)`,
@@ -59,33 +70,33 @@ export default async function OnboardingPage() {
         <div className="px-4 py-12 md:py-20 lg:py-28">
           <div className="max-w-5xl mx-auto">
             
-            {/* Animated Badge */}
+            {/* Animated Status Badge */}
             <div className="flex justify-center mb-6 md:mb-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-sm animate-pulse">
-                <Zap size={14} className="text-blue-400" />
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-sm">
+                <Zap size={14} className="text-blue-400 animate-pulse" />
                 <span className="text-[10px] md:text-sm font-medium text-blue-200">Exclusive Dealer Network</span>
               </div>
             </div>
 
-            {/* Heading Area */}
+            {/* Heading Section */}
             <div className="text-center space-y-4 md:space-y-6 mb-10 md:mb-16">
               <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1] text-white">
-                Unlock Your <br className="hidden md:block" />
+                Register Your <br className="hidden md:block" />
                 <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-300 bg-clip-text text-transparent">
-                  Premium Status
+                  Dealership Profile
                 </span>
               </h1>
               <p className="text-slate-400 text-sm md:text-lg max-w-2xl mx-auto leading-relaxed px-2">
-                Verify your business identity to access our high-intent luxury buyer network.
+                Establish your verified commercial account identity to list premium vehicle fleets to high-intent luxury market pipelines.
               </p>
             </div>
 
-            {/* Benefits Grid */}
+            {/* Platform Trust Highlights */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-10 md:mb-16">
               {[
-                { icon: Shield, label: "Verified Only", desc: "Premium buyer network" },
-                { icon: Clock, label: "48h Approval", desc: "Fast-track verification" },
-                { icon: Zap, label: "Instant Reach", desc: "Live market access" }
+                { icon: Shield, label: "Commercial Verification", desc: "Access high-intent networks" },
+                { icon: Clock, label: "48h Desk SLA", desc: "Fast-track pipeline validation" },
+                { icon: Zap, label: "Corporate Fleet Dashboard", desc: "Real-time client leads access" }
               ].map((benefit, idx) => (
                 <div key={idx} className="flex sm:flex-col items-center sm:items-start gap-4 sm:gap-0 p-4 rounded-xl border border-slate-800/50 bg-slate-900/50 backdrop-blur-sm">
                   <benefit.icon className="w-5 h-5 text-blue-400 sm:mb-3 shrink-0" />
@@ -97,18 +108,19 @@ export default async function OnboardingPage() {
               ))}
             </div>
 
-            {/* Form Container */}
+            {/* Application Desk Mount */}
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/10 to-cyan-500/10 rounded-[2rem] blur-2xl pointer-events-none" />
               <div className="relative bg-slate-900/80 border border-slate-800 rounded-2xl md:rounded-[2rem] p-6 md:p-12 backdrop-blur-xl shadow-2xl">
                 <div className="mb-8 pb-6 border-b border-slate-800/60 text-center md:text-left">
-                  <h2 className="text-xl md:text-2xl font-bold text-white">Dealer Application</h2>
-                  <p className="text-slate-500 text-xs md:text-sm mt-1">Upload required documents to proceed</p>
+                  <h2 className="text-xl md:text-2xl font-bold text-white">Dealership Credentials Application</h2>
+                  <p className="text-slate-500 text-xs md:text-sm mt-1">Please provide accurate corporate profiles matching your official registration parameters.</p>
                 </div>
 
                 <OnboardingForm
-                  userId={userId}
-                  userEmail={clerkUser?.emailAddresses[0].emailAddress || ""}
+                  userId={userPayload.id}
+                  userEmail={userPayload.email}
+                  avatarUrl={userPayload.avatarUrl}
                 />
               </div>
             </div>
@@ -116,5 +128,5 @@ export default async function OnboardingPage() {
         </div>
       </div>
     </main>
-  )
+  );
 }
