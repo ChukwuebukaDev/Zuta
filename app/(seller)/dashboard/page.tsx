@@ -175,7 +175,7 @@ export default async function DealerDashboard() {
       {myCars.length === 0 ? (
         <Card className="p-20 border-dashed border-slate-800 bg-transparent flex flex-col items-center justify-center text-center rounded-[2.5rem] space-y-4">
           <PackageSearch size={48} className="text-slate-700" />
-          <h3 className="text-xl font-bold text-white uppercase tracking-tight">Showroom Empty</h3>
+          <h3 className="text-xl font-bold text-white uppercase tracking-tight">Showroom is Empty</h3>
           <p className="text-slate-500 text-sm max-w-xs">Start adding vehicles to reach premium buyers.</p>
         </Card>
       ) : (
