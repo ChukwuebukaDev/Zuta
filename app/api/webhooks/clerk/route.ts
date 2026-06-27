@@ -5,13 +5,15 @@ import type { WebhookEvent, UserJSON } from "@clerk/nextjs/server";
 
 export async function POST(req: NextRequest) {
   try {
-    // Clerk automatically reads process.env.CLERK_WEBHOOK_SIGNING_SECRET from .env
+    // 1. Verify the incoming webhook signatures securely
     const evt = (await verifyWebhook(req)) as WebhookEvent;
     
     const eventType = evt.type;
     const data = evt.data;
-console.log("[CLERK_WEBHOOK_RECEIVED]", { eventType, data });
-    // Fast path out if webhook is not associated with core user structures
+    
+    console.log("[CLERK_WEBHOOK_RECEIVED]", { eventType, data });
+
+    // Fast path out if the webhook event is completely unrelated to user management
     if (!eventType.startsWith("user.")) {
       return NextResponse.json(
         { success: true, message: "Ignored unrelated structural webhook event" }, 
@@ -19,7 +21,7 @@ console.log("[CLERK_WEBHOOK_RECEIVED]", { eventType, data });
       );
     }
 
-    // Cast data safely to UserJSON to access core fields without explicit 'any' blocks
+    // Cast data safely to UserJSON to access core identity properties safely
     const userData = data as UserJSON;
     const clerkId = userData.id;
 
@@ -52,7 +54,7 @@ console.log("[CLERK_WEBHOOK_RECEIVED]", { eventType, data });
         [userData.first_name, userData.last_name].filter(Boolean).join(" ").trim() ||
         null;
 
-      // Extract metadata safely from Clerk configuration objects
+      // Extract public metadata safely from the Clerk payload structure
       const metadata = userData.public_metadata as { role?: string } | undefined;
       const rawMetadataRole = metadata?.role?.toUpperCase();
       
@@ -72,6 +74,9 @@ console.log("[CLERK_WEBHOOK_RECEIVED]", { eventType, data });
           email: primaryEmail ?? undefined,
           phone: primaryPhone ?? undefined,
           role: resolvedRole, 
+          // 💡 FIXED STATE LEAK: If a user gets reverted or initialized as a BUYER, 
+          // force onboardingComplete and isVerified to false so they don't inherit old dealer states.
+          ...(resolvedRole === "BUYER" ? { onboardingComplete: false, isVerified: false } : {})
         },
         create: {
           id: clerkId,
@@ -88,7 +93,8 @@ console.log("[CLERK_WEBHOOK_RECEIVED]", { eventType, data });
       console.log("[CLERK_SYNC_OK]", { 
         event: eventType, 
         userId: user.id, 
-        activeRole: user.role 
+        activeRole: user.role,
+        onboardingComplete: user.onboardingComplete
       });
 
       return NextResponse.json({ success: true }, { status: 200 });

@@ -31,12 +31,17 @@ async function SellFormContainer() {
     redirect("/sign-in?redirect_url=/sell");
   }
 
+  // Grab both the onboarding completeness and the explicit schema role
   const dbUser = await db.user.findUnique({
     where: { id: user.id },
-    select: { onboardingComplete: true },
+    select: { 
+      onboardingComplete: true,
+      role: true 
+    },
   });
 
-  if (!dbUser || !dbUser.onboardingComplete) {
+  // Guardrail: Force user to onboarding if they aren't a dealer or haven't finished the wizard
+  if (!dbUser || dbUser.role !== "DEALER" || !dbUser.onboardingComplete) {
     redirect("/onboarding");
   }
 
