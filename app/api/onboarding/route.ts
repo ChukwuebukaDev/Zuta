@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma as db } from "@/lib/prisma";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-
-// 💡 Define explicit types for incoming request structure
+import { createClient } from "@/supabase/client";
 interface IncomingDocument {
-  type: "GOVT_ID" | "BUSINESS_CARD";
+  type: "GOVT_ID" | "BUSINESS_CARD" | "CAC_CERTIFICATE";
   url: string;
 }
 
@@ -19,30 +17,21 @@ interface OnboardingRequestBody {
 
 export async function POST(req: Request) {
   try {
-    // 1. Verify authentication state
-    const { userId } = await auth();
-    if (!userId) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
       return NextResponse.json({ message: "Unauthorized Session" }, { status: 401 });
     }
 
-    // 2. Extract structured and typed payloads passed from the client form
     const body: OnboardingRequestBody = await req.json();
-    console.log("[ONBOARDING_PAYLOAD_RECEIVED]:", body);
-    const { 
-      businessName, 
-      cacNumber, 
-      businessAddress, 
-      tagline, 
-      documents ,
-      phone,
-    } = body;
+    const { businessName, cacNumber, businessAddress, tagline, documents, phone } = body;
 
-    // Strict validation check fallback
+    // Fast validation safety check
     if (!businessName || !cacNumber || !businessAddress || !documents || documents.length < 2) {
       return NextResponse.json({ message: "Missing required profile credentials" }, { status: 400 });
     }
 
-    // 💡 Completely Type-Safe URL Extractor
     const govtIdUrl = documents.find((d) => d.type === "GOVT_ID")?.url;
     const businessCardUrl = documents.find((d) => d.type === "BUSINESS_CARD")?.url;
 
@@ -50,70 +39,60 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Required documentation files missing" }, { status: 400 });
     }
 
-    // 3. Database Atomicity: Run nested update write execution
-    const updatedUser = await db.user.update({
-      where: { id: userId },
-      data: {
-        role: "DEALER", 
-        onboardingComplete: true,
-        isVerified: false, 
-        phone: phone.trim(),
-        
-        dealerProfile: {
-          create: {
-            businessName,
-            slug: businessName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-]/g, ""),
+    // Generate a unique marketplace landing identifier
+    const businessSlug = `${businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Math.random().toString(36).substring(2, 6)}`;
+
+    // Atomic transaction execution blocks webhook interruption entirely
+    const updatedUser = await db.$transaction(async (tx) => {
+      return await tx.user.update({
+        where: { id: user.id },
+        data: {
+          role: "DEALER",
+          onboardingComplete: true, // Elevates listing portal clearance
+          phone: phone.trim(),
+          legalName: businessName,
+          idUrl: govtIdUrl,
+          cardUrl: businessCardUrl,
           
-            phone: phone.trim(),
-           
-            tagline: tagline || null,
-            logo: businessCardUrl,         
-          
+          dealerProfile: {
+            create: {
+              businessName,
+              slug: businessSlug,
+              phone: phone.trim(),
+              tagline: tagline || null,
+              logo: businessCardUrl,
+              // 'status' auto-defaults to DRAFT via Prisma schema
+            }
+          },
+
+          verificationRequest: {
+            create: {
+              legalName: businessName,
+              businessAddress,
+              cacNumber,
+              // 'status' auto-defaults to SUBMITTED via Prisma schema
+              documents: {
+                create: documents.map((doc) => ({
+                  type: doc.type,
+                  url: doc.url,
+                }))
+              }
+            }
           }
         }
-      }
+      });
     });
-await db.verificationRequest.create({
-  data: {
-    userId,
 
-    legalName: businessName,
-
-    documents: {
-      create: [
-        {
-          type: "GOVT_ID",
-          url: govtIdUrl,
-        },
-
-        {
-          type: "BUSINESS_CARD",
-          url: businessCardUrl,
-        },
-      ],
-    },
-  },
-});
-    // 4. THE CLERK SYNC: Update Clerk Metadata via the Backend SDK
-    const client = await clerkClient();
-    await client.users.updateUserMetadata(userId, {
-      publicMetadata: {
-        role: "DEALER"
-      }
-    });
 
     return NextResponse.json({ 
       success: true, 
-      message: "Dealership registry parameters committed successfully!!",
+      message: "Dealership configurations fully committed.",
       user: updatedUser 
     }, { status: 200 });
 
   } catch (error: unknown) {
     console.error("[DEALER_ONBOARDING_CRASH]:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal database sync error occurred";
-    return NextResponse.json(
-      { message: errorMessage }, 
-      { status: 500 }
-    );
+    const errorMessage = error instanceof Error ? error.message : "Internal processing failure";
+    return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }

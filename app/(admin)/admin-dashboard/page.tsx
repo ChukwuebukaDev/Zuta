@@ -1,27 +1,28 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { prisma as db } from "@/lib/prisma";
 import Link from "next/link";
 import { ShieldCheck, Car, Users, FileText, ArrowUpRight } from "lucide-react";
+import { createClient } from "@/supabase/client";
 
-// Explicit typing for Clerk session public metadata mapping layout
-interface ClerkCustomMetadata {
-  role?: "BUYER" | "DEALER" | "ADMIN";
-}
 
 export default async function AdminDashboardPage() {
-  const { userId, sessionClaims } = await auth();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // Safely extract metadata using our strict structural mapping schema
-  const metadata = (sessionClaims?.metadata || {}) as ClerkCustomMetadata;
-  const isAdmin = metadata.role === "ADMIN".toLocaleLowerCase();
-console.log("Admin Dashboard Access Attempt:", { userId, metadata });
-  // Guardrail: Restrict view exclusively to system admins
-  if (!userId || !isAdmin) {
-    redirect("/");
+ if (!user) {
+    redirect("/login");
   }
 
-  // Aggregate global operational metrics concurrently
+  // Validate authorization roles via the database profile row directly
+  const dbUser = await db.user.findUnique({
+    where: { id: user.id },
+    select: { role: true }
+  });
+
+  if (dbUser?.role !== "ADMIN") {
+    redirect("/");
+  }
+  
   const [
     totalUsers,
     pendingCarsCount,

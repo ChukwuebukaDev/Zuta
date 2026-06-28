@@ -1,21 +1,19 @@
-import { auth } from "@clerk/nextjs/server";
+import { createClient } from "@/supabase/server";
 import { prisma as db } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
 export default async function SellerLayout({ children }: { children: React.ReactNode }) {
-  const { userId, sessionClaims } = await auth();
+  // 1. Initialize Supabase and read the current session
+  const supabase = await createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
   
-  if (!userId) {
-    redirect("/sign-in");
+  if (!authUser) {
+    redirect("/login");
   }
 
-  // Normalize metadata layer check to lowercase
-  const metadataRole = (sessionClaims?.metadata as { role?: string } | undefined)?.role?.toLowerCase();
-  
-  const isSeller = metadataRole === "seller" || metadataRole === "dealer";
-
+  // 2. Query the exact current status directly from your database
   const user = await db.user.findUnique({
-    where: { id: userId },
+    where: { id: authUser.id },
     select: { 
       role: true, 
       isVerified: true,
@@ -23,7 +21,13 @@ export default async function SellerLayout({ children }: { children: React.React
     }
   });
 
-  if (user?.role === "BUYER" || metadataRole === "buyer" || metadataRole === "admin" ) {
+  // Handle completely missing accounts safely
+  if (!user) {
+    redirect("/login");
+  }
+
+  // 3. Buyer & Admin Gatekeep Override
+  if (user.role === "BUYER" || user.role === "ADMIN") {
     return (
       <div className="min-h-screen bg-[#050505] text-white">
         {children}
@@ -31,17 +35,17 @@ export default async function SellerLayout({ children }: { children: React.React
     );
   }
 
-  // 🛡️ 3. If they are trying to act as a seller/dealer, enforce dealership onboarding verification checks
-  if (isSeller) {
-    if (!user?.isVerified) {
-      if (user?.onboardingComplete) {
+  // 4. Enforce Dealership Onboarding state verification checks for Sellers/Dealers
+  if (user.role === "DEALER") {
+    if (!user.isVerified) {
+      if (user.onboardingComplete) {
         redirect("/onboarding/status");
       } else {
         redirect("/onboarding");
       }
     }
   } else {
-    // Fallback security door if role string remains completely corrupted/unrecognized
+    // Fallback security loop if user has an unexpected role configuration
     redirect("/cars");
   }
 

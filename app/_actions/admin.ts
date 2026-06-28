@@ -1,42 +1,58 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma as db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { auth } from "@clerk/nextjs/server";
+import { createClient } from "@/supabase/client";
+import { DealerStatus } from "@prisma/client";
 
-// Helper to verify Admin Role
+/**
+ * Internal helper to verify Admin Role securely via Supabase and Prisma
+ */
 async function checkAdmin() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error("Unauthorized: Session invalid or expired.");
+  }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
+  const dbUser = await db.user.findUnique({
+    where: { id: user.id },
     select: { role: true },
   });
 
-  // if (user?.role !== "ADMIN") {
-  //   throw new Error("Forbidden: Admin access only.");
-  // }
-  return userId;
+  if (dbUser?.role !== "ADMIN") {
+    throw new Error("Forbidden: Administrative privilege required.");
+  }
+
+  return user.id;
 }
 
 /**
- * Verifies a Dealer's Onboarding Status
+ * Verifies a Dealer's Onboarding Status and flags their profile ACTIVE
  */
-export async function verifyUser(userId: string, status: boolean) {
+export async function verifyUser(targetUserId: string, status: boolean) {
   try {
     await checkAdmin(); // Security Gate
-    
-    await prisma.user.update({
-      where: { id: userId },
-      data: { isVerified: status },
-    });
 
-    revalidatePath("/admin-onboarding");
+    // Atomic transaction updating both verification status and profile enum state
+    await db.$transaction([
+      db.user.update({
+        where: { id: targetUserId },
+        data: { isVerified: status },
+      }),
+      db.dealerProfile.updateMany({
+        where: { userId: targetUserId },
+        data: { status: status ? DealerStatus.APPROVED : DealerStatus.PENDING }
+      })
+    ]);
+
+    revalidatePath("/admin/dashboard");
     return { success: true };
-  } catch (error) {
-    console.error("User Verification Error:", error);
-    return { success: false, message: "Verification failed" };
+  } catch (error: unknown) {
+    console.error("[USER_VERIFICATION_ERROR]:", error);
+    const msg = error instanceof Error ? error.message : "Verification failed";
+    return { success: false, message: msg };
   }
 }
 
@@ -47,38 +63,43 @@ export async function approveCarListing(carId: string) {
   try {
     await checkAdmin(); // Security Gate
 
-    await prisma.car.update({
+    await db.car.update({
       where: { id: carId },
       data: { listingStatus: "APPROVED" },
     });
 
-    // Revalidate multiple paths to ensure the UI updates everywhere
-    revalidatePath("/admin/pending"); 
-    revalidatePath("/seller");       
+    // Revalidate paths to drop cache layout constraints immediately across targets
+    revalidatePath("/admin/dashboard"); 
+    revalidatePath("/dashboard");       
     revalidatePath("/cars");          
+    revalidatePath(`/cars/${carId}`);
     
     return { success: true };
-  } catch (error) {
-    console.error("Car Approval Error:", error);
-    return { success: false, message: "Failed to approve listing" };
+  } catch (error: unknown) {
+    console.error("[CAR_APPROVAL_ERROR]:", error);
+    const msg = error instanceof Error ? error.message : "Failed to approve listing";
+    return { success: false, message: msg };
   }
 }
 
 /**
- * Rejects a Listing
+ * Rejects a Car Listing
  */
 export async function rejectCarListing(carId: string) {
   try {
-    await checkAdmin();
+    await checkAdmin(); // Security Gate
 
-    await prisma.car.update({
+    await db.car.update({
       where: { id: carId },
       data: { listingStatus: "REJECTED" },
     });
 
-    revalidatePath("/admin/pending");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/dashboard");
     return { success: true };
-  } catch (error) {
-    return { success: false };
+  } catch (error: unknown) {
+    console.error("[CAR_REJECTION_ERROR]:", error);
+    const msg = error instanceof Error ? error.message : "Failed to reject listing";
+    return { success: false, message: msg };
   }
 }

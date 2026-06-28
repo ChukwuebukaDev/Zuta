@@ -1,6 +1,7 @@
-import { prisma as db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { prisma as db } from "@/lib/prisma";
 import Image from "next/image";
 import { ApproveButton } from "./ApproveButton";
 
@@ -20,11 +21,50 @@ type PendingCarWithSeller = {
 };
 
 export default async function AdminPendingPage() {
-  const { userId } = await auth();
-  
-  const user = await db.user.findUnique({ where: { id: userId as string } });
-  // if (user?.role !== "ADMIN") redirect("/");
+  const cookieStore = await cookies();
 
+  // 1. Initialize the official Supabase SSR Server Client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Safe catch wrapper for Next.js Server Component environment quirks
+          }
+        },
+      },
+    }
+  );
+
+  // 2. Securely authenticate session layout state
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session?.user) {
+    redirect("/sign-in");
+  }
+
+  const supabaseUser = session.user;
+
+  // 3. Query user details and enforce strict admin role boundaries
+  const dbUser = await db.user.findUnique({ 
+    where: { id: supabaseUser.id },
+    select: { role: true }
+  });
+  
+  if (dbUser?.role !== "ADMIN") {
+    redirect("/");
+  }
+
+  // 4. Fetch the listings matching pending operational parameters
   const pendingCars = (await db.car.findMany({
     where: { listingStatus: "PENDING" },
     include: { 
@@ -42,7 +82,6 @@ export default async function AdminPendingPage() {
       </h1>
 
       <div className="grid gap-4">
-        {/* 3. Now 'car' is typed, so no more 'any' error */}
         {pendingCars.map((car: PendingCarWithSeller) => (
           <div key={car.id} className="flex items-center gap-6 p-4 bg-slate-900/50 border border-slate-800 rounded-2xl backdrop-blur-sm">
             <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-slate-800">

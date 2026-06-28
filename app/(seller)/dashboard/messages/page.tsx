@@ -1,20 +1,50 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma as db } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
 
 export default async function MailboxPage() {
-  const user = await currentUser();
+  const cookieStore = await cookies();
 
-  if (!user) redirect("/sign-in");
+  // 1. Initialize the official Supabase SSR Server Client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Next.js structural mutation handling exception safety block
+          }
+        },
+      },
+    }
+  );
 
-  // Fetch all conversations where the logged-in user is either the buyer OR the seller
-  const conversations = await prisma.conversation.findMany({
+  // 2. Authenticate the session via Supabase SSR
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session?.user) {
+    redirect("/sign-in");
+  }
+
+  const supabaseUser = session.user;
+
+  // 3. Fetch all conversations where the logged-in user is either the buyer OR the seller
+  const conversations = await db.conversation.findMany({
     where: {
       OR: [
-        { buyerId: user.id },
-        { sellerId: user.id }
+        { buyerId: supabaseUser.id },
+        { sellerId: supabaseUser.id }
       ]
     },
     include: {
@@ -75,7 +105,7 @@ export default async function MailboxPage() {
                       {convo.car.year} {convo.car.brand} {convo.car.model}
                     </h2>
                     <span className="text-[10px] font-black text-slate-500 tracking-tight">
-                      ₦{convo.car.price.toLocaleString()}
+                      10%
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 truncate tracking-tight">

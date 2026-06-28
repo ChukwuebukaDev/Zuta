@@ -1,15 +1,41 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { prisma as db } from "@/lib/prisma";
 
 const MAX_MESSAGES_PER_POLL = 100;
 
 export async function GET(req: Request) {
   try {
-    // 1. Authenticate the active user session profile via Clerk
-    const user = await currentUser();
+    const cookieStore = await cookies();
 
-    if (!user) {
+    // 1. Initialize the official Supabase SSR Server Client
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // Safe catch wrapper for Route Handler environment execution quirks
+            }
+          },
+        },
+      }
+    );
+
+    // 2. Authenticate the active user session profile via Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const supabaseUser = session?.user;
+
+    if (!supabaseUser) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -20,7 +46,7 @@ export async function GET(req: Request) {
     const conversationId = searchParams.get("conversationId");
     const lastChecked = searchParams.get("lastChecked");
 
-    // 2. Validate required parameters are present
+    // 3. Validate required parameters are present
     if (!conversationId || !lastChecked) {
       return NextResponse.json(
         { error: "conversationId and lastChecked are required fields." },
@@ -28,7 +54,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // 3. Validate timestamp string integrity
+    // 4. Validate timestamp string integrity
     const parsedDate = new Date(lastChecked);
 
     if (Number.isNaN(parsedDate.getTime())) {
@@ -38,8 +64,8 @@ export async function GET(req: Request) {
       );
     }
 
-    // 4. Verify the conversation room exists and extract membership boundaries
-    const conversation = await prisma.conversation.findUnique({
+    // 5. Verify the conversation room exists and extract membership boundaries
+    const conversation = await db.conversation.findUnique({
       where: { id: conversationId },
       select: {
         buyerId: true,
@@ -54,10 +80,10 @@ export async function GET(req: Request) {
       );
     }
 
-    // Guard: Block multi-tenant traffic if user id doesn't match ledger credentials
+    // Guard: Block multi-tenant traffic if Supabase UUID doesn't match ledger credentials
     const isParticipant =
-      conversation.buyerId === user.id ||
-      conversation.sellerId === user.id;
+      conversation.buyerId === supabaseUser.id ||
+      conversation.sellerId === supabaseUser.id;
 
     if (!isParticipant) {
       return NextResponse.json(
@@ -66,8 +92,8 @@ export async function GET(req: Request) {
       );
     }
 
-    // 5. Query for unread ledgers appended past the historical sync line
-    const messages = await prisma.message.findMany({
+    // 6. Query for unread ledgers appended past the historical sync line
+    const messages = await db.message.findMany({
       where: {
         conversationId,
         createdAt: {

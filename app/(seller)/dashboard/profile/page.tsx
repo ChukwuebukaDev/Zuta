@@ -1,19 +1,22 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { createClient } from "@/supabase/server";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma as db } from "@/lib/prisma";
 import { MapPin, Calendar, Heart, MessageSquare, ShieldCheck, Store } from "lucide-react";
 import ProfileTabs from "@/components/dashboard/ProfileTabs";
 import Link from "next/link";
 
 export default async function ProfilePage() {
-  const clerkUser = await currentUser();
-  if (!clerkUser) redirect("/sign-in");
+  // 1. Initialize Supabase Server client instance and fetch active browser session context
+  const supabase = await createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  
+  if (!authUser) redirect("/login");
 
-  // 1. Fetch complete user profile along with relational hooks for BOTH roles
-  let user = await prisma.user.findUnique({
-    where: { id: clerkUser.id },
+  // 2. Fetch complete user profile along with relational hooks for BOTH roles
+  let user = await db.user.findUnique({
+    where: { id: authUser.id },
     include: {
-      dealerProfile: true, //  Added to read dealership parameters if seller
+      dealerProfile: true, // Used to read dealership parameters if seller
       buyerConversations: {
         include: {
           car: {
@@ -29,7 +32,7 @@ export default async function ProfilePage() {
         },
         orderBy: { updatedAt: "desc" },
       },
-      sellerConversations: { //  Added to read inbound client conversations for sellers
+      sellerConversations: { // Used to read inbound client conversations for sellers
         include: {
           car: {
             select: {
@@ -47,19 +50,15 @@ export default async function ProfilePage() {
     },
   });
 
- 
+  // 3. Fallback database sync layer for newly authorized entries
   if (!user) {
-    // Read Clerk metadata fallback if setup exists
-    const clerkRole = (clerkUser.publicMetadata?.role as string | undefined)?.toUpperCase();
-    const resolvedRole = clerkRole === "DEALER" || clerkRole === "SELLER" ? "DEALER" : "BUYER";
-
-    user = await prisma.user.create({
+    user = await db.user.create({
       data: {
-        id: clerkUser.id,
-        name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "Verified User",
-        email: clerkUser.emailAddresses[0]?.emailAddress || "",
-        role: resolvedRole,
-        onboardingComplete: true,
+        id: authUser.id,
+        name: authUser.user_metadata?.name || "Verified User",
+        email: authUser.email || "",
+        role: "BUYER",
+        onboardingComplete: false,
         savedCarIds: [],
       },
       include: {
@@ -78,11 +77,11 @@ export default async function ProfilePage() {
 
   const isSeller = user.role === "DEALER";
 
-  // 2. Fetch inventory or bookmarks based on dynamic user context
+  // 4. Fetch inventory or bookmarks based on dynamic user context
   let displayCars = [];
   if (isSeller) {
     // Fetch cars belonging to this specific user/dealer listing pipeline
-    displayCars = await prisma.car.findMany({
+    displayCars = await db.car.findMany({
       where: { userId: user.id },
       select: {
         id: true,
@@ -101,7 +100,7 @@ export default async function ProfilePage() {
   } else {
     // Fetch standard buyer scalar bookmarks selection block
     displayCars = user.savedCarIds.length > 0
-      ? await prisma.car.findMany({
+      ? await db.car.findMany({
           where: { id: { in: user.savedCarIds } },
           select: {
             id: true,
@@ -118,11 +117,11 @@ export default async function ProfilePage() {
       : [];
   }
 
-  // 3. Configure layout content based on target profile type
+  // 5. Configure layout content based on target profile type
   const profileData = {
     name: isSeller && user.dealerProfile?.businessName ? user.dealerProfile.businessName : (user.name || "Verified User"),
     email: user.email || "",
-    avatarUrl: isSeller && user.dealerProfile?.logo ? user.dealerProfile.logo : clerkUser.imageUrl,
+    avatarUrl: isSeller && user.dealerProfile?.logo ? user.dealerProfile.logo : null, // Clean database pathing fallback
     joinedDate: new Date(user.createdAt).toLocaleDateString("en-US", {
       month: "long",
       year: "numeric",
@@ -143,12 +142,18 @@ export default async function ProfilePage() {
         <div className={`absolute top-0 right-0 w-96 h-96 ${isSeller ? 'bg-emerald-600/5' : 'bg-blue-600/5'} rounded-full blur-[120px] pointer-events-none`} />
         
         <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-          <div className="relative w-28 h-28 rounded-3xl overflow-hidden border-2 border-slate-800 bg-zinc-950 shrink-0">
-            <img
-              src={profileData.avatarUrl}
-              alt={profileData.name}
-              className="object-cover w-full h-full"
-            />
+          <div className="relative w-28 h-28 rounded-3xl overflow-hidden border-2 border-slate-800 bg-zinc-950 shrink-0 flex items-center justify-center text-zinc-700">
+            {profileData.avatarUrl ? (
+              <img
+                src={profileData.avatarUrl}
+                alt={profileData.name}
+                className="object-cover w-full h-full"
+              />
+            ) : (
+              <div className="font-black italic text-3xl text-zinc-800 uppercase">
+                {profileData.name.substring(0, 2)}
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
@@ -200,12 +205,14 @@ export default async function ProfilePage() {
             </span>
           </div>
         </div>
-        
-    
       </div>
-{!isSeller && (<div className="p-4 rounded-2xl bg-zinc-900/40 hover:bg-zinc-800 border border-slate-900 text-center text-sm text-slate-400 font-medium italic">
-             <Link className="block" href='/sell'>Become a Dealer</Link>
-        </div>)}
+
+      {!isSeller && (
+        <div className="p-4 rounded-2xl bg-zinc-900/40 hover:bg-zinc-800 border border-slate-900 text-center text-sm text-slate-400 font-medium italic">
+          <Link className="block" href='/sell'>Become a Dealer</Link>
+        </div>
+      )}
+
       {/* Interactive Tabs Layout Area */}
       <ProfileTabs 
         displayCars={displayCars} 

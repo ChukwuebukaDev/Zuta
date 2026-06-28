@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@clerk/nextjs";
 import { UploadButton } from "@/lib/uploadthing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,8 @@ import {
   CreditCard,
   Building2,
   MapPin,
-  Tag
+  Tag,
+  Phone
 } from "lucide-react";
 
 // Explicit Uploadthing Response Typing
@@ -30,7 +30,7 @@ interface OnboardingFormProps {
   userId: string;
   userEmail: string;
   avatarUrl: string;
-  phone?:string;
+  phone?: string; // 💡 Captured from our unified signup form step
 }
 
 type DocumentType = "GOVT_ID" | "BUSINESS_CARD";
@@ -40,9 +40,8 @@ interface UploadedDocument {
   url: string;
 }
 
-export default function OnboardingForm({ userId}: OnboardingFormProps) {
+export default function OnboardingForm({ userId, phone: initialPhone }: OnboardingFormProps) {
   const router = useRouter();
-  const { session } = useSession();
 
   const [loading, setLoading] = useState(false);
   const [uploadingType, setUploadingType] = useState<DocumentType | null>(null);
@@ -52,15 +51,17 @@ export default function OnboardingForm({ userId}: OnboardingFormProps) {
   const [businessAddress, setBusinessAddress] = useState("");
   const [tagline, setTagline] = useState("");
   const [docs, setDocs] = useState<UploadedDocument[]>([]);
-  const [phone,setPhone] = useState("");
+  const [phone, setPhone] = useState(initialPhone || ""); // 💡 Hydrated fallback assignment
+
   const hasId = useMemo(() => docs.some((d) => d.type === "GOVT_ID"), [docs]);
   const hasCard = useMemo(() => docs.some((d) => d.type === "BUSINESS_CARD"), [docs]);
 
   const isValidName = businessName.trim().length >= 3;
   const isValidCac = cacNumber.trim().length >= 6; 
   const isValidAddress = businessAddress.trim().length >= 10;
+  const isValidPhone = phone.trim().length >= 8;
   
-  const isComplete = isValidName && isValidCac && isValidAddress && hasId && hasCard;
+  const isComplete = isValidName && isValidCac && isValidAddress && isValidPhone && hasId && hasCard;
 
   async function onSubmit() {
     if (!isComplete || loading) return;
@@ -88,9 +89,6 @@ export default function OnboardingForm({ userId}: OnboardingFormProps) {
 
       toast.success("Dealership application submitted successfully!");
       
-      // 💡 Sync client session with the updated backend metadata role instantaneously
-      await session?.reload();
-      
       router.push("/onboarding/status");
       router.refresh();
     } catch (error: unknown) {
@@ -101,7 +99,7 @@ export default function OnboardingForm({ userId}: OnboardingFormProps) {
     }
   }
 
-  // 💡 Explicitly typed config generator to fix functional "any" callbacks
+  // Explicitly typed config generator to fix functional "any" callbacks
   const getUploadConfig = (type: DocumentType) => ({
     endpoint: "imageUploader" as const,
     onUploadBegin: () => {
@@ -164,18 +162,21 @@ export default function OnboardingForm({ userId}: OnboardingFormProps) {
           />
         </div>
       </div>
-    <div>
-      <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-        <MapPin size={14} /> Business Contact Phone Number
-      </label>
-      <Input
-        placeholder="e.g. +234 801 234 5678"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        className="bg-slate-950/50 border-slate-800 text-white h-12 text-sm focus:ring-blue-600 rounded-xl"
-      />
-    </div>
-      {/* 2. Dealership Slogan / Tagline */}
+
+      {/* 2. Business Contact Phone Number */}
+      <div className="space-y-2">
+        <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <Phone size={14} /> Business Contact Phone Number
+        </label>
+        <Input
+          placeholder="e.g. +234 801 234 5678"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="bg-slate-950/50 border-slate-800 text-white h-12 text-sm focus:ring-blue-600 rounded-xl"
+        />
+      </div>
+
+      {/* 3. Dealership Slogan / Tagline */}
       <div className="space-y-2">
         <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
           <Tag size={14} /> Business Slogan / Tagline (Optional)
@@ -188,7 +189,7 @@ export default function OnboardingForm({ userId}: OnboardingFormProps) {
         />
       </div>
 
-      {/* 3. Physical Showroom Address */}
+      {/* 4. Physical Showroom Address */}
       <div className="space-y-2">
         <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
           <MapPin size={14} /> Showroom / Office Physical Address
@@ -201,7 +202,7 @@ export default function OnboardingForm({ userId}: OnboardingFormProps) {
         />
       </div>
 
-      {/* 4. Upload Cards Selection Area */}
+      {/* 5. Upload Cards Selection Area */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
         {/* Government ID Card */}
         <div className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-4 ${
@@ -212,7 +213,7 @@ export default function OnboardingForm({ userId}: OnboardingFormProps) {
           </div>
           <div className="text-center">
             <p className="text-xs font-black text-white uppercase tracking-wider">Representative ID</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Driver&qout;s License or Int&qout;l Passport</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Driver's License or Int'l Passport</p>
           </div>
           <UploadButton {...getUploadConfig("GOVT_ID")} />
           {hasId && (
@@ -246,7 +247,7 @@ export default function OnboardingForm({ userId}: OnboardingFormProps) {
       <Button
         onClick={onSubmit}
         disabled={!isComplete || loading}
-        className="w-full bg-blue-600 hover:bg-blue-500 text-white h-14 rounded-xl shadow-xl transition-all disabled:opacity-10 font-black text-xs uppercase tracking-widest mt-4"
+        className="w-full bg-blue-600 hover:bg-blue-500 text-white h-14 rounded-xl shadow-xl transition-all disabled:opacity-50 font-black text-xs uppercase tracking-widest mt-4"
       >
         {loading ? (
           <div className="flex items-center gap-2 justify-center">

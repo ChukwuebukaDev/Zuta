@@ -1,19 +1,47 @@
-import { prisma } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { prisma as db } from "@/lib/prisma";
 import { Clock, ShieldCheck, Car, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 export default async function OnboardingStatusPage() {
-  const { userId } = await auth();
+  const cookieStore = await cookies();
 
-  if (!userId) {
+  // 1. Initialize the official Supabase SSR Server Client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Next.js server mutation fallback safety block
+          }
+        },
+      },
+    }
+  );
+
+  // 2. Authenticate the session via Supabase SSR
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session?.user) {
     redirect("/sign-in");
   }
 
-  // Fetch the latest status from the database
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
+  const supabaseUser = session.user;
+
+  // 3. Fetch the latest status from the database using the Supabase UUID string
+  const user = await db.user.findUnique({
+    where: { id: supabaseUser.id },
     select: {
       isVerified: true,
       onboardingComplete: true,
@@ -21,9 +49,9 @@ export default async function OnboardingStatusPage() {
     },
   });
 
-  if(!user) return;
+  if (!user) return null;
   
-  if (user?.isVerified) {
+  if (user.isVerified) {
     redirect("/dashboard");
   }
 
@@ -46,7 +74,7 @@ export default async function OnboardingStatusPage() {
           </h1>
           <h2 className="text-2xl font-semibold">Verification in Progress</h2>
           <p className="text-slate-400 leading-relaxed">
-            Hello, <span className="text-white font-medium">{user.legalName}</span>. 
+            Hello, <span className="text-white font-medium">{user.legalName || "Dealer"}</span>. 
             Our team is currently reviewing your dealer credentials. This usually takes 
             less than 24 hours.
           </p>

@@ -1,28 +1,58 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma as db } from "@/lib/prisma";
 import OnboardingForm from "@/components/forms/OnboardingForm";
 import { Car, Shield, Clock, Zap } from "lucide-react";
 
 export default async function OnboardingPage() {
-  const { userId } = await auth();
-  const clerkUser = await currentUser();
+  const cookieStore = await cookies();
 
-  if (!userId || !clerkUser) {
+  // 1. Initialize the official Supabase SSR Server Client safely
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Next.js handles server mutations safely downstream via Middleware layout checks
+          }
+        },
+      },
+    }
+  );
+
+  // 2. Securely authenticate session layout state
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session?.user) {
     redirect("/sign-in");
   }
 
+  const supabaseUser = session.user;
+
+  // 3. Query your internal database using the Supabase UUID string
   const dbUser = await db.user.findUnique({
-    where: { id: userId },
+    where: { id: supabaseUser.id },
     select: { 
       role: true,
       onboardingComplete: true, 
       isVerified: true 
     }
   });
-if(dbUser?.role === 'ADMIN'){
-  redirect('/admin-dashboard')
-}
+
+  if (dbUser?.role === 'ADMIN') {
+    redirect('/admin-dashboard');
+  }
+
   // If they already completed onboarding and are completely verified, send them to the dashboard
   if (dbUser?.isVerified && dbUser?.role === "DEALER") {
     redirect("/dashboard");
@@ -33,12 +63,12 @@ if(dbUser?.role === 'ADMIN'){
     redirect("/onboarding/status");
   }
 
-  //  Fallback/Preset structural defaults directly from Clerk payload structures
+  // 4. Structural defaults extracted from the Supabase User session parameters
   const userPayload = {
-    id: userId,
-    email: clerkUser.emailAddresses[0]?.emailAddress || "",
-    defaultName: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || "",
-    avatarUrl: clerkUser.imageUrl || ""
+    id: supabaseUser.id,
+    email: supabaseUser.email || "",
+    avatarUrl: supabaseUser.user_metadata?.avatar_url || "",
+    phone: supabaseUser.user_metadata?.phone || supabaseUser.phone || ""
   };
 
   return (
@@ -121,6 +151,7 @@ if(dbUser?.role === 'ADMIN'){
                   userId={userPayload.id}
                   userEmail={userPayload.email}
                   avatarUrl={userPayload.avatarUrl}
+                  phone={userPayload.phone}
                 />
               </div>
             </div>

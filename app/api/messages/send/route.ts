@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { prisma as db } from "@/lib/prisma";
 
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_MESSAGES_PER_MINUTE = 10;
@@ -10,13 +11,39 @@ class RateLimitError extends Error {}
 
 export async function POST(req: Request) {
   try {
-    // 1. Authentication
-    const clerkUser = await currentUser();
-    if (!clerkUser) {
+    const cookieStore = await cookies();
+
+    // 1. Initialize the official Supabase SSR Server Client
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // Safe catch wrapper for Route Handler environment execution quirks
+            }
+          },
+        },
+      }
+    );
+
+    // 2. Authentication Context Extraction
+    const { data: { session } } = await supabase.auth.getSession();
+    const supabaseUser = session?.user;
+
+    if (!supabaseUser) {
       return NextResponse.json({ error: "Unauthorized access. Sign in to continue." }, { status: 401 });
     }
 
-    // 2. Body Parser Guard
+    // 3. Body Parser Guard
     const body: unknown = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
@@ -40,9 +67,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Sync Clerk user with Database Profile
-    const dbUser = await prisma.user.findUnique({
-      where: { id: clerkUser.id },
+    // 4. Sync Session User with Internal Database Profile (using Supabase UUID)
+    const dbUser = await db.user.findUnique({
+      where: { id: supabaseUser.id },
       select: { id: true },
     });
 
@@ -55,7 +82,7 @@ export async function POST(req: Request) {
 
     // SCENARIO A: Existing Conversation Channel
     if (targetConversationId) {
-      const activeConversation = await prisma.conversation.findUnique({
+      const activeConversation = await db.conversation.findUnique({
         where: { id: targetConversationId },
         select: { buyerId: true, sellerId: true },
       });
@@ -68,12 +95,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Forbidden access to this conversation desk." }, { status: 403 });
       }
       
-      // Only existing chats need an explicit conversation timestamp touch later
       needsTimestampUpdate = true;
     } 
     // SCENARIO B: First-time setup initiated by buyer
+    // Note: Implicitly relies on the correction prioritizing buyer workflows over combined pages
     else if (carId) {
-      const listing = await prisma.car.findUnique({
+      const listing = await db.car.findUnique({
         where: { id: carId },
         select: { userId: true },
       });
@@ -88,8 +115,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Cannot message your own listing." }, { status: 400 });
       }
 
-      // Upsert atomically handles the creation/update timeline
-      const conv = await prisma.conversation.upsert({
+      // Upsert atomically handles creation/update synchronization
+      const conv = await db.conversation.upsert({
         where: {
           carId_buyerId_sellerId: {
             carId,
@@ -109,8 +136,8 @@ export async function POST(req: Request) {
       targetConversationId = conv.id;
     }
 
-    // 4. Critical Section Execution (Transactions)
-    const result = await prisma.$transaction(async (tx) => {
+    // 5. Critical Section Execution (Database Transactions)
+    const result = await db.$transaction(async (tx) => {
       const oneMinuteAgo = new Date(Date.now() - 60_000);
       
       // Rate limit evaluation
@@ -125,8 +152,7 @@ export async function POST(req: Request) {
         throw new RateLimitError();
       }
 
-      // Turn enforcement using raw PostgreSQL/MySQL lock for true serializability protection
-      // This prevents parallel button-mashing bypasses
+      // Concurrency lock using PostgreSQL/MySQL FOR UPDATE lines to preserve order integrity
       const lastMessages = await tx.$queryRaw<{ senderId: string }[]>`
         SELECT "senderId" FROM "Message" 
         WHERE "conversationId" = ${targetConversationId} 
@@ -157,9 +183,9 @@ export async function POST(req: Request) {
       });
     });
 
-    // 5. Update parent metadata only if it wasn't already updated by the Scenario B upsert
+    // 6. Non-blocking update parent timestamp catch line
     if (needsTimestampUpdate) {
-      await prisma.conversation.update({
+      await db.conversation.update({
         where: { id: targetConversationId },
         data: { updatedAt: new Date() }
       }).catch(err => console.error("Non-blocking conversation timestamp touch failed:", err));

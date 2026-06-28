@@ -1,6 +1,6 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { createClient } from "@/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma as db } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ArrowUpRight } from "lucide-react";
@@ -11,13 +11,17 @@ interface MessageDetailsPageProps {
 }
 
 export default async function MessageDetailsPage({ params }: MessageDetailsPageProps) {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
+  // 1. Initialize Supabase Server client instance and fetch active browser session context
+  const supabase = await createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  
+  if (!authUser) redirect("/login");
 
   const resolvedParams = await params;
   const { conversationId } = resolvedParams;
 
-  const conversation = await prisma.conversation.findUnique({
+  // 2. Query conversation details directly from your database
+  const conversation = await db.conversation.findUnique({
     where: { id: conversationId },
     include: {
       car: {
@@ -51,12 +55,12 @@ export default async function MessageDetailsPage({ params }: MessageDetailsPageP
 
   // Verify conversation exists and the active user is a legitimate participant
   if (!conversation) notFound();
-  if (conversation.buyerId !== user.id && conversation.sellerId !== user.id) {
+  if (conversation.buyerId !== authUser.id && conversation.sellerId !== authUser.id) {
     redirect("/dashboard/messages");
   }
 
   // Determine who the conversational counterpart is
-  const isUserBuyer = conversation.buyerId === user.id;
+  const isUserBuyer = conversation.buyerId === authUser.id;
   const chatPartner = isUserBuyer ? conversation.seller : conversation.buyer;
 
   const formattedMessages = conversation.messages.map((msg) => ({
@@ -128,7 +132,7 @@ export default async function MessageDetailsPage({ params }: MessageDetailsPageP
           key={conversation.id} 
           initialMessages={formattedMessages}
           conversationId={conversation.id}
-          currentUserId={user.id}
+          currentUserId={authUser.id}
           carId={conversation.car.id}
           recipientId={chatPartner?.id || ""}
         />

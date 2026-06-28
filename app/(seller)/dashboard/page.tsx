@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card/Card";
 import { Plus, Car, Clock, CheckCircle, PackageSearch, Tag, MessageSquare, Pencil, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { auth } from "@clerk/nextjs/server";
+import { createClient } from "@/supabase/client";
 import { prisma as db } from "@/lib/prisma";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -109,14 +109,18 @@ function InventoryCarCard({ car }: { car: InventoryCar }) {
 
 // --- Main Page ---
 export default async function DealerDashboard() {
-  const { userId } = await auth();
+  // 💡 SWAPPED: Fetch session information securely using the Supabase Server Client
+  const supabase = await createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
   
-  if (!userId) {
-    redirect("/sign-in");
+  if (!authUser) {
+    redirect("/login");
   }
 
+  const userId = authUser.id;
+
   // Fetching data concurrently to optimize load times
-  const [myCarsRaw, user, conversationCount] = await Promise.all([
+  const [myCarsRaw, dbUser, conversationCount] = await Promise.all([
     db.car.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -138,7 +142,7 @@ export default async function DealerDashboard() {
   const myCars = myCarsRaw as unknown as InventoryCar[];
   
   // Safe Name parsing logic
-  const firstName = user?.name ? user.name.trim().split(' ')[0] : "Dealer";
+  const firstName = dbUser?.name ? dbUser.name.trim().split(' ')[0] : "Dealer";
 
   const pendingCount = myCars.filter(c => c.listingStatus === "PENDING").length;
   const approvedCount = myCars.filter(c => c.listingStatus === "APPROVED").length;

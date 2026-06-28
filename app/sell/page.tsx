@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { createClient } from "@/supabase/server";
 import { redirect } from "next/navigation";
 import { prisma as db } from "@/lib/prisma"; 
 import SellHero from "@/components/sell/SellOptions/SellHero";
@@ -12,48 +12,34 @@ export default function SellPage() {
     <main className="bg-black">
       <SellHero />
       <SellBenefits />
-
-      <AnimatedSection id="how-it-works">
-        <SellSteps />
-      </AnimatedSection>
-
-      <AnimatedSection id="sell-form">
-        <SellFormContainer />
-      </AnimatedSection>
+      <AnimatedSection id="how-it-works"><SellSteps /></AnimatedSection>
+      <AnimatedSection id="sell-form"><SellFormContainer /></AnimatedSection>
     </main>
   );
 }
 
 async function SellFormContainer() {
-  const user = await currentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
-    redirect("/sign-in?redirect_url=/sell");
+    redirect("/login?redirect_url=/sell");
   }
 
-  // Grab both the onboarding completeness and the explicit schema role
   const dbUser = await db.user.findUnique({
     where: { id: user.id },
-    select: { 
-      onboardingComplete: true,
-      role: true 
-    },
+    select: { onboardingComplete: true, role: true, name: true, phone: true },
   });
 
-  // Guardrail: Force user to onboarding if they aren't a dealer or haven't finished the wizard
   if (!dbUser || dbUser.role !== "DEALER" || !dbUser.onboardingComplete) {
     redirect("/onboarding");
   }
 
-  const defaultEmail = user.emailAddresses[0]?.emailAddress || "";
-  const defaultName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Verified Dealer";
-  const defaultPhone = user.phoneNumbers[0]?.phoneNumber || "";
-
   return (
     <SellForm
-      defaultEmail={defaultEmail}
-      defaultName={defaultName}
-      defaultPhone={defaultPhone}
+      defaultEmail={user.email || ""}
+      defaultName={dbUser.name || "Verified Dealer"}
+      defaultPhone={dbUser.phone || ""}
     />
   );
 }

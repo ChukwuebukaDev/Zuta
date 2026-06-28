@@ -1,11 +1,39 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { prisma as db } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const cookieStore = await cookies();
+
+    // 1. Initialize the official Supabase SSR Server Client
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // Safe catch wrapper for Route Handler environments
+            }
+          },
+        },
+      }
+    );
+
+    // 2. Validate authentication context state
+    const { data: { session } } = await supabase.auth.getSession();
+    const supabaseUser = session?.user;
+
+    if (!supabaseUser) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -15,20 +43,25 @@ export async function POST(req: Request) {
       return new NextResponse("Missing Car ID", { status: 400 });
     }
 
+    // 3. Handle mutating the array inside your database using the Supabase UUID string
     if (save) {
-      await prisma.user.update({
-        where: { id: user.id },
+      await db.user.update({
+        where: { id: supabaseUser.id },
         data: {
           savedCarIds: { push: carId } 
         }
       });
     } else {
-      // Logic example: filter out item record
-      const userData = await prisma.user.findUnique({ where: { id: user.id } });
-      const updatedList = (userData as any)?.savedCarIds?.filter((id: string) => id !== carId) || [];
+      // Pull down existing array layout and filter target car string out
+      const userData = await db.user.findUnique({ 
+        where: { id: supabaseUser.id },
+        select: { savedCarIds: true }
+      });
       
-      await prisma.user.update({
-        where: { id: user.id },
+      const updatedList = userData?.savedCarIds?.filter((id: string) => id !== carId) || [];
+      
+      await db.user.update({
+        where: { id: supabaseUser.id },
         data: { savedCarIds: updatedList }
       });
     }

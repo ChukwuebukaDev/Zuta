@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { X, ChevronLeft, Share2, Heart, MapPin, Gauge, Settings2, Fuel, MessageSquare } from "lucide-react";
-import { useUser } from "@clerk/nextjs"; // 
 import CarImageSlider from "@/components/ui/Wrapper/CarImageSlider";
 import MapContainer from "@/map/MapContainer";
 import ContactSellerSection from "./ContactSellerSection";
@@ -15,10 +14,10 @@ type UnwrappedCarType = PromisedCarType extends Promise<infer T> ? T : never;
 
 export interface CarDetailsViewProps {
   car: NonNullable<UnwrappedCarType>;
+  currentUserId: string; // ✨ Passed down directly from Supabase server context session
 }
 
-export default function CarDetailsView({ car }: CarDetailsViewProps) {
-  const { user, isLoaded } = useUser(); 
+export default function CarDetailsView({ car, currentUserId }: CarDetailsViewProps) {
   const [showChatDesk, setShowChatDesk] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle");
@@ -35,9 +34,6 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
     joinedDate: "2024",
     phoneNumber: seller?.sellerPhone || "0800ZUTACARS",
   };
-
-  // Determine actual authentication state strings safely
-  const currentUserId = isLoaded && user ? user.id : "user_guest";
 
   const mockOtherListings = [
     {
@@ -131,13 +127,15 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
           </section>
         </div>
 
-        {seller.userId !== currentUserId && (<aside className="lg:col-span-4">
-          <div className="sticky top-10 p-8 rounded-[3rem] bg-white border border-slate-200 shadow-sm space-y-6">
-            <Button onClick={() => setShowChatDesk(true)} className="w-full h-16 rounded-2xl bg-black text-white font-black uppercase tracking-widest flex items-center gap-2">
-              <MessageSquare size={14} /> Contact Seller
-            </Button>
-          </div>
-        </aside>)}
+        {seller.userId !== currentUserId && (
+          <aside className="lg:col-span-4">
+            <div className="sticky top-10 p-8 rounded-[3rem] bg-white border border-slate-200 shadow-sm space-y-6">
+              <Button onClick={() => setShowChatDesk(true)} className="w-full h-16 rounded-2xl bg-black text-white font-black uppercase tracking-widest flex items-center gap-2">
+                <MessageSquare size={14} /> Contact Seller
+              </Button>
+            </div>
+          </aside>
+        )}
       </main>
 
       {/* --- MODAL OVERLAY --- */}
@@ -147,7 +145,7 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
             <button onClick={() => setShowChatDesk(false)} className="absolute top-0 right-0 p-2 bg-red-900 text-white rounded-full hover:bg-red-800 z-10">
               <X size={20} />
             </button>
-      
+        
             <ContactSellerSection 
               key={car.id} 
               seller={formattedSeller} 

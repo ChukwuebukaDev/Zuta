@@ -1,7 +1,8 @@
-import { prisma } from "@/lib/prisma";
-import { z } from "zod";
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { prisma as db } from "@/lib/prisma";
+import { z } from "zod";
 
 const carSchema = z.object({
   brand: z.string().min(1),
@@ -19,7 +20,6 @@ const carSchema = z.object({
   price: z.coerce.number().positive(),
   negotiable: z.coerce.boolean().default(false),
   thumbnail: z.string().url(),
-  // Enforcement: Ensure the validator mirrors our 6 mandatory perspective rules
   images: z.array(z.string().url()).min(6, "Minimum of 6 structural perspective photos required."),
   sellerName: z.string().min(1),
   sellerPhone: z.string().transform((val) => val.trim() === "" ? "080-ZUTA-DEALER" : val).optional(),
@@ -39,9 +39,35 @@ function generateSlug(brand: string, model: string) {
 
 export async function POST(req: Request) {
   try {
-    // Check if the dealer is logged in
-    const { userId } = await auth();
-    if (!userId) {
+    const cookieStore = await cookies();
+
+    // 1. Initialize the official Supabase SSR Server Client
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // Safe catch wrapper for Route Handler execution environments
+            }
+          },
+        },
+      }
+    );
+
+    // 2. Validate authentication context state
+    const { data: { session } } = await supabase.auth.getSession();
+    const supabaseUser = session?.user;
+
+    if (!supabaseUser) {
       return NextResponse.json({ error: "Unauthorized. Account validation failed." }, { status: 401 });
     }
 
@@ -63,7 +89,6 @@ export async function POST(req: Request) {
       return new NextResponse("Validation Error: Missing mandatory angle urls inside array bounds.", { status: 400 });
     }
 
-
     const structuralOrder: ("FRONT" | "REAR" | "LEFT" | "RIGHT" | "INTERIOR" | "UNDERNEATH")[] = [
       "FRONT",      
       "REAR",       
@@ -73,8 +98,8 @@ export async function POST(req: Request) {
       "UNDERNEATH"  
     ];
 
-    // i used a transaction here to ensure that if any part of the car creation fails (including image creation), the entire operation will roll back, maintaining data integrity. This is especially important given the multiple related records being created (car and its images).
-    const newCarListing = await prisma.$transaction(async (tx) => {
+    // Atomic transaction for the listing data entry structures
+    const newCarListing = await db.$transaction(async (tx) => {
       const car = await tx.car.create({
         data: {
           slug: generateSlug(data.brand, data.model),
@@ -100,7 +125,7 @@ export async function POST(req: Request) {
           sellerName: data.sellerName,
           sellerPhone: data.sellerPhone,
           sellerEmail: data.sellerEmail,
-          userId: userId,
+          userId: supabaseUser.id,
           carImages: {
             create: data.images.map((url, idx) => ({
               url,
@@ -128,7 +153,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId"); 
     
-    const cars = await prisma.car.findMany({
+    const cars = await db.car.findMany({
       where: userId ? { userId } : {},
       include: { carImages: true },
       orderBy: { createdAt: "desc" },

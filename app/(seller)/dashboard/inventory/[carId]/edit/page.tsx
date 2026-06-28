@@ -1,6 +1,7 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma as db } from "@/lib/prisma";
 import EditCarForm from "@/components/dashboard/EditCarForm";
 
 interface EditCarPageProps {
@@ -8,21 +9,52 @@ interface EditCarPageProps {
 }
 
 export default async function EditCarPage({ params }: EditCarPageProps) {
-  const user = await currentUser();
-  if (!user) redirect("/sign-in");
+  const cookieStore = await cookies();
 
+  // 1. Initialize the official Supabase SSR Server Client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Next.js server mutation fallback safety block
+          }
+        },
+      },
+    }
+  );
+
+  // 2. Authenticate the session via Supabase SSR
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session?.user) {
+    redirect("/sign-in");
+  }
+
+  const supabaseUser = session.user;
+
+  // 3. Handle asynchronous params layout unpacking safely
   const resolvedParams = await params;
   const { carId } = resolvedParams;
 
-  // Fetch the car and confirm the logged-in user is the true uploader
-  const car = await prisma.car.findUnique({
+  // 4. Fetch the car listing parameters from Prisma
+  const car = await db.car.findUnique({
     where: { id: carId },
   });
 
   if (!car) notFound();
   
-  // Guard clause: Block unauthorized edits
-  if (car.userId !== user.id) {
+  // 5. Guard clause: Ensure the Supabase UUID matches the record's uploader ID
+  if (car.userId !== supabaseUser.id) {
     redirect("/dashboard");
   }
 
