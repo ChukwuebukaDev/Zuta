@@ -1,5 +1,5 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { createClient } from "@/supabase/client";
+import { createClient } from "@/supabase/server";
 
 const f = createUploadthing();
 

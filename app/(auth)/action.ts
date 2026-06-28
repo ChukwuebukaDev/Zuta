@@ -34,7 +34,7 @@ export async function signup(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const name = formData.get("name") as string;
-  const phone = formData.get("phone") as string; // 💡 Read phone from form
+  const phone = formData.get("phone") as string;
 
   if (!email || !password || !name || !phone) {
     return redirect(`/signup?error=${encodeURIComponent("All fields are required.")}`);
@@ -46,7 +46,7 @@ export async function signup(formData: FormData) {
     options: {
       data: {
         name: name,
-        phone: phone, // 💡 Passed down to our SQL trigger function
+        phone: phone, 
       }
     }
   });
@@ -79,7 +79,6 @@ export async function loginWithGoogle() {
     return redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  // Redirect the browser to Google's secure authorization screen
   if (data.url) {
     redirect(data.url);
   }

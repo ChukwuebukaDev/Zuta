@@ -6,7 +6,6 @@ import ProfileTabs from "@/components/dashboard/ProfileTabs";
 import Link from "next/link";
 
 export default async function ProfilePage() {
-  // 1. Initialize Supabase Server client instance and fetch active browser session context
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
   
