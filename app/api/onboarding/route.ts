@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma as db } from "@/lib/prisma";
-import { createClient } from "@/supabase/client";
+import { createClient } from "@/supabase/server";
 interface IncomingDocument {
   type: "GOVT_ID" | "BUSINESS_CARD" | "CAC_CERTIFICATE";
   url: string;

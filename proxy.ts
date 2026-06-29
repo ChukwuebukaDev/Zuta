@@ -41,7 +41,7 @@ export async function proxy(request: NextRequest) {
 
   // Define route rules
   const isAuthPage = path.startsWith("/login") || path.startsWith("/signup");
-  const isPublicApi = path.startsWith("/api/uploadthing") || path.startsWith("/api/messages/send");
+  const isPublicApi = path.startsWith("/api/uploadthing") || path.startsWith("/api/messages/send") || path.startsWith("/api/onboarding");
   const isStaticPublic = path === "/" || path.startsWith("/cars");
 
   const isPublicRoute = isAuthPage || isPublicApi || isStaticPublic;

@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) redirect("/login");
 
-  // This runs completely fine because it executes in Node.js server runtime environment!
+
   const dbUser = await db.user.findUnique({
     where: { id: session.user.id },
     select: { role: true },

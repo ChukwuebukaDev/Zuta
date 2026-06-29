@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card/Card";
 import { Plus, Car, Clock, CheckCircle, PackageSearch, Tag, MessageSquare, Pencil, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { createClient } from "@/supabase/client";
+import { createClient } from "@/supabase/server";
 import { prisma as db } from "@/lib/prisma";
 import Image from "next/image";
 import { redirect } from "next/navigation";

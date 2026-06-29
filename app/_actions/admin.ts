@@ -2,7 +2,7 @@
 
 import { prisma as db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/supabase/client";
+import { createClient } from "@/supabase/server";
 import { DealerStatus } from "@prisma/client";
 
 /**
