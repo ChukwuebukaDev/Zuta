@@ -72,7 +72,7 @@ export function AuthButtons() {
         {/* 🎬 Premium Dashboard Session Controller Mini-Menu */}
         <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
           <div className="w-9 h-9 flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-300 rounded-xl font-medium text-xs uppercase" title={user.email}>
-            <Link href = {isAdmin ? "/admin/dashboard" : isSeller ? "/dashboard" : "/dashboard/profile"} >
+            <Link href = {isAdmin ? "/admin-dashboard" : isSeller ? "/dashboard" : "/dashboard/profile"} >
             <User size={16} />
             </Link>
           </div>

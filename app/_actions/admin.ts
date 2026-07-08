@@ -5,9 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/supabase/server";
 import { DealerStatus } from "@prisma/client";
 
-/**
- * Internal helper to verify Admin Role securely via Supabase and Prisma
- */
+
 async function checkAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -28,9 +26,6 @@ async function checkAdmin() {
   return user.id;
 }
 
-/**
- * Verifies a Dealer's Onboarding Status and flags their profile ACTIVE
- */
 export async function verifyUser(targetUserId: string, status: boolean) {
   try {
     await checkAdmin(); // Security Gate

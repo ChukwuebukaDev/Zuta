@@ -6,65 +6,86 @@ import { FileText, ShieldCheck, MessageCircle } from "lucide-react";
 const steps = [
   {
     icon: FileText,
-    title: "Add Your Car Details",
+    title: "Asset Specification",
     description:
-      "Provide information about your vehicle including brand, model, year, and price.",
+      "Input your vehicle metrics comprehensively—including brand variants, mechanical historical logs, and custom pricing arrays.",
   },
   {
     icon: ShieldCheck,
-    title: "We Review & Approve",
+    title: "System Authentication",
     description:
-      "Our team verifies your listing to maintain a high-quality marketplace.",
+      "Our integrity team reviews and audits your parameters swiftly to maintain an optimized, premium-tier marketplace standard.",
   },
   {
     icon: MessageCircle,
-    title: "Connect With Buyers",
+    title: "Direct Gateway Access",
     description:
-      "Interested buyers reach out and you close the deal confidently.",
+      "Uncover active real-time deals, receive targeted verified offers, and close transactions securely inside your buyer workspace.",
   },
 ];
 
 export default function SellSteps() {
   return (
-    <section id="how-it-works" className="bg-[#141414] text-white py-24 px-6">
-      <div className="max-w-6xl mx-auto text-center">
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-3xl md:text-4xl font-bold"
-        >
-          How It Works
-        </motion.h2>
+    <section id="how-it-works" className="bg-zinc-950 text-slate-100 py-28 px-4 border-t border-slate-900/60 relative">
+      {/* Background Ambient Depth Grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f141c_1px,transparent_1px),linear-gradient(to_bottom,#0f141c_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-20 pointer-events-none" />
 
-        <p className="mt-6 text-gray-400 max-w-2xl mx-auto">
-          Listing your car on Zuta is simple, secure, and designed for serious
-          sellers.
-        </p>
+      <div className="max-w-6xl mx-auto space-y-16 relative z-10">
+        
+        {/* Section Typography Header */}
+        <div className="text-center space-y-4">
+          <motion.h2
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter text-white"
+          >
+            System Engine Workflow
+          </motion.h2>
 
-        <div className="mt-16 grid md:grid-cols-3 gap-12">
+          <motion.p 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="text-xs md:text-sm text-slate-400 max-w-xl mx-auto font-medium leading-relaxed tracking-normal"
+          >
+            Deploying your automotive asset on Zuta is an engineered, linear sequence built for structural tracking accuracy.
+          </motion.p>
+        </div>
+
+        {/* Process Step Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((step, index) => {
             const Icon = step.icon;
             return (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.15 }}
+                transition={{ delay: index * 0.15, duration: 0.6 }}
                 viewport={{ once: true }}
-                className="relative"
+                className="group flex flex-col justify-between rounded-[2rem] bg-zinc-900/20 border border-slate-900/80 p-8 hover:border-zinc-800 transition-all duration-300"
               >
-                {/* Step Number */}
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-black w-10 h-10 rounded-full flex items-center justify-center font-semibold">
-                  {index + 1}
-                </div>
+                <div>
+                  {/* Technical Index Counter Row */}
+                  <div className="flex items-center justify-between border-b border-slate-900/60 pb-6 mb-6">
+                    <span className="font-mono text-xs font-black text-zinc-600 group-hover:text-emerald-400 transition-colors">
+                      [{String(index + 1).padStart(2, "0")}]
+                    </span>
+                    <Icon size={16} className="text-zinc-500 group-hover:text-white transition-colors" strokeWidth={1.5} />
+                  </div>
 
-                <div className="bg-[#1c1c1c] p-10 rounded-2xl border border-gray-800">
-                  <Icon className="mx-auto mb-6 text-white" size={32} />
-                  <h3 className="text-xl font-semibold">{step.title}</h3>
-                  <p className="mt-4 text-gray-400 text-sm">
-                    {step.description}
-                  </p>
+                  {/* Body Block text */}
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold uppercase tracking-tight text-white">
+                      {step.title}
+                    </h3>
+                    <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-medium">
+                      {step.description}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             );

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma as db } from "@/lib/prisma";
 import Link from "next/link";
 import { ShieldCheck, Car, Users, FileText, ArrowUpRight } from "lucide-react";
-import { createClient } from "@/supabase/client";
+import { createClient } from "@/supabase/server";
 
 
 export default async function AdminDashboardPage() {

@@ -25,7 +25,7 @@ export default function NavList({ variant, setIsMenuOpen }: NavListProps) {
     {
       name: "Services",
       sub: [
-        { name: "Mechanics", link: "/services?type=mechanic" },
+        { name: "Mechanics", link: "/services" },
         { name: "Car Wash", link: "/services?type=carwash" },
       ],
     },

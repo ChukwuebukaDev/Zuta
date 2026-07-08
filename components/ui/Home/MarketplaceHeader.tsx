@@ -35,7 +35,7 @@ export default function MarketplaceHeader() {
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2 rounded-lg hover:bg-gray-50 transition-colors z-50"
+              className="md:hidden p-2 hover:bg-gray-50 bg-gray-600 rounded-lg transition-colors z-50"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label="Toggle menu"
             >

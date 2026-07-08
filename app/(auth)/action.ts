@@ -25,7 +25,7 @@ export async function login(formData: FormData) {
     redirect("/admin/dashboard");
   }
   
-  redirect("/");
+  redirect("/cars");
 }
 
 export async function signup(formData: FormData) {
@@ -55,7 +55,7 @@ export async function signup(formData: FormData) {
     return redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/onboarding");
+  redirect("/cars");
 }
 
 /**

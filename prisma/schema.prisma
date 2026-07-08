@@ -21,8 +21,13 @@ model User {
   idUrl               String?
   legalName           String?
   onboardingComplete  Boolean              @default(false)
+  isBanned            Boolean  @default(false)
+  fraudScore          Int      @default(0)
+  fraudStatus         FraudStatus @default(CLEAR)
+  fraudEvents         FraudEvent[]
   savedCarIds         String[]
   cars                Car[]
+  bookings            Booking[]
   buyerConversations  Conversation[]       @relation("BuyerConversations")
   sellerConversations Conversation[]       @relation("SellerConversations")
   dealerProfile       DealerProfile?
@@ -151,6 +156,44 @@ model Message {
   sender         User         @relation(fields: [senderId], references: [id])
 }
 
+model ServiceProvider {
+  id          String        @id @default(uuid())
+  name        String        // e.g., "Matrix Premium Detailing"
+  type        ServiceType
+  rating      Float         @default(5.0)
+  location    String        // City / Area
+  address     String
+  phone       String
+  image       String?       // Thumbnail via Uploadthing
+  priceFrom   Float         // Base pricing tier indicator
+  isVerified  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  bookings    Booking[]
+}
+
+model FraudEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  reason      String
+  score       Int
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+model Booking {
+  id                String          @id @default(uuid())
+  userId            String          // The authenticated Buyer
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId        String
+  provider          ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  scheduledAt       DateTime        // Date and time of booking
+  status            BookingStatus   @default(PENDING)
+  notes             String?         // Car model or specific issue notes
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
 enum ImageAngle {
   FRONT
   REAR
@@ -217,3 +260,26 @@ enum DocType {
   BUSINESS_CARD
   CAC_CERTIFICATE
 }
+
+enum ServiceType {
+  MECHANIC
+  CAR_WASH
+  DETAILING
+  TOWING
+  INSPECTION
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum FraudStatus {
+  CLEAR
+  REVIEW
+  SUSPICIOUS
+  FRAUD
+}
+
