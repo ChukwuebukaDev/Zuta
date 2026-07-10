@@ -4,10 +4,28 @@ import Link from "next/link";
 
 export default async function ServicesPage() {
   // Fetch seed/mocked provider rows from your database context
-  const providers = await db.serviceProvider.findMany({
-    orderBy: { rating: "desc" },
-  });
-
+  const providers = [
+    {
+      id: 1,
+      name: "John Doe",
+      type: "MECHANIC",
+      location: "Lagos, Nigeria",
+      rating: 4.8,
+      priceFrom: 5000,
+      image: "/providers/john-doe.jpg",
+      isVerified: true
+    },
+    {
+      id: 2,
+      name: "Jane Smith",
+      type: "CAR_WASH",
+      location: "Abuja, Nigeria",
+      rating: 4.9,
+      priceFrom: 2000,
+      image: "/providers/jane-smith.jpg",
+      isVerified: true
+    }
+  ];
   const getIcon = (type: string) => {
     switch (type) {
       case "MECHANIC": return <Wrench size={16} className="text-amber-400" />;
