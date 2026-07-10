@@ -13,7 +13,8 @@ export default function SellPage() {
       <SellHero />
       <SellBenefits />
       <AnimatedSection id="how-it-works"><SellSteps /></AnimatedSection>
-      <AnimatedSection id="sell-form"><SellFormContainer /></AnimatedSection>
+      <section id="sell-form"><SellFormContainer /></section>
+      
     </main>
   );
 }
