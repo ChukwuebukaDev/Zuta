@@ -39,7 +39,7 @@ export default async function CarsPage({
 
   const cars = await getCars({
     ...filters,
-    pageSize: 20,
+    pageSize: 8,
   });
 
   const hasResults = cars.data.length > 0;
