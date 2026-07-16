@@ -1,7 +1,7 @@
 "use client";
 
-import { Country, State, City } from "country-state-city";
 import { MapPin, Globe, Landmark } from "lucide-react";
+import { useEffect, useState } from "react";
 
 type Props = {
   city: string;
@@ -11,18 +11,90 @@ type Props = {
 };
 
 export default function SellerSection({ city, state, country, onChange }: Props) {
-  // 1. Get all countries
-  const allCountries = Country.getAllCountries();
+  const [allCountries, setAllCountries] = useState<string[]>([]);
+  const [states, setStates] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  const [isLoadingStates, setIsLoadingStates] = useState(false);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
 
-  // 2. Find selected country object to get its ISO code for state lookup
-  const selectedCountry = allCountries.find((c) => c.name === country);
-  const states = selectedCountry ? State.getStatesOfCountry(selectedCountry.isoCode) : [];
+  // 1. Fetch all countries on component mount
+  useEffect(() => {
+    async function fetchCountries() {
+      try {
+        const response = await fetch("https://countriesnow.space/api/v0.1/countries/states");
+        if (!response.ok) throw new Error("Failed to fetch countries");
+        const json = await response.json();
+        
+        
+        const countryNames = json.data.map((c: { name: string }) => c.name);
+        setAllCountries(countryNames);
+      } catch (error) {
+        console.error("Error fetching countries:", error);
+      }
+    }
+    fetchCountries();
+  }, []);
 
-  // 3. Find selected state object to get its ISO code for city lookup
-  const selectedState = states.find((s) => s.name === state);
-  const cities = (selectedCountry && selectedState) 
-    ? City.getCitiesOfState(selectedCountry.isoCode, selectedState.isoCode) 
-    : [];
+  useEffect(() => {
+    if (!country) {
+      setTimeout(()=>setStates([]),0)
+      return;
+    }
+
+    async function fetchStates() {
+      try {
+        setIsLoadingStates(true);
+        const response = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ country }),
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch states");
+        const json = await response.json();
+        
+        const stateNames = json.data?.states?.map((s: { name: string }) => s.name) || [];
+        setStates(stateNames);
+      } catch (error) {
+        console.error("Error fetching states:", error);
+        setStates([]);
+      } finally {
+        setIsLoadingStates(false);
+      }
+    }
+
+    fetchStates();
+  }, [country]);
+
+  useEffect(() => {
+    if (!state || !country) {
+      setTimeout(()=>setCities([]),0)
+      
+      return;
+    }
+
+    async function fetchCities() {
+      try {
+        setIsLoadingCities(true);
+        const response = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ country, state }),
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch cities");
+        const json = await response.json();
+        setCities(json.data || []);
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+        setCities([]);
+      } finally {
+        setIsLoadingCities(false);
+      }
+    }
+
+    fetchCities();
+  }, [state, country]);
 
   return (
     <div className="space-y-6">
@@ -47,7 +119,7 @@ export default function SellerSection({ city, state, country, onChange }: Props)
           >
             <option value="" disabled>Select Country</option>
             {allCountries.map((c) => (
-              <option key={c.isoCode} value={c.name}>{c.name}</option>
+              <option key={c.iso3} value={c}>{c}</option>
             ))}
           </select>
         </div>
@@ -57,7 +129,7 @@ export default function SellerSection({ city, state, country, onChange }: Props)
           <Landmark className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500" size={18} />
           <select
             value={state || ""}
-            disabled={!country}
+            disabled={!country || isLoadingStates}
             onChange={(e) => {
               onChange("state", e.target.value);
               onChange("city", "");
@@ -65,9 +137,11 @@ export default function SellerSection({ city, state, country, onChange }: Props)
             className="w-full p-4 pl-12 rounded-xl bg-black border border-slate-800 focus:border-blue-500/50 outline-none text-white appearance-none cursor-pointer disabled:opacity-20"
             required
           >
-            <option value="" disabled>Select State</option>
+            <option value="" disabled>
+              {isLoadingStates ? "Loading States..." : "Select State"}
+            </option>
             {states.map((s) => (
-              <option key={s.isoCode} value={s.name}>{s.name}</option>
+              <option key={s} value={s}>{s}</option>
             ))}
           </select>
         </div>
@@ -77,14 +151,16 @@ export default function SellerSection({ city, state, country, onChange }: Props)
           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500" size={18} />
           <select
             value={city || ""}
-            disabled={!state}
+            disabled={!state || isLoadingCities}
             onChange={(e) => onChange("city", e.target.value)}
             className="w-full p-4 pl-12 rounded-xl bg-black border border-slate-800 focus:border-blue-500/50 outline-none text-white appearance-none cursor-pointer disabled:opacity-20"
             required
           >
-            <option value="" disabled>Select City/Area</option>
+            <option value="" disabled>
+              {isLoadingCities ? "Loading Cities..." : "Select City/Area"}
+            </option>
             {cities.map((ci) => (
-              <option key={ci.name} value={ci.name}>{ci.name}</option>
+              <option key={ci} value={ci}>{ci}</option>
             ))}
           </select>
         </div>

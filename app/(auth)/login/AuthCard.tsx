@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { login, signup, loginWithGoogle } from "@/app/(auth)/action";
-import { Mail, Lock, User, Phone, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, Phone, ArrowRight, Loader2 } from "lucide-react";
 
 interface AuthCardProps {
   initialMode: "login" | "signup";
@@ -12,14 +13,63 @@ interface AuthCardProps {
 
 export function AuthCard({ initialMode, backendError }: AuthCardProps) {
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  // Controlled Form Inputs to bypass dynamic mounting serialization issues
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLocalError(null);
+
+    // Explicitly construct the FormData payload
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+    
+    if (mode === "signup") {
+      formData.append("name", name);
+      formData.append("phone", phone);
+    }
+
+    startTransition(async () => {
+      try {
+        let result;
+        if (mode === "login") {
+          result = await login(formData);
+        } else {
+          result = await signup(formData);
+        }
+
+        if (result?.error) {
+          setLocalError(result.error);
+          return;
+        }
+
+        if (result?.success && result.redirectTo) {
+          router.push(result.redirectTo);
+          router.refresh(); 
+        }
+      } catch (err) {
+        setLocalError("An unexpected connection error occurred.");
+      }
+    });
+  };
+
+  const activeError = localError || (backendError ? decodeURIComponent(backendError) : null);
 
   return (
     <motion.div 
       layout
       transition={{ type: "spring", stiffness: 220, damping: 26 }}
-      className="w-full max-w-md bg-zinc-950 border border-zinc-900 p-8 rounded-2xl relative z-10 shadow-2xl shadow-black"
+      className="w-full max-w-md bg-zinc-950 border border-zinc-900 pt-12 pb-8 px-8 rounded-2xl relative z-10 shadow-2xl shadow-black"
     >
-      {/* Dynamic Header Animation */}
+      {/* Header */}
       <motion.div layout="position" className="space-y-2 text-center mb-8">
         <motion.h1 
           layout="position"
@@ -34,24 +84,21 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
         </p>
       </motion.div>
 
-      {/* Error Messaging Guardrail */}
-      {backendError && (
+      {/* Error Messaging */}
+      {activeError && (
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="p-4 mb-6 bg-red-500/5 border border-red-500/20 text-red-400 text-xs rounded-xl font-medium"
         >
-          {decodeURIComponent(backendError)}
+          {activeError}
         </motion.div>
       )}
 
-      {/* Form Context Actions Setup */}
-      <form action={mode === "login" ? login : signup} className="space-y-4">
-        
-        {/* Animated Slide-in For Full Name Field */}
+      <form onSubmit={handleSubmit} className="space-y-4">
         <AnimatePresence mode="popLayout">
           {mode === "signup" && (
-            <>
+            <div className="space-y-4">
               <motion.div
                 initial={{ opacity: 0, height: 0, y: -15 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -69,12 +116,13 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
                     type="text"
                     required={mode === "signup"}
                     placeholder="Aliko Dangote"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className="w-full pl-11 pr-4 py-4 bg-zinc-900/40 border border-zinc-800/80 focus:border-zinc-700 text-white placeholder:text-zinc-600 rounded-xl outline-none text-sm font-medium transition"
                   />
                 </div>
               </motion.div>
 
-              {/* Animated Slide-in For Phone Number Field */}
               <motion.div
                 initial={{ opacity: 0, height: 0, y: -15 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -92,11 +140,13 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
                     type="tel"
                     required={mode === "signup"}
                     placeholder="+234..."
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     className="w-full pl-11 pr-4 py-4 bg-zinc-900/40 border border-zinc-800/80 focus:border-zinc-700 text-white placeholder:text-zinc-600 rounded-xl outline-none text-sm font-medium transition"
                   />
                 </div>
               </motion.div>
-            </>
+            </div>
           )}
         </AnimatePresence>
 
@@ -111,6 +161,8 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
               type="email"
               required
               placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-11 pr-4 py-4 bg-zinc-900/40 border border-zinc-800/80 focus:border-zinc-700 text-white placeholder:text-zinc-600 rounded-xl outline-none text-sm font-medium transition"
             />
           </div>
@@ -127,35 +179,43 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
               type="password"
               required
               placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full pl-11 pr-4 py-4 bg-zinc-900/40 border border-zinc-800/80 focus:border-zinc-700 text-white placeholder:text-zinc-600 rounded-xl outline-none text-sm font-medium transition"
             />
           </div>
         </div>
 
-        {/* Unified Submission Trigger Button */}
         <motion.button
           layout="position"
           type="submit"
-          className="w-full h-14 mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest text-xs rounded-xl transition-colors duration-200 shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2 group"
+          disabled={isPending}
+          className="w-full h-14 mt-4 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-bold uppercase tracking-widest text-xs rounded-xl transition-colors duration-200 shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2 group cursor-pointer disabled:cursor-not-allowed"
         >
-          <span>{mode === "login" ? "Authorize Session" : "Complete Registration"}</span>
-          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+          {isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <span>{mode === "login" ? "Authorize Session" : "Complete Registration"}</span>
+              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            </>
+          )}
         </motion.button>
       </form>
 
-      {/* Visual Divider Line */}
+      {/* Divider */}
       <motion.div layout="position" className="relative flex items-center py-5">
         <div className="flex-grow border-t border-zinc-900"></div>
         <span className="flex-shrink mx-4 text-[10px] font-bold uppercase tracking-widest text-zinc-600">or</span>
         <div className="flex-grow border-t border-zinc-900"></div>
       </motion.div>
 
-      {/* Google OAuth Access Trigger */}
+      {/* Google */}
       <motion.button
         layout="position"
         type="button"
         onClick={() => loginWithGoogle()}
-        className="w-full h-14 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-colors duration-150 flex items-center justify-center gap-3 group"
+        className="w-full h-14 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-colors duration-150 flex items-center justify-center gap-3 group cursor-pointer"
       >
         <svg className="w-4 h-4 transition-transform group-hover:scale-105" viewBox="0 0 24 24">
           <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -166,7 +226,7 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
         <span>Continue with Google</span>
       </motion.button>
 
-      {/* Switch Layout Footer Actions */}
+      {/* Switch Footer */}
       <motion.div 
         layout="position" 
         className="mt-8 pt-6 border-t border-zinc-900 text-center"
@@ -175,8 +235,11 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
           {mode === "login" ? "New to the platform?" : "Already registered?"}{" "}
           <button
             type="button"
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-            className="text-blue-500 hover:text-blue-400 font-semibold transition underline underline-offset-4 decoration-blue-500/20"
+            onClick={() => {
+              setLocalError(null);
+              setMode(mode === "login" ? "signup" : "login");
+            }}
+            className="text-blue-500 hover:text-blue-400 font-semibold transition underline underline-offset-4 decoration-blue-500/20 cursor-pointer"
           >
             {mode === "login" ? "Create an account" : "Sign in here"}
           </button>

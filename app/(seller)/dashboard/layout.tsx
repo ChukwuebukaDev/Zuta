@@ -27,7 +27,7 @@ export default async function SellerLayout({ children }: { children: React.React
   }
 
   // 3. Buyer & Admin Gatekeep Override
-  if (user.role === "BUYER" || user.role === "ADMIN") {
+  if (user.role === "USER" || user.role === "ADMIN") {
     return (
       <div className="min-h-screen bg-[#050505] text-white">
         {children}

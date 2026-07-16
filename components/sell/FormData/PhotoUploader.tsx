@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useMemo, useEffect, useState, useRef } from "react";
-import { Camera, Plus, X, Image as ImageIcon, Trash2, Check, AlertCircle } from "lucide-react";
+import { Camera, Plus, X, Image as ImageIcon, Trash2, Check, AlertCircle, Loader2 } from "lucide-react";
+import { verifyVehiclePerspective } from "@/app/_actions/validateImage"
 
 type Props = {
   thumbnail: File | null;
@@ -22,21 +23,23 @@ interface MandatorySlot {
 
 export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  
+  // Track system validation states per slot index
+  const [validatingSlots, setValidatingSlots] = useState<Record<number, boolean>>({});
+  const [slotErrors, setSlotErrors] = useState<Record<number, string | null>>({});
+
   const thumbInputRef = useRef<HTMLInputElement>(null);
   const slotInputRef = useRef<HTMLInputElement>(null);
   const optionalInputRef = useRef<HTMLInputElement>(null);
-
-  // Active tracking state to tell which slot slot-input is currently handling
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
 
-  // 1. Map explicit array indexes to mandatory structural vehicle perspectives
   const mandatorySlots: MandatorySlot[] = [
     { index: 0, key: "front", label: "Front Profile", description: "Straight-on head shot, grill clear" },
     { index: 1, key: "rear", label: "Rear Profile", description: "Tailgates, exhaust, and badges visible" },
     { index: 2, key: "left", label: "Left Side View", description: "Full profile front-to-back wheels" },
     { index: 3, key: "right", label: "Right Side View", description: "Full profile back-to-front wheels" },
     { index: 4, key: "interior", label: "Interior Cabin", description: "Dashboard, steering wheel, front cockpit" },
-    { index: 5, key: "underneath", label: "Underneath", description: "Suspension rails, exhaust line, rust check" },
+    { index: 5, key: "engine", label: "Engine Bay", description: "Engine components, belts, fluids" },
   ];
 
   const mainPreview = useMemo(() => {
@@ -46,36 +49,69 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
 
   useEffect(() => {
     const urls = images.map((img) => (img ? URL.createObjectURL(img) : ""));
-    setGalleryPreviews(urls);
+    setTimeout(() => setGalleryPreviews(urls), 0);
     return () => urls.forEach((url) => { if (url) URL.revokeObjectURL(url); });
   }, [images]);
 
-  // Trigger file manager viewport for specific slots
   const triggerSlotUpload = (index: number) => {
     setActiveSlotIdx(index);
     slotInputRef.current?.click();
   };
 
-  const handleSlotFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Helper to convert files to base64 for vision processor strings
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        resolve(base64String.split(",")[1]); // Strip data schema prefix
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleSlotFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || activeSlotIdx === null) return;
 
-    const updatedImages = [...images];
-    // Pad the array if needed to maintain deterministic positional slots
-    while (updatedImages.length <= activeSlotIdx) {
-      updatedImages.push(null as unknown as File); 
+    const slotConfig = mandatorySlots.find(s => s.index === activeSlotIdx);
+    if (!slotConfig) return;
+
+    // Trigger local visual interface indicators
+    setValidatingSlots(prev => ({ ...prev, [activeSlotIdx]: true }));
+    setSlotErrors(prev => ({ ...prev, [activeSlotIdx]: null }));
+
+    try {
+      const base64 = await fileToBase64(file);
+      const validation = await verifyVehiclePerspective(base64, slotConfig.label);
+
+      if (!validation.isValid) {
+        setSlotErrors(prev => ({ ...prev, [activeSlotIdx]: validation.reason || "Incorrect view." }));
+        e.target.value = "";
+        return;
+      }
+
+      // If valid, commit block modification to parent collection states
+      const updatedImages = [...images];
+      while (updatedImages.length <= activeSlotIdx) {
+        updatedImages.push(null as unknown as File); 
+      }
+      updatedImages[activeSlotIdx] = file;
+      onChange("images", updatedImages);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setValidatingSlots(prev => ({ ...prev, [activeSlotIdx]: false }));
+      e.target.value = "";
     }
-    updatedImages[activeSlotIdx] = file;
-    
-    onChange("images", updatedImages);
-    e.target.value = ""; // Reset file path stream
   };
 
   const handleOptionalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const newFiles = Array.from(e.target.files);
     
-    // Slice off or pad mandatory items to ensure optional photos sit at index 6+
     const coreMandatory = [...images];
     while (coreMandatory.length < 6) {
       coreMandatory.push(null as unknown as File);
@@ -88,27 +124,24 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
   const removeImageSlot = (index: number) => {
     const updatedImages = [...images];
     if (index < 6) {
-      // For required items, set back to empty to keep indexes valid
       updatedImages[index] = null as unknown as File;
+      setSlotErrors(prev => ({ ...prev, [index]: null }));
     } else {
-      // For optional items, cut them out completely
       updatedImages.splice(index, 1);
     }
     onChange("images", updatedImages);
   };
 
-  // Check if all 6 structural perspectives are complete
   const isInspectionBlueprintValid = useMemo(() => {
     return mandatorySlots.every(slot => !!images[slot.index]);
   }, [images, mandatorySlots]);
 
   return (
     <div className="space-y-12">
-      {/* Hidden input managers */}
       <input ref={slotInputRef} type="file" accept="image/*" className="hidden" onChange={handleSlotFileChange} />
       <input ref={optionalInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleOptionalChange} />
 
-      {/* --- Main Cover Image Showroom Cover --- */}
+      {/* --- Main Cover Image --- */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-blue-500">
@@ -153,7 +186,7 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
             <span className="text-sm font-bold uppercase tracking-widest">Mandatory Inspection Blueprint</span>
           </div>
           {!isInspectionBlueprintValid && (
-            <span className="text-[10px] text-yellow-500 font-bold uppercase tracking-wider flex items-center gap-1.5 animate-pulse bg-yellow-500/5 border border-yellow-500/10 px-3 py-1 rounded-full">
+            <span className="text-[10px] text-yellow-500 font-bold uppercase tracking-wider flex items-center gap-1.5 bg-yellow-500/5 border border-yellow-500/10 px-3 py-1 rounded-full">
               <AlertCircle size={12} /> All {mandatorySlots.length} Perspective Angles Required
             </span>
           )}
@@ -163,12 +196,18 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
           {mandatorySlots.map((slot) => {
             const previewUrl = galleryPreviews[slot.index];
             const hasFile = !!images[slot.index];
+            const isValidating = validatingSlots[slot.index];
+            const errorMsg = slotErrors[slot.index];
 
             return (
               <div 
                 key={slot.key}
                 className={`p-5 rounded-2xl border flex flex-col justify-between h-56 transition-all duration-300 ${
-                  hasFile ? "bg-slate-900/40 border-emerald-500/30" : "bg-slate-900/10 border-slate-800/80"
+                  errorMsg 
+                    ? "bg-red-950/10 border-red-500/40 animate-shake" 
+                    : hasFile 
+                    ? "bg-slate-900/40 border-emerald-500/30" 
+                    : "bg-slate-900/10 border-slate-800/80"
                 }`}
               >
                 <div>
@@ -176,7 +215,13 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
                     <span className="text-[11px] font-black uppercase tracking-wider text-slate-300">
                       {slot.label} <span className="text-red-500">*</span>
                     </span>
-                    {hasFile ? (
+                    {isValidating ? (
+                      <span className="text-[9px] font-bold text-blue-400 flex items-center gap-1 uppercase tracking-widest">
+                        <Loader2 size={10} className="animate-spin" /> Analyzing
+                      </span>
+                    ) : errorMsg ? (
+                      <span className="text-[9px] font-bold text-red-400 uppercase tracking-widest">Failed</span>
+                    ) : hasFile ? (
                       <span className="p-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         <Check size={10} strokeWidth={3} />
                       </span>
@@ -184,7 +229,9 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
                       <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Required</span>
                     )}
                   </div>
-                  <p className="text-slate-500 text-xs mt-0.5 tracking-tight">{slot.description}</p>
+                  <p className="text-slate-500 text-xs mt-0.5 tracking-tight">
+                    {errorMsg ? errorMsg : slot.description}
+                  </p>
                 </div>
 
                 <div className="mt-4 relative flex-1 rounded-xl overflow-hidden bg-black/40 border border-slate-900 flex items-center justify-center group">
@@ -204,11 +251,18 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
                   ) : (
                     <button
                       type="button"
+                      disabled={isValidating}
                       onClick={() => triggerSlotUpload(slot.index)}
-                      className="w-full h-full flex flex-col items-center justify-center gap-1.5 hover:bg-slate-900/40 text-slate-500 hover:text-blue-400 transition"
+                      className={`w-full h-full flex flex-col items-center justify-center gap-1.5 transition text-slate-500 hover:text-blue-400 hover:bg-slate-900/40 disabled:opacity-50`}
                     >
-                      <Camera size={18} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Add Perspective</span>
+                      {isValidating ? (
+                        <Loader2 size={18} className="animate-spin text-blue-500" />
+                      ) : (
+                        <Camera size={18} className={errorMsg ? "text-red-400" : ""} />
+                      )}
+                      <span className="text-[10px] font-bold uppercase tracking-widest">
+                        {errorMsg ? "Retry Upload" : "Add Perspective"}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -218,7 +272,7 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
         </div>
       </div>
 
-      {/* --- Optional Supplementary Media Gallery --- */}
+      {/* --- Optional Supplementary Gallery --- */}
       <div className="space-y-4 pt-4 border-t border-slate-900">
         <div className="flex flex-col">
           <span className="text-sm font-bold uppercase tracking-widest text-slate-400">Additional Media Gallery (Optional)</span>
@@ -226,7 +280,6 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-          {/* Render extra items resting outside the mandatory 6 boundaries */}
           {galleryPreviews.slice(6).map((src, idx) => {
             const targetIndex = idx + 6;
             if (!src) return null;
@@ -245,7 +298,6 @@ export default function PhotoUploader({ thumbnail, images, onChange }: Props) {
             );
           })}
 
-          {/* Optional trigger slot */}
           <button
             type="button"
             onClick={() => optionalInputRef.current?.click()}

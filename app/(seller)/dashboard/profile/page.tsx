@@ -1,7 +1,7 @@
 import { createClient } from "@/supabase/server";
 import { redirect } from "next/navigation";
 import { prisma as db } from "@/lib/prisma";
-import { MapPin, Calendar, Heart, MessageSquare, ShieldCheck, Store } from "lucide-react";
+import { MapPin, Calendar, Heart, MessageSquare, ShieldCheck, Store, PlusCircle,Settings2 } from "lucide-react";
 import ProfileTabs from "@/components/dashboard/ProfileTabs";
 import Link from "next/link";
 
@@ -11,11 +11,28 @@ export default async function ProfilePage() {
   
   if (!authUser) redirect("/login");
 
-  // 2. Fetch complete user profile along with relational hooks for BOTH roles
+  // 1. Fetch user including relational nested favourites and conversation streams
   let user = await db.user.findUnique({
     where: { id: authUser.id },
     include: {
-      dealerProfile: true, // Used to read dealership parameters if seller
+      dealerProfile: true, 
+      favourites: {
+        include: {
+          car: {
+            select: {
+              id: true,
+              brand: true,
+              model: true,
+              year: true,
+              price: true, // Prisma Decimal
+              thumbnail: true,
+              slug: true,
+              mileage: true,
+              transmission: true,
+            }
+          }
+        }
+      },
       buyerConversations: {
         include: {
           car: {
@@ -31,7 +48,7 @@ export default async function ProfilePage() {
         },
         orderBy: { updatedAt: "desc" },
       },
-      sellerConversations: { // Used to read inbound client conversations for sellers
+      sellerConversations: { 
         include: {
           car: {
             select: {
@@ -49,19 +66,23 @@ export default async function ProfilePage() {
     },
   });
 
-  // 3. Fallback database sync layer for newly authorized entries
+  // Fallback database sync layer if user doesn't exist locally
   if (!user) {
     user = await db.user.create({
       data: {
         id: authUser.id,
         name: authUser.user_metadata?.name || "Verified User",
         email: authUser.email || "",
-        role: "BUYER",
+        role: "USER",
         onboardingComplete: false,
-        savedCarIds: [],
       },
       include: {
         dealerProfile: true,
+        favourites: {
+          include: {
+            car: { select: { id: true, brand: true, model: true, year: true, price: true, thumbnail: true, slug: true, mileage: true, transmission: true } }
+          }
+        },
         buyerConversations: {
           include: { car: { select: { id: true, brand: true, model: true, year: true, price: true, thumbnail: true } } },
           orderBy: { updatedAt: "desc" },
@@ -74,71 +95,81 @@ export default async function ProfilePage() {
     });
   }
 
-  const isSeller = user.role === "DEALER";
+  const isDealer = user.role === "DEALER";
 
-  // 4. Fetch inventory or bookmarks based on dynamic user context
-  let displayCars = [];
-  if (isSeller) {
-    // Fetch cars belonging to this specific user/dealer listing pipeline
-    displayCars = await db.car.findMany({
-      where: { userId: user.id },
-      select: {
-        id: true,
-        brand: true,
-        model: true,
-        year: true,
-        price: true,
-        thumbnail: true,
-        slug: true,
-        mileage: true,
-        transmission: true,
-        status: true, // Let sellers see AVAILABLE/SOLD context badges
-      },
-      orderBy: { createdAt: "desc" },
-    });
-  } else {
-    // Fetch standard buyer scalar bookmarks selection block
-    displayCars = user.savedCarIds.length > 0
-      ? await db.car.findMany({
-          where: { id: { in: user.savedCarIds } },
-          select: {
-            id: true,
-            brand: true,
-            model: true,
-            year: true,
-            price: true,
-            thumbnail: true,
-            slug: true,
-            mileage: true,
-            transmission: true,
-          },
-        })
-      : [];
-  }
+  // 2. Fetch User's Created Listings (Works for both DEALER and USER roles)
+  const rawListings = await db.car.findMany({
+    where: { userId: user.id },
+    select: {
+      id: true,
+      brand: true,
+      model: true,
+      year: true,
+      price: true, // Decimal
+      thumbnail: true,
+      slug: true,
+      mileage: true,
+      transmission: true,
+      status: true, 
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-  // 5. Configure layout content based on target profile type
+  // 👇 Fix 1: Map raw listings to convert Decimal prices to standard numbers
+  const myListings = rawListings.map(listing => ({
+    ...listing,
+    price: Number(listing.price), // Converts Decimal class to standard JS number
+  }));
+
+  // 👇 Fix 2: Flatten favorites and convert nested Decimal prices to standard numbers
+  const savedCars = (user.favourites?.map((fav) => {
+    if (!fav.car) return null;
+    return {
+      ...fav.car,
+      price: Number(fav.car.price), // Converts Decimal class to standard JS number
+    };
+  }).filter(Boolean) || []) as any[];
+
+  // 3. Configure layout display details
   const profileData = {
-    name: isSeller && user.dealerProfile?.businessName ? user.dealerProfile.businessName : (user.name || "Verified User"),
+    name: isDealer && user.dealerProfile?.businessName ? user.dealerProfile.businessName : (user.name || "Verified User"),
     email: user.email || "",
-    avatarUrl: isSeller && user.dealerProfile?.logo ? user.dealerProfile.logo : null, // Clean database pathing fallback
+    avatarUrl: isDealer && user.dealerProfile?.logo ? user.dealerProfile.logo : null, 
     joinedDate: new Date(user.createdAt).toLocaleDateString("en-US", {
       month: "long",
       year: "numeric",
     }),
     location: "Nigeria",
     isVerified: user.isVerified,
-    tagline: isSeller ? user.dealerProfile?.tagline : null,
+    tagline: isDealer ? user.dealerProfile?.tagline : null,
   };
 
-  // Funnel incoming/outgoing interaction streams based on active profile context
-  const activeChats = isSeller ? user.sellerConversations : user.buyerConversations;
+  // 4. Map display values strictly to match your client-side interface signatures
+  // - If they are a dealer, display their posted inventory listings and inbound client leads.
+  // - If they are a regular user, display their active bookmarks (savedCars) and outbound negotiations.
+  const displayCars = isDealer ? myListings : savedCars;
+  
+  const activeChats = isDealer 
+    ? user.sellerConversations 
+    : user.buyerConversations;
+
+  // Re-map active chat Nested Decimal types to numbers so we don't cause hydration warnings 
+  const serializedChats = activeChats.map(chat => ({
+    ...chat,
+    createdAt: chat.createdAt.toISOString(),
+    updatedAt: chat.updatedAt.toISOString(),
+    car: {
+      ...chat.car,
+      price: Number(chat.car.price),
+    }
+  }));
 
   return (
     <div className="min-h-screen bg-zinc-950 text-slate-100 p-4 lg:p-8 max-w-6xl mx-auto space-y-8">
       
       {/* Dynamic Profile Identity Panel */}
       <div className="relative overflow-hidden rounded-[2.5rem] bg-zinc-900/40 border border-slate-900 p-6 md:p-10 flex flex-col md:flex-row items-center gap-6 justify-between shadow-xl">
-        <div className={`absolute top-0 right-0 w-96 h-96 ${isSeller ? 'bg-emerald-600/5' : 'bg-blue-600/5'} rounded-full blur-[120px] pointer-events-none`} />
+        <div className={`absolute top-0 right-0 w-96 h-96 ${isDealer ? 'bg-emerald-600/5' : 'bg-amber-600/5'} rounded-full blur-[120px] pointer-events-none`} />
         
         <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
           <div className="relative w-28 h-28 rounded-3xl overflow-hidden border-2 border-slate-800 bg-zinc-950 shrink-0 flex items-center justify-center text-zinc-700">
@@ -161,12 +192,12 @@ export default async function ProfilePage() {
               </h1>
               
               <span className={`inline-flex items-center gap-1 border px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                isSeller 
+                isDealer 
                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                  : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
               }`}>
-                {isSeller ? <Store size={12} /> : <ShieldCheck size={12} />}
-                {isSeller ? "Authorized Dealer" : "Verified Buyer"}
+                {isDealer ? <Store size={12} /> : <ShieldCheck size={12} />}
+                {isDealer ? "Authorized Dealer" : "Private Seller"}
               </span>
             </div>
             
@@ -184,38 +215,56 @@ export default async function ProfilePage() {
         </div>
 
         {/* Dynamic Metric Display Panels */}
-        <div className="grid grid-cols-2 gap-3 w-full md:w-auto shrink-0">
-          <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[110px]">
-            {isSeller ? (
-              <Store className="mx-auto text-emerald-500 mb-1" size={18} />
-            ) : (
-              <Heart className="mx-auto text-rose-500 mb-1" size={18} />
-            )}
-            <span className="block text-xl font-black italic tracking-tight">{displayCars.length}</span>
+        <div className="grid grid-cols-3 gap-3 w-full md:w-auto shrink-0">
+          <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]">
+            <Store className="mx-auto text-amber-500 mb-1" size={18} />
+            <span className="block text-xl font-black italic tracking-tight text-white">{myListings.length}</span>
             <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
-              {isSeller ? "My Inventory" : "Saved Cars"}
+              My Cars
             </span>
           </div>
-          <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[110px]">
+
+          <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]">
+            <Heart className="mx-auto text-rose-500 mb-1" size={18} />
+            <span className="block text-xl font-black italic tracking-tight text-white">{savedCars.length}</span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
+              Bookmarks
+            </span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]">
             <MessageSquare className="mx-auto text-blue-500 mb-1" size={18} />
-            <span className="block text-xl font-black italic tracking-tight">{activeChats.length}</span>
+            <span className="block text-xl font-black italic tracking-tight text-white font-sans">
+              {serializedChats.length}
+            </span>
             <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
-              {isSeller ? "Client Leads" : "Open Desks"}
+              Messages
             </span>
           </div>
+
+            <Link className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]" href="/dashboard/settings">
+            <Settings2 className="mx-auto text-amber-500 mb-1" size={18} />
+          
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
+              Settings
+            </span>
+          </Link>
         </div>
       </div>
 
-      {!isSeller && (
-        <div className="p-4 rounded-2xl bg-zinc-900/40 hover:bg-zinc-800 border border-slate-900 text-center text-sm text-slate-400 font-medium italic">
-          <Link className="block" href='/sell'>Become a Dealer</Link>
+      {/* Upgrade Call To Action */}
+      {!isDealer && (
+        <div className="p-4 rounded-2xl bg-linear-to-r from-zinc-900/60 to-amber-950/20 hover:from-zinc-900 hover:to-amber-950/30 border border-zinc-900 text-center text-sm text-slate-400 font-medium transition-colors">
+          <Link className="flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-amber-400 font-bold" href='/onboarding'>
+            Scale Up: Register an Official Dealership Profile <PlusCircle size={14} />
+          </Link>
         </div>
       )}
 
-      {/* Interactive Tabs Layout Area */}
+      {/* 👇 FIXED PROP CALLOUT: Matches the clean parameters ProfileTabs expects! */}
       <ProfileTabs 
         displayCars={displayCars} 
-        activeChats={activeChats} 
+        activeChats={serializedChats} 
         userRole={user.role} 
       />
     </div>

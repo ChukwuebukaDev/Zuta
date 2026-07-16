@@ -3,80 +3,96 @@
 import { createClient } from "@/supabase/server";
 import { prisma as db } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-
 export async function login(formData: FormData) {
   const supabase = await createClient();
 
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (!email || !password) {
+    return { error: "Email and password are required." };
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
   if (error) {
-    return redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    return { error: error.message };
   }
 
   const dbUser = await db.user.findUnique({
     where: { email },
-    select: { role: true }
+    select: { role: true },
   });
 
-  if (dbUser?.role === "ADMIN") {
-    redirect("/admin/dashboard");
-  }
-  
-  redirect("/cars");
+  // Return destination instructions back to the client cleanly
+  return { 
+    success: true, 
+    redirectTo: dbUser?.role === "ADMIN" ? "/admin-dashboard" : "/cars" 
+  };
 }
 
 export async function signup(formData: FormData) {
   const supabase = await createClient();
-
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const name = formData.get("name") as string;
-  const phone = formData.get("phone") as string;
-
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
   if (!email || !password || !name || !phone) {
-    return redirect(`/signup?error=${encodeURIComponent("All fields are required.")}`);
+    return { error: "All fields are required to complete registration." };
   }
 
-  const { error } = await supabase.auth.signUp({ 
-    email, 
+  const { data, error } = await supabase.auth.signUp({
+    email,
     password,
     options: {
-      data: {
-        name: name,
-        phone: phone, 
-      }
-    }
+      data: { name, phone },
+    },
   });
 
   if (error) {
-    return redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+    return { error: error.message };
   }
 
-  redirect("/cars");
-}
+  if (data.user) {
+    try {
+      await db.user.upsert({
+        where: { id: data.user.id },
+        update: { email, name, phone },
+        create: {
+          id: data.user.id,
+          email,
+          name,
+          phone,
+          role: "USER",
+          privateListingLimit: 2,
+        },
+      });
+    } catch (err) {
+      console.error("Prisma local postgres sync failed:", err);
+      return { 
+        error: "Account created in Supabase, but local database profile setup failed." 
+      };
+    }
+  }
 
-/**
- * Initiates the Google OAuth login/signup handshake process
- */
+  return { success: true, redirectTo: "/cars" };
+}
 export async function loginWithGoogle() {
   const supabase = await createClient();
-  
-  // Dynamically derive the platform origin URL for environment shifting
-  const origin = typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      // Points to your application's auth callback route pathing layer
       redirectTo: `${origin}/auth/callback`,
     },
   });
 
   if (error) {
-    return redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    return { error: error.message };
   }
 
   if (data.url) {
@@ -87,5 +103,5 @@ export async function loginWithGoogle() {
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect("/"); 
 }

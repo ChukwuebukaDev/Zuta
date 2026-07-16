@@ -28,9 +28,8 @@ async function checkAdmin() {
 
 export async function verifyUser(targetUserId: string, status: boolean) {
   try {
-    await checkAdmin(); // Security Gate
+    await checkAdmin(); 
 
-    // Atomic transaction updating both verification status and profile enum state
     await db.$transaction([
       db.user.update({
         where: { id: targetUserId },
@@ -42,7 +41,7 @@ export async function verifyUser(targetUserId: string, status: boolean) {
       })
     ]);
 
-    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin-dashboard");
     return { success: true };
   } catch (error: unknown) {
     console.error("[USER_VERIFICATION_ERROR]:", error);
@@ -51,20 +50,17 @@ export async function verifyUser(targetUserId: string, status: boolean) {
   }
 }
 
-/**
- * Approves a Specific Car Listing for the Public Showroom
- */
+
 export async function approveCarListing(carId: string) {
   try {
-    await checkAdmin(); // Security Gate
-
+    await checkAdmin(); 
     await db.car.update({
       where: { id: carId },
       data: { listingStatus: "APPROVED" },
     });
 
     // Revalidate paths to drop cache layout constraints immediately across targets
-    revalidatePath("/admin/dashboard"); 
+    revalidatePath("/admin-dashboard"); 
     revalidatePath("/dashboard");       
     revalidatePath("/cars");          
     revalidatePath(`/cars/${carId}`);
@@ -82,7 +78,7 @@ export async function approveCarListing(carId: string) {
  */
 export async function rejectCarListing(carId: string) {
   try {
-    await checkAdmin(); // Security Gate
+    await checkAdmin(); 
 
     await db.car.update({
       where: { id: carId },

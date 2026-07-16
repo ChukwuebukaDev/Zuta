@@ -16,16 +16,13 @@ model User {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   isVerified          Boolean              @default(false)
-  role                Role                 @default(BUYER)
-  cardUrl             String?
-  idUrl               String?
-  legalName           String?
+  isBanned            Boolean              @default(false) // Removed duplicate entry
+  role                Role                 @default(USER)
   onboardingComplete  Boolean              @default(false)
-  isBanned            Boolean  @default(false)
-  fraudScore          Int      @default(0)
-  fraudStatus         FraudStatus @default(CLEAR)
+  fraudScore          Int                  @default(0)
+  fraudStatus         FraudStatus          @default(CLEAR)
   fraudEvents         FraudEvent[]
-  savedCarIds         String[]
+  favourites          Favorite[]
   cars                Car[]
   bookings            Booking[]
   buyerConversations  Conversation[]       @relation("BuyerConversations")
@@ -33,23 +30,64 @@ model User {
   dealerProfile       DealerProfile?
   messages            Message[]
   verificationRequest VerificationRequest?
+  privateListingLimit Int                  @default(2)
+  carValuations       CarValuation[] // Added missing inverse relation
+  dealerReviews       DealerReview[] // Added missing inverse relation
 }
 
 model DealerProfile {
-  id           String       @id @default(cuid())
-  businessName String
-  slug         String       @unique
-  phone        String?
-  tagline      String?
-  bio          String?
-  logo         String?
-  banner       String?
-  website      String?
-  status       DealerStatus @default(DRAFT)
-  userId       String       @unique
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String              @id @default(cuid())
+  businessName        String
+  slug                String              @unique
+  phone               String?
+  tagline             String?
+  bio                 String?
+  logo                String?
+  banner              String?
+  website             String?
+  status              DealerStatus        @default(DRAFT)
+  listingLimits       Int                 @default(50)
+  autoApproveListings Boolean             @default(false)
+  rating              Float               @default(5)
+  totalReviews        Int                 @default(0)
+  responseRate        Float               @default(100)
+  responseTime        Int                 @default(0)
+  totalSales          Int                 @default(0)
+  subscription        DealerSubscription?
+  userId              String              @unique
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviews             DealerReview[] // Added missing inverse relation
+}
+
+model DealerSubscription {
+  id               String           @id @default(cuid())
+  dealerProfileId  String           @unique
+  dealerProfile    DealerProfile    @relation(fields: [dealerProfileId], references: [id], onDelete: Cascade)
+  tier             SubscriptionTier @default(FREE)
+  active           Boolean          @default(true)
+  startedAt        DateTime         @default(now())
+  expiresAt        DateTime?
+  autoRenew        Boolean          @default(false)
+  paymentReference String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model DealerReview {
+  id              String        @id @default(cuid())
+  dealerProfileId String
+  reviewerId      String
+  rating          Int
+  title           String?
+  comment         String?
+  createdAt       DateTime      @default(now())
+  dealer          DealerProfile @relation(fields: [dealerProfileId], references: [id], onDelete: Cascade)
+  reviewer        User          @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@unique([dealerProfileId, reviewerId])
+  @@index([dealerProfileId])
 }
 
 model VerificationRequest {
@@ -68,7 +106,7 @@ model VerificationRequest {
 
 model VerificationDocument {
   id        String              @id @default(cuid())
-  type      DocType
+  type      DocumentType // Fixed typo mismatch with enum DocumentType
   url       String
   requestId String
   request   VerificationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
@@ -76,26 +114,28 @@ model VerificationDocument {
 
 model Car {
   id              String         @id @default(cuid())
+  sellerType      SellerType     @default(PRIVATE)
   title           String
   brand           String
   model           String
   year            Int
-  price           Int
+  price           Decimal        @db.Decimal(15, 2)
   mileage         Int
+  publishedAt     DateTime?
   createdAt       DateTime       @default(now())
+  expiresAt       DateTime?
+  soldAt          DateTime?
+  archivedAt      DateTime?
+  updatedAt       DateTime       @updatedAt
   accidentHistory Boolean        @default(false)
   bodyType        String
   currency        String         @default("NGN")
   drivetrain      String
   featured        Boolean        @default(false)
   negotiable      Boolean        @default(false)
-  sellerEmail     String?
-  sellerName      String?
-  sellerPhone     String?        @db.VarChar(20)
   serviceHistory  Boolean        @default(false)
   slug            String         @unique
   thumbnail       String
-  updatedAt       DateTime       @updatedAt
   views           Int            @default(0)
   color           String
   fuelType        FuelType
@@ -104,17 +144,22 @@ model Car {
   status          Status         @default(AVAILABLE)
   city            String
   country         String         @default("Nigeria")
-  description     String?
   state           String
+  description     String?
   userId          String
   listingStatus   ListingStatus  @default(PENDING)
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   carImages       CarImage[]
   conversations   Conversation[]
+  favourites      Favorite[]
 
+  @@index([brand])
+  @@index([model])
   @@index([price])
   @@index([city])
   @@index([state])
+  @@index([listingStatus])
+  @@index([sellerType])
   @@index([createdAt])
   @@index([status])
   @@index([userId])
@@ -129,6 +174,44 @@ model CarImage {
   car       Car        @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@index([carId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  carId     String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, carId])
+  @@index([userId])
+  @@index([carId])
+}
+
+model CarValuation {
+  id           String       @id @default(cuid())
+  brand        String
+  model        String
+  year         Int
+  mileage      Int
+  transmission Transmission
+  fuelType     FuelType
+  condition    Condition
+  bodyType     String?
+  color        String?
+  state        String
+  city         String
+  estimatedMin Decimal      @db.Decimal(15, 2)
+  estimatedMax Decimal      @db.Decimal(15, 2)
+  confidence   Int?
+  userId       String?
+  email        String?
+  phone        String?
+  createdAt    DateTime     @default(now())
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }
 
 model Conversation {
@@ -157,41 +240,41 @@ model Message {
 }
 
 model ServiceProvider {
-  id          String        @id @default(uuid())
-  name        String        // e.g., "Matrix Premium Detailing"
-  type        ServiceType
-  rating      Float         @default(5.0)
-  location    String        // City / Area
-  address     String
-  phone       String
-  image       String?       // Thumbnail via Uploadthing
-  priceFrom   Float         // Base pricing tier indicator
-  isVerified  Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-  bookings    Booking[]
+  id         String      @id @default(uuid())
+  name       String
+  type       ServiceType
+  rating     Float       @default(5.0)
+  location   String
+  address    String
+  phone      String
+  image      String?
+  priceFrom  Float
+  isVerified Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  bookings   Booking[]
 }
 
 model FraudEvent {
-  id          String   @id @default(cuid())
-  userId      String
-  reason      String
-  score       Int
-  metadata    Json?
-  createdAt   DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  userId    String
+  reason    String
+  score     Int
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
+
 model Booking {
-  id                String          @id @default(uuid())
-  userId            String          // The authenticated Buyer
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  providerId        String
-  provider          ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  scheduledAt       DateTime        // Date and time of booking
-  status            BookingStatus   @default(PENDING)
-  notes             String?         // Car model or specific issue notes
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId  String
+  provider    ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime
+  status      BookingStatus   @default(PENDING)
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 enum ImageAngle {
@@ -205,9 +288,14 @@ enum ImageAngle {
 }
 
 enum Role {
-  BUYER
+  USER
   DEALER
   ADMIN
+}
+
+enum SellerType {
+  PRIVATE
+  DEALER
 }
 
 enum Transmission {
@@ -229,23 +317,32 @@ enum Condition {
 }
 
 enum ListingStatus {
+  DRAFT
   PENDING
   APPROVED
   REJECTED
   SOLD
+  ARCHIVED
 }
 
 enum Status {
   AVAILABLE
   SOLD
-  PENDING
+  RESERVED
 }
 
 enum DealerStatus {
   DRAFT
   PENDING
   APPROVED
+  REJECTED
   SUSPENDED
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+  ENTERPRISE
 }
 
 enum RequestStatus {
@@ -255,7 +352,7 @@ enum RequestStatus {
   REJECTED
 }
 
-enum DocType {
+enum DocumentType {
   GOVT_ID
   BUSINESS_CARD
   CAC_CERTIFICATE
@@ -282,4 +379,3 @@ enum FraudStatus {
   SUSPICIOUS
   FRAUD
 }
-
