@@ -43,8 +43,14 @@ export default async function OnboardingStatusPage() {
   const user = await db.user.findUnique({
     where: { id: supabaseUser.id },
     select: {
+      name: true,               // 🌟 Added root name fallback
       isVerified: true,
       onboardingComplete: true,
+      dealerProfile: {          // 🌟 Added relational profiles to grab dealership name
+        select: {
+          businessName: true,
+        }
+      }
     },
   });
 
@@ -53,6 +59,9 @@ export default async function OnboardingStatusPage() {
   if (user.isVerified) {
     redirect("/dashboard");
   }
+
+  // Determine a personalized display name (prefer business name, then user name, then default)
+  const displayName = user.dealerProfile?.businessName || user.name || "Dealer";
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
@@ -73,7 +82,7 @@ export default async function OnboardingStatusPage() {
           </h1>
           <h2 className="text-2xl font-semibold">Verification in Progress</h2>
           <p className="text-slate-400 leading-relaxed">
-            Hello, <span className="text-white font-medium">{user.legalName || "Dealer"}</span>. 
+            Hello, <span className="text-white font-medium">{displayName}</span>. 
             Our team is currently reviewing your dealer credentials. This usually takes 
             less than 24 hours.
           </p>
