@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma as db } from "@/lib/prisma";
 import { createClient } from "@/supabase/server";
+
 interface IncomingDocument {
   type: "GOVT_ID" | "BUSINESS_CARD" | "CAC_CERTIFICATE";
   url: string;
@@ -32,8 +33,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Missing required profile credentials" }, { status: 400 });
     }
 
-    const govtIdUrl = documents.find((d) => d.type === "GOVT_ID")?.url;
-    const businessCardUrl = documents.find((d) => d.type === "BUSINESS_CARD")?.url;
+    const govtIdUrl = documents.find((d) => String(d.type).toUpperCase() === "GOVT_ID")?.url;
+    const businessCardUrl = documents.find((d) => String(d.type).toUpperCase() === "BUSINESS_CARD")?.url;
 
     if (!govtIdUrl || !businessCardUrl) {
       return NextResponse.json({ message: "Required documentation files missing" }, { status: 400 });
@@ -50,10 +51,8 @@ export async function POST(req: Request) {
           role: "DEALER",
           onboardingComplete: true, // Elevates listing portal clearance
           phone: phone.trim(),
-          legalName: businessName,
-          idUrl: govtIdUrl,
-          cardUrl: businessCardUrl,
           
+          // 🌟 FIXED: Removed 'legalName', 'idUrl', and 'cardUrl' from root User write
           dealerProfile: {
             create: {
               businessName,
@@ -73,7 +72,7 @@ export async function POST(req: Request) {
               // 'status' auto-defaults to SUBMITTED via Prisma schema
               documents: {
                 create: documents.map((doc) => ({
-                  type: doc.type,
+                  type: String(doc.type).toUpperCase() as any, 
                   url: doc.url,
                 }))
               }
@@ -82,7 +81,6 @@ export async function POST(req: Request) {
         }
       });
     });
-
 
     return NextResponse.json({ 
       success: true, 

@@ -45,7 +45,6 @@ export default async function OnboardingStatusPage() {
     select: {
       isVerified: true,
       onboardingComplete: true,
-      legalName: true,
     },
   });
 

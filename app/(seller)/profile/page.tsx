@@ -242,7 +242,7 @@ export default async function ProfilePage() {
             </span>
           </div>
 
-            <Link className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]" href="/dashboard/settings">
+            <Link className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]" href="/settings">
             <Settings2 className="mx-auto text-amber-500 mb-1" size={18} />
           
             <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">

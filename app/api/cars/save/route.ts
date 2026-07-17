@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   try {
     const cookieStore = await cookies();
 
-    // 1. Initialize the official Supabase SSR Server Client
+    // 1. Initialize Supabase SSR Client
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -43,26 +43,29 @@ export async function POST(req: Request) {
       return new NextResponse("Missing Car ID", { status: 400 });
     }
 
-    // 3. Handle mutating the array inside your database using the Supabase UUID string
+    // 3. Mutate the relational Favorite table based on user intent
     if (save) {
-      await db.user.update({
-        where: { id: supabaseUser.id },
-        data: {
-          savedCarIds: { push: carId } 
-        }
+      // Create a join record. we use upsert to cleanly prevent double-click primary key conflicts
+      await db.favorite.upsert({
+        where: {
+          userId_carId: {
+            userId: supabaseUser.id,
+            carId: carId,
+          },
+        },
+        create: {
+          userId: supabaseUser.id,
+          carId: carId,
+        },
+        update: {}, // Do nothing on duplicate, preventing DB constraint crashes!
       });
     } else {
-      // Pull down existing array layout and filter target car string out
-      const userData = await db.user.findUnique({ 
-        where: { id: supabaseUser.id },
-        select: { savedCarIds: true }
-      });
-      
-      const updatedList = userData?.savedCarIds?.filter((id: string) => id !== carId) || [];
-      
-      await db.user.update({
-        where: { id: supabaseUser.id },
-        data: { savedCarIds: updatedList }
+      // Cleanly delete the relational bookmark connection if it exists
+      await db.favorite.deleteMany({
+        where: {
+          userId: supabaseUser.id,
+          carId: carId,
+        },
       });
     }
 

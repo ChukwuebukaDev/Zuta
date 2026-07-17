@@ -27,13 +27,14 @@ export type Car = {
   condition: string;
   accidentHistory: boolean;
   serviceHistory: boolean;
-
+  sellerType: "PRIVATE" | "DEALER";
   price: number;
   currency: string;
   negotiable: boolean;
 
   thumbnail: string;
-  images: string[];
+  images: string[]; 
+  carImages: string[];
 
   userId: string;
   user?: {
@@ -53,6 +54,10 @@ export type Car = {
   location: string;
   createdAt: Date;
   updatedAt: Date;
+  publishedAt?: Date | null;
+  expiresAt?: Date | null;
+  soldAt?: Date | null;
+  archivedAt?: Date | null;
 };
 export type CarFilters = {
   brand?: string;

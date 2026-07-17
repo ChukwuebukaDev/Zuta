@@ -4,7 +4,7 @@ import { prisma as db } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ArrowUpRight } from "lucide-react";
-import DashboardChatFeed from "../../DashboardChatFeed";
+import DashboardChatFeed from "../../dashboard/DashboardChatFeed"
 
 interface MessageDetailsPageProps {
   params: Promise<{ conversationId: string }> | { conversationId: string };

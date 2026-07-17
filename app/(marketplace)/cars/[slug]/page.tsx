@@ -45,6 +45,22 @@ export default async function CarDetailsPage({ params }: Props) {
     notFound();
   }
 
-  // 4. Feed both fields into the refactored view layout
-  return <CarDetailsView car={car} currentUserId={currentUserId} />;
+  const serializedCar = {
+    ...car,
+    price: Number(car.price),
+    
+    // Process Dates to plain ISO strings safely, verifying optional fields first
+    createdAt: car.createdAt instanceof Date ? car.createdAt.toISOString() : car.createdAt,
+    updatedAt: car.updatedAt instanceof Date ? car.updatedAt.toISOString() : car.updatedAt,
+    publishedAt: car.publishedAt instanceof Date ? car.publishedAt.toISOString() : car.publishedAt || null,
+    expiresAt: car.expiresAt instanceof Date ? car.expiresAt.toISOString() : car.expiresAt || null,
+    soldAt: car.soldAt instanceof Date ? car.soldAt.toISOString() : car.soldAt || null,
+    archivedAt: car.archivedAt instanceof Date ? car.archivedAt.toISOString() : car.archivedAt || null,
+    
+    // Process nested images array if present to ensure complete serialization
+    carImages: car.carImages?.map((img: string) => img) || [],
+  };
+
+  // 5. Feed the completely serialized plain object representation into the view layout
+  return <CarDetailsView car={serializedCar} currentUserId={currentUserId} />;
 }

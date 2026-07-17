@@ -88,16 +88,15 @@ export default function SellForm({
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
 
-    // 1. Core Structural Validation Check
+
     if (!formData.thumbnail) {
       return toast.error("Please upload a Main Showroom Cover Image.");
     }
 
-    // Verify that the first 6 indices are completely populated by files
     const mandatoryAngles = ["Front", "Rear", "Left Side", "Right Side", "Interior", "Underneath"];
     for (let i = 0; i < 6; i++) {
       if (!formData.images[i]) {
@@ -108,12 +107,12 @@ export default function SellForm({
     if (!formData.city || !formData.state) {
       return toast.error("Please select a complete showroom location.");
     }
+    let loadingToastId: string | number | null = null;
 
     try {
       setIsSubmitting(true);
-      const loadingToast = toast.loading("Syncing inspection assets with Zuta Cloud...");
+      loadingToastId = toast.loading("Syncing inspection assets with Zuta Cloud...");
 
-      // 2. Safe Image Optimization with type safety filters
       const compressedThumb = await optimizeImage(formData.thumbnail!);
       
       const compressedGallery = await Promise.all(
@@ -123,7 +122,6 @@ export default function SellForm({
         })
       );
 
-      // Filter out any dangling empty frames safely before shipping across network bounds
       const activeGalleryFiles = compressedGallery.filter((file): file is File => file !== null);
 
       // Execute upload parallel batches
@@ -180,8 +178,6 @@ export default function SellForm({
         timeout,
       ]);
 
-      toast.dismiss(loadingToast);
-
       if (res.ok) {
         toast.success("Listing submitted for review!", {
           description: isPrivateUser 
@@ -189,17 +185,23 @@ export default function SellForm({
             : "Zuta administrators will verify inspection logs within 24 hours.",
           duration: 5000,
         });
-        router.push("/dashboard");
+        
+        router.push(isPrivateUser ? "/profile" : "/dashboard");
         router.refresh();
       } else {
-        const errText = await res.text();
+        const errData = await res.json().catch(() => ({}));
+        const errText = errData.error || await res.text();
         throw new Error(errText || "Database rejected form payload data properties.");
       }
     } catch (error) {
-      console.error(error);
+      console.error("FORM_SUBMIT_ERROR:", error);
       const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
       toast.error(errorMessage);
     } finally {
+
+      if (loadingToastId !== null) {
+        toast.dismiss(loadingToastId);
+      }
       setIsSubmitting(false);
     }
   };

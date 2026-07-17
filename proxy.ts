@@ -32,8 +32,7 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // 2. Refresh session and get the user token context safely
-  // ALWAYS use getUser() in middleware for security verification
+  // 2. ALWAYS use getUser() in middleware for security verification
   const { data: { user } } = await supabase.auth.getUser();
 
   const url = request.nextUrl.clone();
@@ -43,10 +42,11 @@ export async function proxy(request: NextRequest) {
   const isAuthPage = path.startsWith("/login") || path.startsWith("/signup");
   const isPublicApi = path.startsWith("/api/uploadthing") || path.startsWith("/api/messages/send") || path.startsWith("/api/onboarding");
   const isStaticPublic = path === "/" || path.startsWith("/cars");
+  const isDashboardRoute = path.startsWith("/dashboard");
 
   const isPublicRoute = isAuthPage || isPublicApi || isStaticPublic;
 
-  // 🔒 Guardrail 1: Standard Private Route Gatekeeper (Handles your profile page!)
+  // 🔒 Guardrail 1: Standard Private Route Gatekeeper
   if (!user && !isPublicRoute) {
     url.pathname = "/login";
     url.searchParams.set("redirect_url", path);
@@ -57,6 +57,26 @@ export async function proxy(request: NextRequest) {
   if (user && isAuthPage) {
     url.pathname = "/";
     return NextResponse.redirect(url);
+  }
+
+  // 🛡️ Guardrail 3: Secure Dealer Dashboard from standard buyers (Role-Based Access)
+  if (isDashboardRoute) {
+    if (!user) {
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+
+    // Read the role string directly from the encrypted Supabase JWT user_metadata
+    // This runs completely on the edge without making slow Prisma DB roundtrips!
+    const role = user.user_metadata?.role;
+
+    if (role !== "DEALER" && role !== "ADMIN") {
+      console.warn(`[UNAUTHORIZED_DASHBOARD_ACCESS]: User ${user.id} tried accessing dealer console with role: ${role}`);
+      
+      // Send standard buyers to their personal garage/profile page instead of the dealer panel
+      url.pathname = "/profile"; 
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;

@@ -16,6 +16,7 @@ export default function SellerSection({ city, state, country, onChange }: Props)
   const [cities, setCities] = useState<string[]>([]);
   const [isLoadingStates, setIsLoadingStates] = useState(false);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
+  const mixedCharacters = crypto.getRandomValues(new Uint8Array(16)).reduce((str, byte) => str + String.fromCharCode(byte % 26 + 65), "");
 
   // 1. Fetch all countries on component mount
   useEffect(() => {
@@ -118,8 +119,8 @@ export default function SellerSection({ city, state, country, onChange }: Props)
             required
           >
             <option value="" disabled>Select Country</option>
-            {allCountries.map((c) => (
-              <option key={c.iso3} value={c}>{c}</option>
+            {allCountries.map((c,idx) => (
+              <option key={`country-opt-${c}-${idx}`} value={c}>{c}</option>
             ))}
           </select>
         </div>

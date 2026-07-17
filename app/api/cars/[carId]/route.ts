@@ -3,6 +3,14 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { prisma as db } from "@/lib/prisma";
 
+// Helper for dynamic SEO Slugs on make/model updates
+function generateSlug(brand: string, model: string) {
+  return `${brand}-${model}-${Date.now()}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ carId: string }> | { carId: string } }
@@ -10,7 +18,7 @@ export async function PATCH(
   try {
     const cookieStore = await cookies();
 
-    // 1. Initialize the official Supabase SSR Server Client
+    // 1. Initialize Supabase SSR Client
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -25,14 +33,14 @@ export async function PATCH(
                 cookieStore.set(name, value, options)
               );
             } catch {
-              // Safe catch wrapper for Route Handler execution context quirks
+              // Safe catch wrapper for Route Handler environments
             }
           },
         },
       }
     );
 
-    // 2. Authenticate the active user session profile via Supabase
+    // 2. Validate authentication context state
     const { data: { session } } = await supabase.auth.getSession();
     const supabaseUser = session?.user;
 
@@ -40,12 +48,12 @@ export async function PATCH(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // 3. Resolve the asynchronous parameters layout unpacking
+    // 3. Resolve the route params unpacking
     const resolvedParams = await params;
     const { carId } = resolvedParams;
     const body = await req.json();
 
-    // 4. Verify listing ownership boundary using the Supabase UUID string
+    // 4. Verify listing ownership boundary
     const existingCar = await db.car.findUnique({
       where: { id: carId }
     });
@@ -53,20 +61,50 @@ export async function PATCH(
     if (!existingCar) return new NextResponse("Listing not found", { status: 404 });
     if (existingCar.userId !== supabaseUser.id) return new NextResponse("Forbidden", { status: 403 });
 
-    // 5. Perform the update mutation securely
+    // 5. Build dynamic mutations safely
+    const updatedBrand = body.brand || existingCar.brand;
+    const updatedModel = body.model || existingCar.model;
+    const hasBrandOrModelChanged = 
+      updatedBrand.toLowerCase() !== existingCar.brand.toLowerCase() || 
+      updatedModel.toLowerCase() !== existingCar.model.toLowerCase();
+
+    // Re-generate SEO slug only if brand or model parameters shift
+    const slug = hasBrandOrModelChanged 
+      ? generateSlug(updatedBrand, updatedModel) 
+      : existingCar.slug;
+
+    // Normalizing incoming enum strings to prevent capitalization write crashes
+    const transmission = body.transmission ? String(body.transmission).toUpperCase() : undefined;
+    const fuelType = body.fuelType ? String(body.fuelType).toUpperCase() : undefined;
+    const condition = body.condition ? String(body.condition).toUpperCase() : undefined;
+
+    // Safe comparison: Convert Prisma Decimal price to a standard Javascript Number
+    const existingPrice = Number(existingCar.price);
+    const incomingPrice = Number(body.price);
+    const hasPriceChanged = existingPrice !== incomingPrice;
+
+    // 6. Perform the update mutation securely 
     const updatedCar = await db.car.update({
       where: { id: carId },
       data: {
-        brand: body.brand,
-        model: body.model,
+        brand: updatedBrand,
+        model: updatedModel,
+        slug,
+        title: `${Number(body.year)} ${updatedBrand} ${updatedModel}`,
         year: Number(body.year),
-        price: Number(body.price),
+        price: incomingPrice,
         mileage: Number(body.mileage),
-        transmission: body.transmission,
-        fuelType: body.fuelType,
-        condition: body.condition,
-        // If critical parameters shift, automatically toggle status back to review protocol
-        listingStatus: existingCar.price !== Number(body.price) ? "PENDING" : existingCar.listingStatus
+        color: body.color,
+        bodyType: body.bodyType,
+        drivetrain: body.drivetrain,
+        transmission: transmission as any,
+        fuelType: fuelType as any,
+        condition: condition as any,
+        negotiable: Boolean(body.negotiable),
+        
+        // Keep standard listing availability status (AVAILABLE, SOLD) consistent
+        status: existingCar.status,
+        listingStatus: hasPriceChanged ? "PENDING" : existingCar.listingStatus
       }
     });
 

@@ -3,11 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation"; 
 import { motion } from "framer-motion";
 import { Role } from "@prisma/client";
 import { ArrowRight, Car, LayoutDashboard, MessageSquare, PlusCircle, ShieldCheck, Star } from "lucide-react";
 import { Button } from "../controls/Button";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { showListingPromptToast } from "@/components/toast/ListingPromptToast";
 
 interface DbUser {
   id: string | null;
@@ -27,6 +29,7 @@ interface HeroProps {
 }
 
 export default function Hero({ user }: HeroProps) {
+  const router = useRouter(); // 👈 Initialized router
   const isAuthenticated = !!user?.id;
   const firstName = user?.name ? user.name.trim().split(" ")[0] : null;
   const isDealer = user?.role === Role.DEALER;
@@ -39,6 +42,32 @@ export default function Hero({ user }: HeroProps) {
 
   const openAuth = (mode: "login" | "signup") => {
     setAuthModal({ isOpen: true, mode });
+  };
+
+  // 🛠️ The Corrected Action Handler
+  const handleListVehicleClick = () => {
+    // 1. If not logged in, pop open the clean entry portal modal!
+    if (!isAuthenticated) {
+      return openAuth("login");
+    }
+
+    // 2. If already an onboarded Dealer, bypass prompt and land right on /sell
+    if (user?.role === Role.DEALER) {
+      return router.push("/sell");
+    }
+
+    // 3. If standard user, run our custom action prompt toast
+    if (user?.role === Role.USER) {
+      showListingPromptToast({
+        listingsRemaining: user.privateListingLimit ?? 2,
+        onChoosePrivate: () => {
+          router.push("/sell#sell-form");
+        },
+        onChooseDealer: () => {
+          router.push("/onboarding");
+        },
+      });
+    }
   };
 
   return (
@@ -128,6 +157,10 @@ export default function Hero({ user }: HeroProps) {
                 <p className="text-xs uppercase text-neutral-400 font-semibold tracking-wider">Account Status</p>
                 <p className="text-xl font-bold text-emerald-400 mt-1">Active</p>
               </div>
+              <Link href="/valuation" className="bg-neutral-900/80 hover:bg-neutral-800/50 backdrop-blur-md p-4 rounded-xl border border-neutral-800">
+                <p className="text-xs uppercase text-neutral-400 font-semibold tracking-wider">Car Valuation</p>
+                <p className="text-xl font-bold text-gray-400 mt-1">Valuate my car</p>
+              </Link>
             </div>
           </div>
         )}
@@ -140,7 +173,7 @@ export default function Hero({ user }: HeroProps) {
           className="mt-10 flex flex-wrap items-center justify-center gap-4"
         >
           <Link href="/cars">
-            <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8">
+            <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 cursor-pointer">
               Explore Showroom <Car className="ml-2 h-4 w-4" />
             </Button>
           </Link>
@@ -149,29 +182,34 @@ export default function Hero({ user }: HeroProps) {
             <>
               {isDealer || isAdmin ? (
                 <Link href="/dashboard">
-                  <Button variant="outline" size="lg" className="border-neutral-700 text-neutral-300 hover:bg-neutral-900/50 font-semibold">
+                  <Button variant="outline" size="lg" className="border-neutral-700 text-neutral-300 hover:bg-neutral-900/50 font-semibold cursor-pointer">
                     Console <LayoutDashboard className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
               ) : (
-                <Link href="/sell">
-                  <Button variant="outline" size="lg" className="border-amber-500/40 text-amber-400 hover:bg-amber-400/10 font-semibold">
-                    List a Vehicle <PlusCircle className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
+        
+                <Button 
+                  onClick={handleListVehicleClick} 
+                  variant="outline" 
+                  size="lg" 
+                  className="border-amber-500/40 text-amber-400 hover:bg-amber-400/10 font-semibold cursor-pointer animate-none"
+                >
+                  List a Vehicle <PlusCircle className="ml-2 h-4 w-4" />
+                </Button>
+                
               )}
               <Link href="/messages">
-                <Button variant="ghost" size="lg" className="text-neutral-300 hover:text-white hover:bg-white/5">
+                <Button variant="ghost" size="lg" className="text-neutral-300 hover:text-white hover:bg-white/5 cursor-pointer">
                   Inbox <MessageSquare className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </>
           ) : (
-            /* INTERCEPTED: Triggers the popping modal instead of navigating away */
+            /* Direct click also points standard guests to the click intercept wrapper */
             <Button
               variant="outline"
               size="lg"
-              onClick={() => openAuth("signup")}
+              onClick={handleListVehicleClick}
               className="border-neutral-700 text-neutral-300 hover:bg-neutral-900 font-semibold cursor-pointer"
             >
               Sell Your Vehicle <ArrowRight className="ml-2 h-4 w-4" />

@@ -12,9 +12,25 @@ import { getCarBySlug } from "@/lib/engine/marketplace";
 type PromisedCarType = ReturnType<typeof getCarBySlug>;
 type UnwrappedCarType = PromisedCarType extends Promise<infer T> ? T : never;
 
+type OriginalCar = NonNullable<UnwrappedCarType>;
+
+export type SerializedCar = Omit<
+  OriginalCar,
+  "price" | "createdAt" | "updatedAt" | "publishedAt" | "expiresAt" | "soldAt" | "archivedAt" | "carImages"
+> & {
+  price: number;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  expiresAt: string | null;
+  soldAt: string | null;
+  archivedAt: string | null;
+  carImages?: string[];
+};
+
 export interface CarDetailsViewProps {
-  car: NonNullable<UnwrappedCarType>;
-  currentUserId: string; // ✨ Passed down directly from Supabase server context session
+  car: SerializedCar; 
+  currentUserId: string;
 }
 
 export default function CarDetailsView({ car, currentUserId }: CarDetailsViewProps) {
