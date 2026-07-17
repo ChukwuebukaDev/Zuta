@@ -43,7 +43,7 @@ export type Car = {
     imageUrl?: string | null; // Clerk image URL
     isVerified?: boolean;
   };
-
+  city:string;
   status: string;
   listingStatus: string;
   featured: boolean;

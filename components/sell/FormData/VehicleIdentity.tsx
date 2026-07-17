@@ -62,12 +62,30 @@ export default function VehicleIdentity({
           onChange={(val) => onChange("year", Number(val))}
         />
 
-        <Dropdown
-          options={["Black", "White", "Silver", "Gray", "Blue", "Red"]}
-          value={color}
-          placeholder="Color"
-          onChange={(val) => onChange("color", val)}
-        />
+       <Dropdown
+  options={[
+    "Black",
+    "White",
+    "Silver",
+    "Gray",
+    "Charcoal",
+    "Blue",
+    "Red",
+    "Green",
+    "Yellow",
+    "Orange",
+    "Gold",
+    "Bronze",
+    "Brown",
+    "Beige",
+    "Burgundy",
+    "Purple",
+    "Custom / Other"
+  ]}
+  value={color}
+  placeholder="Color"
+  onChange={(val) => onChange("color", val)}
+/>
       </div>
     </div>
   );
