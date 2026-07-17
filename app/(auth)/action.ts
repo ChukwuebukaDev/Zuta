@@ -3,6 +3,7 @@
 import { createClient } from "@/supabase/server";
 import { prisma as db } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import {Role} from "@prisma/client";
 export async function login(formData: FormData) {
   const supabase = await createClient();
 
@@ -66,7 +67,7 @@ export async function signup(formData: FormData) {
           email,
           name,
           phone,
-          role: "USER",
+          role: Role.USER,
           privateListingLimit: 2,
         },
       });
