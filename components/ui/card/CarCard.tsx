@@ -8,9 +8,10 @@ type CarsListProps = {
 };
 
 export default function CarCard({ cars }: CarsListProps) {
+  const availableCars = cars.filter((car) => car.status === "AVAILABLE" || car.status === "PENDING");
   return (
     <>
-      {cars.map((car) => {
+      {availableCars.map((car) => {
         const isPrivate = car.sellerType === "PRIVATE";
 
         return (
