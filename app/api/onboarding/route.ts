@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma as db } from "@/lib/prisma";
 import { createClient } from "@/supabase/server";
+import { supabaseAdmin } from "@/supabase/admin";
 
 interface IncomingDocument {
   type: "GOVT_ID" | "BUSINESS_CARD" | "CAC_CERTIFICATE";
@@ -18,41 +19,98 @@ interface OnboardingRequestBody {
 
 export async function POST(req: Request) {
   try {
+    // ============================================================
+    // 1. Validate authenticated Supabase session
+    // ============================================================
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ message: "Unauthorized Session" }, { status: 401 });
+      return NextResponse.json(
+        { message: "Unauthorized session." },
+        { status: 401 }
+      );
     }
 
+    // ============================================================
+    // 2. Parse incoming onboarding payload
+    // ============================================================
     const body: OnboardingRequestBody = await req.json();
-    const { businessName, cacNumber, businessAddress, tagline, documents, phone } = body;
 
-    // Fast validation safety check
-    if (!businessName || !cacNumber || !businessAddress || !documents || documents.length < 2) {
-      return NextResponse.json({ message: "Missing required profile credentials" }, { status: 400 });
+    const {
+      businessName,
+      phone,
+      cacNumber,
+      businessAddress,
+      tagline,
+      documents,
+    } = body;
+
+    // ============================================================
+    // 3. Validate required fields
+    // ============================================================
+    if (
+      !businessName ||
+      !phone ||
+      !cacNumber ||
+      !businessAddress ||
+      !documents ||
+      documents.length < 2
+    ) {
+      return NextResponse.json(
+        {
+          message: "Missing required dealership information.",
+        },
+        { status: 400 }
+      );
     }
 
-    const govtIdUrl = documents.find((d) => String(d.type).toUpperCase() === "GOVT_ID")?.url;
-    const businessCardUrl = documents.find((d) => String(d.type).toUpperCase() === "BUSINESS_CARD")?.url;
+    const govtIdUrl = documents.find(
+      (doc) => doc.type === "GOVT_ID"
+    )?.url;
+
+    const businessCardUrl = documents.find(
+      (doc) => doc.type === "BUSINESS_CARD"
+    )?.url;
 
     if (!govtIdUrl || !businessCardUrl) {
-      return NextResponse.json({ message: "Required documentation files missing" }, { status: 400 });
+      return NextResponse.json(
+        {
+          message: "Required verification documents are missing.",
+        },
+        { status: 400 }
+      );
     }
 
-    // Generate a unique marketplace landing identifier
-    const businessSlug = `${businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Math.random().toString(36).substring(2, 6)}`;
+    // ============================================================
+    // 4. Generate a unique public dealership slug
+    // ============================================================
+    const businessSlug = `${businessName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")}-${Math.random()
+      .toString(36)
+      .substring(2, 6)}`;
 
-    // Atomic transaction execution blocks webhook interruption entirely
+    // ============================================================
+    // 5. Prisma Transaction
+    //
+    // Prisma remains the PRIMARY source of truth.
+    // If any nested write fails, everything rolls back.
+    // ============================================================
     const updatedUser = await db.$transaction(async (tx) => {
-      return await tx.user.update({
-        where: { id: user.id },
+      return tx.user.update({
+        where: {
+          id: user.id,
+        },
+
         data: {
           role: "DEALER",
-          onboardingComplete: true, // Elevates listing portal clearance
+          onboardingComplete: true,
           phone: phone.trim(),
-          
-          // 🌟 FIXED: Removed 'legalName', 'idUrl', and 'cardUrl' from root User write
+
           dealerProfile: {
             create: {
               businessName,
@@ -60,8 +118,7 @@ export async function POST(req: Request) {
               phone: phone.trim(),
               tagline: tagline || null,
               logo: businessCardUrl,
-              // 'status' auto-defaults to DRAFT via Prisma schema
-            }
+            },
           },
 
           verificationRequest: {
@@ -69,28 +126,75 @@ export async function POST(req: Request) {
               legalName: businessName,
               businessAddress,
               cacNumber,
-              // 'status' auto-defaults to SUBMITTED via Prisma schema
+
               documents: {
                 create: documents.map((doc) => ({
-                  type: String(doc.type).toUpperCase() as any, 
+                  type: doc.type,
                   url: doc.url,
-                }))
-              }
-            }
-          }
-        }
+                })),
+              },
+            },
+          },
+        },
       });
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Dealership configurations fully committed.",
-      user: updatedUser 
-    }, { status: 200 });
+    // ============================================================
+    // 6. Synchronize Supabase Auth metadata
+    //
+    // Proxy runs on the Edge and cannot efficiently query Prisma.
+    // Therefore we mirror important authorization fields into
+    // Supabase Auth user_metadata.
+    // ============================================================
+    const { error: metadataError } =
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          role: updatedUser.role,
+          onboardingComplete: updatedUser.onboardingComplete,
+        },
+      });
 
-  } catch (error: unknown) {
-    console.error("[DEALER_ONBOARDING_CRASH]:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal processing failure";
-    return NextResponse.json({ message: errorMessage }, { status: 500 });
+    if (metadataError) {
+      console.error(
+        "[SUPABASE_METADATA_SYNC_FAILED]",
+        metadataError
+      );
+
+      return NextResponse.json(
+        {
+          message:
+            "Dealer account was created, but authentication metadata failed to synchronize.",
+        },
+        { status: 500 }
+      );
+    }
+
+    // ============================================================
+    // 7. Success
+    // ============================================================
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Dealer onboarding completed successfully.",
+        user: updatedUser,
+      },
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error("[DEALER_ONBOARDING_CRASH]", error);
+
+    return NextResponse.json(
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : "Internal server error.",
+      },
+      {
+        status: 500,
+      }
+    );
   }
 }

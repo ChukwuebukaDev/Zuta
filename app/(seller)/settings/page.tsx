@@ -25,7 +25,7 @@ export default async function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-slate-100 p-4 lg:p-8 max-w-2xl mx-auto space-y-8 pt-24">
+    <main className="min-h-screen bg-zinc-950 text-slate-100 p-4 lg:p-8 space-y-8 pt-24">
       <div>
         <h1 className="text-3xl font-black uppercase italic tracking-tight text-white">
           Account Settings

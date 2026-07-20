@@ -3,12 +3,15 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma as db } from "@/lib/prisma";
 import OnboardingForm from "@/components/forms/OnboardingForm";
-import { Car, Shield, Clock, Zap } from "lucide-react";
+import { 
+  Car, Shield, Clock, Zap, Sparkles, Award, 
+  BadgeCheck, Users, TrendingUp, CheckCircle2,
+  Building2, Globe, Mail, Phone, Star, Crown
+} from "lucide-react";
 
 export default async function OnboardingPage() {
   const cookieStore = await cookies();
 
-  // 1. Initialize the official Supabase SSR Server Client safely
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -30,16 +33,13 @@ export default async function OnboardingPage() {
     }
   );
 
-  // 2. Securely authenticate session layout state
-  const { data: { session } } = await supabase.auth.getSession();
+  // ⚡ OPTIMIZATION: Swapped getSession() for getUser() to prevent runtime session forgery
+  const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (authError || !supabaseUser) {
     redirect("/sign-in");
   }
 
-  const supabaseUser = session.user;
-
-  // 3. Query your internal database using the Supabase UUID string
   const dbUser = await db.user.findUnique({
     where: { id: supabaseUser.id },
     select: { 
@@ -53,17 +53,14 @@ export default async function OnboardingPage() {
     redirect('/admin-dashboard');
   }
 
-  // If they already completed onboarding and are completely verified, send them to the dashboard
   if (dbUser?.isVerified && dbUser?.role === "DEALER") {
     redirect("/dashboard");
   }
 
-  // If they filled out the form but the admin desk hasn't approved them yet, show the status hold page
   if (dbUser?.onboardingComplete && !dbUser?.isVerified) {
     redirect("/onboarding/status");
   }
 
-  // 4. Structural defaults extracted from the Supabase User session parameters
   const userPayload = {
     id: supabaseUser.id,
     email: supabaseUser.email || "",
@@ -71,80 +68,138 @@ export default async function OnboardingPage() {
     phone: supabaseUser.user_metadata?.phone || supabaseUser.phone || ""
   };
 
+  // 🛠️ FIXED: Static Tailwind style map dictionary to bypass string compilation constraints
+  const benefitCards = [
+    { 
+      icon: Shield, 
+      label: "Commercial Verification", 
+      desc: "Access high-intent buyer networks",
+      iconClass: "text-blue-400 bg-blue-500/10 border-blue-500/20"
+    },
+    { 
+      icon: Clock, 
+      label: "48h Desk SLA", 
+      desc: "Fast-track pipeline validation",
+      iconClass: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
+    },
+    { 
+      icon: Zap, 
+      label: "Corporate Dashboard", 
+      desc: "Real-time client leads access",
+      iconClass: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20"
+    },
+    { 
+      icon: Crown, 
+      label: "Premium Listings", 
+      desc: "Unlock luxury vehicle inventory",
+      iconClass: "text-purple-400 bg-purple-500/10 border-purple-500/20"
+    }
+  ];
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black overflow-x-hidden">
-      {/* Background Grid Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 opacity-[0.03] md:opacity-5" style={{
-          backgroundImage: `linear-gradient(0deg, transparent 24%, rgba(59, 130, 246, 0.2) 25%, rgba(59, 130, 246, 0.2) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.2) 75%, rgba(59, 130, 246, 0.2) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(59, 130, 246, 0.2) 25%, rgba(59, 130, 246, 0.2) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.2) 75%, rgba(59, 130, 246, 0.2) 76%, transparent 77%, transparent)`,
-          backgroundSize: '40px 40px'
+    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black overflow-hidden relative">
+      
+      {/* ==================== BACKGROUND EFFECTS ==================== */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 opacity-[0.03] md:opacity-[0.05]" style={{
+          backgroundImage: `
+            linear-gradient(0deg, transparent 24%, rgba(59, 130, 246, 0.15) 25%, rgba(59, 130, 246, 0.15) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.15) 75%, rgba(59, 130, 246, 0.15) 76%, transparent 77%, transparent),
+            linear-gradient(90deg, transparent 24%, rgba(59, 130, 246, 0.15) 25%, rgba(59, 130, 246, 0.15) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.15) 75%, rgba(59, 130, 246, 0.15) 76%, transparent 77%, transparent)
+          `,
+          backgroundSize: '50px 50px'
         }} />
-        <div className="absolute top-1/4 -left-1/4 w-[100%] md:w-1/2 h-1/2 bg-blue-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 -right-1/4 w-[100%] md:w-1/2 h-1/2 bg-cyan-500/10 rounded-full blur-[120px]" />
+        
+        <div className="absolute top-1/4 -left-1/4 w-[50%] md:w-1/3 h-[50%] bg-blue-600/20 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/4 -right-1/4 w-[50%] md:w-1/3 h-[50%] bg-cyan-500/15 rounded-full blur-[150px]" />
       </div>
 
-      <div className="relative z-10">
-        {/* Navigation Bar */}
-        <nav className="backdrop-blur-md bg-slate-950/40 border-b border-slate-800/50 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 md:gap-3 group">
-              <div className="relative p-1.5 md:p-2 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg md:rounded-xl shadow-lg">
-                <Car className="text-white w-4 h-4 md:w-5 md:h-5" />
+      {/* ==================== NAVIGATION ==================== */}
+      <nav className="relative z-50 backdrop-blur-xl bg-slate-950/60 border-b border-slate-800/50 sticky top-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            <div className="flex items-center gap-2 sm:gap-3 group">
+              <div className="relative p-1.5 sm:p-2.5 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl shadow-lg shadow-blue-500/20">
+                <Car className="text-white w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-blue-100 to-cyan-100 bg-clip-text text-transparent">ZUTA</span>
+              <div>
+                <span className="text-lg sm:text-2xl font-black bg-gradient-to-r from-blue-100 to-cyan-100 bg-clip-text text-transparent tracking-tight">
+                  ZUTA
+                </span>
+                <span className="hidden sm:inline text-[10px] font-bold text-blue-400/60 ml-1.5 uppercase tracking-widest">
+                  • Dealership
+                </span>
+              </div>
             </div>
-            <div className="text-[10px] md:text-sm text-slate-400 font-medium tracking-wider uppercase">Dealer Portal</div>
+
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                <BadgeCheck size={12} className="text-blue-400" />
+                <span className="text-[10px] font-medium text-blue-300 tracking-wide">Verified Portal</span>
+              </div>
+            </div>
           </div>
-        </nav>
+        </div>
+      </nav>
 
-        <div className="px-4 py-12 md:py-20 lg:py-28">
-          <div className="max-w-5xl mx-auto">
+      {/* ==================== MAIN CONTENT ==================== */}
+      <div className="relative z-10 min-h-[calc(100vh-5rem)] flex items-center">
+        <div className="w-full py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
             
-            {/* Animated Status Badge */}
-            <div className="flex justify-center mb-6 md:mb-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-sm">
-                <Zap size={14} className="text-blue-400 animate-pulse" />
-                <span className="text-[10px] md:text-sm font-medium text-blue-200">Exclusive Dealer Network</span>
+            {/* ===== HERO SECTION ===== */}
+            <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-2 mb-4 sm:mb-6 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-full backdrop-blur-sm">
+                <Sparkles size={14} className="text-blue-400" />
+                <span className="text-[10px] sm:text-xs font-bold text-blue-200 tracking-[0.15em] uppercase">
+                  Exclusive Dealer Network • Apply Now
+                </span>
               </div>
-            </div>
 
-            {/* Heading Section */}
-            <div className="text-center space-y-4 md:space-y-6 mb-10 md:mb-16">
               <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1] text-white">
-                Register Your <br className="hidden md:block" />
-                <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-300 bg-clip-text text-transparent">
+                Register Your{" "}
+                <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-300 bg-clip-text text-transparent block sm:inline">
                   Dealership Profile
                 </span>
               </h1>
-              <p className="text-slate-400 text-sm md:text-lg max-w-2xl mx-auto leading-relaxed px-2">
-                Establish your verified commercial account identity to list premium vehicle fleets to high-intent luxury market pipelines.
-              </p>
             </div>
 
-            {/* Platform Trust Highlights */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-10 md:mb-16">
-              {[
-                { icon: Shield, label: "Commercial Verification", desc: "Access high-intent networks" },
-                { icon: Clock, label: "48h Desk SLA", desc: "Fast-track pipeline validation" },
-                { icon: Zap, label: "Corporate Fleet Dashboard", desc: "Real-time client leads access" }
-              ].map((benefit, idx) => (
-                <div key={idx} className="flex sm:flex-col items-center sm:items-start gap-4 sm:gap-0 p-4 rounded-xl border border-slate-800/50 bg-slate-900/50 backdrop-blur-sm">
-                  <benefit.icon className="w-5 h-5 text-blue-400 sm:mb-3 shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-white text-xs md:text-sm">{benefit.label}</h3>
-                    <p className="text-[10px] md:text-xs text-slate-500 mt-0.5">{benefit.desc}</p>
+            {/* ===== BENEFITS GRID ===== */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+              {benefitCards.map((benefit, idx) => (
+                <div 
+                  key={idx} 
+                  className="group relative p-5 rounded-2xl bg-slate-900/40 border border-slate-800/60 backdrop-blur-sm hover:border-blue-500/30 hover:bg-slate-900/60 transition-all duration-300 shadow-xl"
+                >
+                  {/* Fixed: Applied static class bindings to ensure icon wraps pop cleanly */}
+                  <div className={`p-2 rounded-xl inline-flex items-center justify-center border mb-3 group-hover:scale-105 transition-transform duration-300 ${benefit.iconClass}`}>
+                    <benefit.icon size={18} />
                   </div>
+                  <h3 className="font-bold text-white text-xs sm:text-sm mb-1 uppercase tracking-wide">{benefit.label}</h3>
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-medium">{benefit.desc}</p>
                 </div>
               ))}
             </div>
 
-            {/* Application Desk Mount */}
+            {/* ===== FORM SECTION ===== */}
             <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/10 to-cyan-500/10 rounded-[2rem] blur-2xl pointer-events-none" />
-              <div className="relative bg-slate-900/80 border border-slate-800 rounded-2xl md:rounded-[2rem] p-6 md:p-12 backdrop-blur-xl shadow-2xl">
-                <div className="mb-8 pb-6 border-b border-slate-800/60 text-center md:text-left">
-                  <h2 className="text-xl md:text-2xl font-bold text-white">Dealership Credentials Application</h2>
-                  <p className="text-slate-500 text-xs md:text-sm mt-1">Please provide accurate corporate profiles matching your official registration parameters.</p>
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/10 via-cyan-500/10 to-indigo-600/10 rounded-[2rem] blur-2xl pointer-events-none" />
+              
+              <div className="relative bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800/50 rounded-3xl p-6 sm:p-8 lg:p-12 backdrop-blur-xl shadow-2xl">
+                
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-slate-800/60">
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3 uppercase italic tracking-tight">
+                      <Building2 size={22} className="text-blue-400" />
+                      Dealership Credentials
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">
+                      Please provide accurate corporate profiles matching your official registration parameters.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full shrink-0 self-start sm:self-center">
+                    <CheckCircle2 size={12} className="text-emerald-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">4-step verification</span>
+                  </div>
                 </div>
 
                 <OnboardingForm
@@ -153,8 +208,31 @@ export default async function OnboardingPage() {
                   avatarUrl={userPayload.avatarUrl}
                   phone={userPayload.phone}
                 />
+
+                <div className="mt-8 pt-6 border-t border-slate-800/60">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-4 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <span className="flex items-center gap-1.5"><Shield size={12} className="text-emerald-400" /> Secure Matrix</span>
+                      <span className="text-slate-800">|</span>
+                      <span className="flex items-center gap-1.5"><Clock size={12} className="text-blue-400" /> GDPR Protected</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Trusted by 2,400+ dealers</span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
+
+            {/* ===== BOTTOM TRUST BAR ===== */}
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-500">
+              <div className="flex items-center gap-2"><Globe size={14} className="text-slate-600" /> <span>Global Network</span></div>
+              <div className="flex items-center gap-2"><Mail size={14} className="text-slate-600" /> <span>24/7 Support</span></div>
+              <div className="flex items-center gap-2"><Phone size={14} className="text-slate-600" /> <span>Dedicated Manager</span></div>
+              <div className="flex items-center gap-2"><Star size={14} className="text-amber-500 fill-amber-500/10" /> <span>4.9/5 Rating</span></div>
+            </div>
+
           </div>
         </div>
       </div>

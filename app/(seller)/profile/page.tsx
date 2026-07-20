@@ -1,9 +1,10 @@
 import { createClient } from "@/supabase/server";
 import { redirect } from "next/navigation";
 import { prisma as db } from "@/lib/prisma";
-import { MapPin, Calendar, Heart, MessageSquare, ShieldCheck, Store, PlusCircle,Settings2 } from "lucide-react";
+import { MapPin, Calendar, Heart, MessageSquare, ShieldCheck, Store, PlusCircle, Settings2 } from "lucide-react";
 import ProfileTabs from "@/components/dashboard/ProfileTabs";
 import Link from "next/link";
+import SubscriptionClient from "@/components/dashboard/SubscriptionClient";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -24,7 +25,7 @@ export default async function ProfilePage() {
               brand: true,
               model: true,
               year: true,
-              price: true, // Prisma Decimal
+              price: true, 
               thumbnail: true,
               slug: true,
               mileage: true,
@@ -105,30 +106,41 @@ export default async function ProfilePage() {
       brand: true,
       model: true,
       year: true,
-      price: true, // Decimal
+      price: true, 
       thumbnail: true,
       slug: true,
       mileage: true,
       transmission: true,
       status: true, 
+      sellerType: true,
     },
     orderBy: { createdAt: "desc" },
   });
 
-  // 👇 Fix 1: Map raw listings to convert Decimal prices to standard numbers
+  // Map raw listings to convert Decimal prices to standard numbers
   const myListings = rawListings.map(listing => ({
     ...listing,
-    price: Number(listing.price), // Converts Decimal class to standard JS number
+    price: Number(listing.price), 
   }));
 
-  // 👇 Fix 2: Flatten favorites and convert nested Decimal prices to standard numbers
+  // Flatten favorites and convert nested Decimal prices to standard numbers
   const savedCars = (user.favourites?.map((fav) => {
     if (!fav.car) return null;
     return {
       ...fav.car,
-      price: Number(fav.car.price), // Converts Decimal class to standard JS number
+      price: Number(fav.car.price), 
     };
-  }).filter(Boolean) || []) as any[];
+  }).filter(Boolean) || []) as Array<{
+    id: string;
+    brand: string;
+    model: string;
+    year: number;
+    price: number;
+    thumbnail: string;
+    slug: string;
+    mileage: number;
+    transmission: string;
+  }>;
 
   // 3. Configure layout display details
   const profileData = {
@@ -144,12 +156,12 @@ export default async function ProfilePage() {
     tagline: isDealer ? user.dealerProfile?.tagline : null,
   };
 
-  // 4. Map display values strictly to match your client-side interface signatures
-  // - If they are a dealer, display their posted inventory listings and inbound client leads.
-  // - If they are a regular user, display their active bookmarks (savedCars) and outbound negotiations.
-  const displayCars = isDealer ? myListings : savedCars;
+  // If they have uploaded cars, we display those car listings (Private Seller mode)
+  // Otherwise, we fallback to showing their bookmarked Garage items
+  const displayCars = (isDealer || myListings.length > 0) ? myListings : savedCars;
   
-  const activeChats = isDealer 
+  // Show active inbound leads if they have listings, otherwise outbound buyer tracks
+  const activeChats = (isDealer || myListings.length > 0)
     ? user.sellerConversations 
     : user.buyerConversations;
 
@@ -165,12 +177,12 @@ export default async function ProfilePage() {
   }));
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-slate-100 p-4 lg:p-8 max-w-6xl mx-auto space-y-8">
-      
+    <div className="min-h-screen bg-zinc-950 text-slate-100 p-4 lg:p-8  space-y-8">
+      <SubscriptionClient />
       {/* Dynamic Profile Identity Panel */}
       <div className="relative overflow-hidden rounded-[2.5rem] bg-zinc-900/40 border border-slate-900 p-6 md:p-10 flex flex-col md:flex-row items-center gap-6 justify-between shadow-xl">
-        <div className={`absolute top-0 right-0 w-96 h-96 ${isDealer ? 'bg-emerald-600/5' : 'bg-amber-600/5'} rounded-full blur-[120px] pointer-events-none`} />
-        
+        <div className={`absolute top-0 right-0 w-96 h-96 ${isDealer ? 'bg-emerald-600/5' : 'bg-blue-600/5'} rounded-full blur-[120px] pointer-events-none`} />
+      
         <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
           <div className="relative w-28 h-28 rounded-3xl overflow-hidden border-2 border-slate-800 bg-zinc-950 shrink-0 flex items-center justify-center text-zinc-700">
             {profileData.avatarUrl ? (
@@ -180,7 +192,7 @@ export default async function ProfilePage() {
                 className="object-cover w-full h-full"
               />
             ) : (
-              <div className="font-black italic text-3xl text-zinc-800 uppercase">
+              <div className="font-black italic text-3xl text-zinc-400 uppercase">
                 {profileData.name.substring(0, 2)}
               </div>
             )}
@@ -194,10 +206,12 @@ export default async function ProfilePage() {
               <span className={`inline-flex items-center gap-1 border px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
                 isDealer 
                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  : myListings.length > 0
+                    ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
               }`}>
                 {isDealer ? <Store size={12} /> : <ShieldCheck size={12} />}
-                {isDealer ? "Authorized Dealer" : "Private Seller"}
+                {isDealer ? "Authorized Dealer" : myListings.length > 0 ? "Private Seller" : "Verified Buyer"}
               </span>
             </div>
             
@@ -215,53 +229,43 @@ export default async function ProfilePage() {
         </div>
 
         {/* Dynamic Metric Display Panels */}
-        <div className="grid grid-cols-3 gap-3 w-full md:w-auto shrink-0">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full md:w-auto shrink-0 relative z-10">
           <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]">
-            <Store className="mx-auto text-amber-500 mb-1" size={18} />
+            <Store className="mx-auto text-blue-500 mb-1" size={18} />
             <span className="block text-xl font-black italic tracking-tight text-white">{myListings.length}</span>
-            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
-              My Cars
-            </span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">My Postings</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]">
             <Heart className="mx-auto text-rose-500 mb-1" size={18} />
             <span className="block text-xl font-black italic tracking-tight text-white">{savedCars.length}</span>
-            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
-              Bookmarks
-            </span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">Bookmarks</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]">
-            <MessageSquare className="mx-auto text-blue-500 mb-1" size={18} />
-            <span className="block text-xl font-black italic tracking-tight text-white font-sans">
-              {serializedChats.length}
-            </span>
-            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
-              Messages
-            </span>
+            <MessageSquare className="mx-auto text-emerald-500 mb-1" size={18} />
+            <span className="block text-xl font-black italic tracking-tight text-white">{serializedChats.length}</span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">Negotiations</span>
           </div>
 
-            <Link className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px]" href="/settings">
-            <Settings2 className="mx-auto text-amber-500 mb-1" size={18} />
-          
-            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">
-              Settings
-            </span>
+          <Link className="p-4 rounded-2xl bg-zinc-950 border border-slate-900 text-center min-w-[100px] hover:border-slate-800 transition" href="/settings">
+            <Settings2 className="mx-auto text-slate-400 mb-1" size={18} />
+            <span className="block text-xl opacity-0 select-none leading-none">-</span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-500 font-black">Settings</span>
           </Link>
         </div>
       </div>
 
       {/* Upgrade Call To Action */}
       {!isDealer && (
-        <div className="p-4 rounded-2xl bg-linear-to-r from-zinc-900/60 to-amber-950/20 hover:from-zinc-900 hover:to-amber-950/30 border border-zinc-900 text-center text-sm text-slate-400 font-medium transition-colors">
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-zinc-900/60 to-amber-950/20 hover:from-zinc-900 hover:to-amber-950/30 border border-zinc-900 text-center text-sm text-slate-400 font-medium transition-colors">
           <Link className="flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-amber-400 font-bold" href='/onboarding'>
             Scale Up: Register an Official Dealership Profile <PlusCircle size={14} />
           </Link>
         </div>
       )}
 
-      {/* 👇 FIXED PROP CALLOUT: Matches the clean parameters ProfileTabs expects! */}
+      {/* Pass structural properties cleanly to our client tabs module */}
       <ProfileTabs 
         displayCars={displayCars} 
         activeChats={serializedChats} 

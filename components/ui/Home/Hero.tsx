@@ -10,6 +10,8 @@ import { ArrowRight, Car, LayoutDashboard, MessageSquare, PlusCircle, ShieldChec
 import { Button } from "../controls/Button";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { showListingPromptToast } from "@/components/toast/ListingPromptToast";
+import AccountStatusIsland from "@/components/ui/Wrapper/AccountIsland";
+import SubscriptionClient from "@/components/dashboard/SubscriptionClient";
 
 interface DbUser {
   id: string | null;
@@ -17,6 +19,7 @@ interface DbUser {
   email: string | null;
   role?: Role;
   privateListingLimit?: number;
+  isVerified?: boolean; 
   dealerProfile?: {
     businessName: string;
     rating: number;
@@ -29,7 +32,7 @@ interface HeroProps {
 }
 
 export default function Hero({ user }: HeroProps) {
-  const router = useRouter(); // 👈 Initialized router
+  const router = useRouter(); 
   const isAuthenticated = !!user?.id;
   const firstName = user?.name ? user.name.trim().split(" ")[0] : null;
   const isDealer = user?.role === Role.DEALER;
@@ -44,19 +47,15 @@ export default function Hero({ user }: HeroProps) {
     setAuthModal({ isOpen: true, mode });
   };
 
-  // 🛠️ The Corrected Action Handler
   const handleListVehicleClick = () => {
-    // 1. If not logged in, pop open the clean entry portal modal!
     if (!isAuthenticated) {
       return openAuth("login");
     }
 
-    // 2. If already an onboarded Dealer, bypass prompt and land right on /sell
     if (user?.role === Role.DEALER) {
       return router.push("/sell");
     }
 
-    // 3. If standard user, run our custom action prompt toast
     if (user?.role === Role.USER) {
       showListingPromptToast({
         listingsRemaining: user.privateListingLimit ?? 2,
@@ -71,159 +70,168 @@ export default function Hero({ user }: HeroProps) {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden text-white">
-      {/* Base Stacking Background Layers remain identical */}
-      <div className="absolute inset-0 bg-neutral-950 -z-30" />
-      <div className="absolute inset-0 -z-20">
-        <Image
-          src="/images/car-background.jpg"
-          alt="Luxury car with engineer in workshop"
-          fill
-          priority
-          className="object-cover scale-105"
+    <>
+      {user && user.id && (
+        <AccountStatusIsland 
+          user={{
+            name: user.name || "Showroom Broker",
+            role: user.role || Role.USER,
+            listingLimit: user.privateListingLimit ?? 0,
+            isVerified: user.isVerified ?? false,
+          }} 
         />
-      </div>
-      <div className="absolute inset-0 -z-10 bg-black/40" />
-      <div className="absolute inset-0 -z-10 bg-linear-to-tr from-neutral-950 via-neutral-950/70 to-amber-900/20" />
+      )}
+      {user && user.id && <SubscriptionClient />}
+     
+      <section className="relative min-h-[92vh] md:min-h-screen w-full flex items-center justify-center overflow-hidden text-white px-4 py-12 md:py-0">
+       
+        
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          <Image
+            src="/images/car-background.jpg"
+            alt="Luxury car workshop presentation layout backdrop"
+            fill
+            priority
+            className="object-cover scale-103 opacity-30 md:opacity-45 object-center"
+          />
+        </div>
+        
+        <div className="absolute inset-0 bg-black/70 md:bg-black/60 z-20 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-tr from-neutral-950 via-neutral-950/80 to-amber-950/10 z-20 pointer-events-none" />
 
-      <div className="container mx-auto px-6 text-center max-w-5xl z-10">
-        {/* UPPER CONTEXT BADGE */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 mb-6 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1 text-sm text-amber-300 tracking-wide"
-        >
-          {isAdmin && <ShieldCheck className="h-4 w-4 text-amber-400" />}
-          {isDealer
-            ? `${user.dealerProfile?.businessName || "Authorized Dealership"} • Portal`
-            : isAuthenticated
-            ? `Premium Account • Welcome back, ${firstName}`
-            : "Premium Automotive Marketplace"}
-        </motion.div>
+        <div className="w-full container mx-auto px-2 sm:px-6 text-center max-w-5xl z-30 space-y-6 md:space-y-8 relative">
+          
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/5 px-4 py-1.5 text-[11px] md:text-sm font-semibold text-amber-400 tracking-wider backdrop-blur-xs shadow-sm max-w-[90%] sm:max-w-full"
+          >
+            {isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
+            <span className="truncate">
+              {isDealer
+                ? `${user.dealerProfile?.businessName || "Authorized Dealership"} • Showroom Portal`
+                : isAuthenticated
+                ? `Premium Vault Identity • Welcome back, ${firstName}`
+                : "Premium Automotive Marketplace"}
+            </span>
+          </motion.div>
 
-        {/* CONDITIONALLY RENDERED INTERFACES */}
-        {!isAuthenticated ? (
-          <div className="space-y-6">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-4xl md:text-6xl font-bold leading-tight tracking-tight"
-            >
-              Own the road.
-              <span className="block bg-linear-to-r from-amber-300 to-yellow-500 bg-clip-text text-transparent">
-                Drive excellence.
-              </span>
-            </motion.h1>
-            <p className="text-lg text-neutral-300 max-w-2xl mx-auto">
-              Discover elite vehicles, premium metrics, and trusted automotive
-              professionals — all in one refined marketplace.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <motion.h1
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-3xl md:text-5xl font-bold tracking-tight text-neutral-100"
-            >
-              Hello, <span className="text-amber-400">{firstName}</span>. What are we doing today?
-            </motion.h1>
-
-            {/* Quick Insights Matrix */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto text-left">
-              {isDealer ? (
-                <>
-                  <div className="bg-neutral-900/80 backdrop-blur-md p-4 rounded-xl border border-neutral-800">
-                    <p className="text-xs uppercase text-neutral-400 font-semibold tracking-wider">Rating</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-xl font-bold text-neutral-100">{user?.dealerProfile?.rating ?? "5.0"}</span>
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    </div>
-                  </div>
-                  <div className="bg-neutral-900/80 backdrop-blur-md p-4 rounded-xl border border-neutral-800">
-                    <p className="text-xs uppercase text-neutral-400 font-semibold tracking-wider">Total Sales</p>
-                    <p className="text-xl font-bold text-neutral-100 mt-1">{user?.dealerProfile?.totalSales ?? 0} units</p>
-                  </div>
-                </>
-              ) : (
-                <div className="bg-neutral-900/80 backdrop-blur-md p-4 rounded-xl border border-neutral-800">
-                  <p className="text-xs uppercase text-neutral-400 font-semibold tracking-wider">Listing Slots Open</p>
-                  <p className="text-xl font-bold text-neutral-100 mt-1">{user?.privateListingLimit ?? 2} Remaining</p>
-                </div>
-              )}
-              <div className="bg-neutral-900/80 backdrop-blur-md p-4 rounded-xl border border-neutral-800">
-                <p className="text-xs uppercase text-neutral-400 font-semibold tracking-wider">Account Status</p>
-                <p className="text-xl font-bold text-emerald-400 mt-1">Active</p>
-              </div>
-              <Link href="/valuation" className="bg-neutral-900/80 hover:bg-neutral-800/50 backdrop-blur-md p-4 rounded-xl border border-neutral-800">
-                <p className="text-xs uppercase text-neutral-400 font-semibold tracking-wider">Car Valuation</p>
-                <p className="text-xl font-bold text-gray-400 mt-1">Valuate my car</p>
-              </Link>
+          {!isAuthenticated ? (
+            <div className="space-y-4 md:space-y-6">
+              <motion.h1
+                initial={{ opacity: 0, y: 25 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tight uppercase italic"
+              >
+                Own the road.
+                <span className="block bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 bg-clip-text text-transparent mt-1 md:mt-2">
+                  Drive excellence.
+                </span>
+              </motion.h1>
+              <p className="text-xs sm:text-sm md:text-lg text-neutral-400 max-w-2xl mx-auto font-medium leading-relaxed antialiased px-2">
+                Discover elite vehicles, advanced performance metrics, and trusted global automotive professionals — all in one refined digital marketplace environment.
+              </p>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="space-y-6 md:space-y-8">
+              <motion.h1
+                initial={{ opacity: 0, y: -15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xl sm:text-3xl md:text-5xl font-black tracking-tight text-neutral-100 uppercase italic leading-tight"
+              >
+                Hello, <span className="bg-gradient-to-r from-amber-400 to-yellow-200 bg-clip-text text-transparent">{firstName}</span>. <br className="sm:hidden" /> What are we doing today?
+              </motion.h1>
 
-        {/* ACTION PANEL */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.3 }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-4"
-        >
-          <Link href="/cars">
-            <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 cursor-pointer">
-              Explore Showroom <Car className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 max-w-3xl mx-auto text-left relative z-10 px-2 sm:px-0">
+                {isDealer ? (
+                  <>
+                    <div className="bg-neutral-900/40 backdrop-blur-md p-4 rounded-xl border border-neutral-900/60 hover:border-neutral-800 transition">
+                      <p className="text-[9px] uppercase text-neutral-500 font-bold tracking-wider">Showroom Rating</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-base font-black text-neutral-100">{user?.dealerProfile?.rating ?? "5.0"}</span>
+                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                      </div>
+                    </div>
+                    <div className="bg-neutral-900/40 backdrop-blur-md p-4 rounded-xl border border-neutral-900/60 hover:border-neutral-800 transition">
+                      <p className="text-[9px] uppercase text-neutral-500 font-bold tracking-wider">Total Revenue Units</p>
+                      <p className="text-base font-black text-neutral-100 mt-1">{user?.dealerProfile?.totalSales ?? 0} units sold</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="bg-neutral-900/40 backdrop-blur-md p-4 rounded-xl border border-neutral-900/60 hover:border-neutral-800 transition">
+                    <p className="text-[9px] uppercase text-neutral-500 font-bold tracking-wider">Free Listing Slots Open</p>
+                    <p className="text-base font-black text-slate-200 mt-1">{user?.privateListingLimit ?? 2} Remaining</p>
+                  </div>
+                )}
+                <div className="bg-neutral-900/40 backdrop-blur-md p-4 rounded-xl border border-neutral-900/60 hover:border-neutral-800 transition">
+                  <p className="text-[9px] uppercase text-neutral-500 font-bold tracking-wider">Account Operations</p>
+                  <p className="text-base font-black text-emerald-400 mt-1 uppercase tracking-wide">Active Node</p>
+                </div>
+                <Link href="/valuation" className="bg-neutral-900/40 hover:bg-neutral-900/80 backdrop-blur-md p-4 rounded-xl border border-neutral-900/60 hover:border-slate-800/80 transition group col-span-1 sm:col-span-3 lg:col-span-1">
+                  <p className="text-[9px] uppercase text-neutral-500 font-bold tracking-wider group-hover:text-amber-400 transition-colors">Instant Valuation</p>
+                  <p className="text-xs sm:text-sm font-bold text-slate-400 mt-1 flex items-center gap-1">Valuate my asset <ArrowRight size={12} /></p>
+                </Link>
+              </div>
+            </div>
+          )}
 
-          {isAuthenticated ? (
-            <>
-              {isDealer || isAdmin ? (
-                <Link href="/dashboard">
-                  <Button variant="outline" size="lg" className="border-neutral-700 text-neutral-300 hover:bg-neutral-900/50 font-semibold cursor-pointer">
-                    Console <LayoutDashboard className="ml-2 h-4 w-4" />
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-6 md:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 w-full px-2 sm:px-0 relative z-20"
+          >
+            <Link href="/cars" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-widest px-8 py-3.5 sm:py-3 cursor-pointer rounded-xl transition duration-300 shadow-xl shadow-amber-500/5 flex items-center justify-center">
+                Explore Showroom <Car className="ml-2 h-4 w-4 shrink-0" />
+              </Button>
+            </Link>
+
+            {isAuthenticated ? (
+              <>
+                {isDealer || isAdmin ? (
+                  <Link href="/dashboard" className="w-full sm:w-auto">
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto border-neutral-800 text-neutral-300 hover:bg-neutral-900/50 hover:text-white font-bold text-xs uppercase tracking-widest py-3.5 sm:py-3 cursor-pointer rounded-xl transition flex items-center justify-center">
+                      Management Console <LayoutDashboard className="ml-2 h-4 w-4 shrink-0" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button 
+                    onClick={handleListVehicleClick} 
+                    variant="outline" 
+                    size="lg" 
+                    className="w-full sm:w-auto border-amber-500/30 text-amber-400 hover:bg-amber-400/10 font-bold text-xs uppercase tracking-widest py-3.5 sm:py-3 cursor-pointer rounded-xl transition flex items-center justify-center"
+                  >
+                    List a Vehicle <PlusCircle className="ml-2 h-4 w-4 shrink-0" />
+                  </Button>
+                )}
+                <Link href="/messages" className="w-full sm:w-auto">
+                  <Button variant="ghost" size="lg" className="w-full sm:w-auto text-neutral-400 hover:text-white hover:bg-white/5 font-bold text-xs uppercase tracking-widest py-3.5 sm:py-3 cursor-pointer rounded-xl transition flex items-center justify-center">
+                    Inbox <MessageSquare className="ml-2 h-4 w-4 shrink-0" />
                   </Button>
                 </Link>
-              ) : (
-        
-                <Button 
-                  onClick={handleListVehicleClick} 
-                  variant="outline" 
-                  size="lg" 
-                  className="border-amber-500/40 text-amber-400 hover:bg-amber-400/10 font-semibold cursor-pointer animate-none"
-                >
-                  List a Vehicle <PlusCircle className="ml-2 h-4 w-4" />
-                </Button>
-                
-              )}
-              <Link href="/messages">
-                <Button variant="ghost" size="lg" className="text-neutral-300 hover:text-white hover:bg-white/5 cursor-pointer">
-                  Inbox <MessageSquare className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </>
-          ) : (
-            /* Direct click also points standard guests to the click intercept wrapper */
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleListVehicleClick}
-              className="border-neutral-700 text-neutral-300 hover:bg-neutral-900 font-semibold cursor-pointer"
-            >
-              Sell Your Vehicle <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          )}
-        </motion.div>
-      </div>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleListVehicleClick}
+                className="w-full sm:w-auto border-neutral-800 text-neutral-300 hover:bg-neutral-900 hover:text-white font-bold text-xs uppercase tracking-widest py-3.5 sm:py-3 cursor-pointer rounded-xl transition flex items-center justify-center"
+              >
+                Sell Your Vehicle <ArrowRight className="ml-2 h-4 w-4 shrink-0" />
+              </Button>
+            )}
+          </motion.div>
+        </div>
 
-      {/* RENDER POPPING MODAL SCREEN PORTAL */}
-      <AuthModal
-        isOpen={authModal.isOpen}
-        initialMode={authModal.mode}
-        onClose={() => setAuthModal((prev) => ({ ...prev, isOpen: false }))}
-      />
-    </section>
+        <AuthModal
+          isOpen={authModal.isOpen}
+          initialMode={authModal.mode}
+          onClose={() => setAuthModal((prev) => ({ ...prev, isOpen: false }))}
+        />
+      </section>
+    </>
   );
 }

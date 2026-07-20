@@ -8,7 +8,7 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // 1. Initialize Supabase SSR Client cleanly for Edge Runtime
+  // Initialize the Supabase SSR client for the Edge Runtime
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -17,64 +17,122 @@ export async function proxy(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
+
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set({ name, value, ...options })
-          );
-          response = NextResponse.next({
-            request,
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set({
+              name,
+              value,
+              ...options,
+            });
           });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set({ name, value, ...options })
-          );
+
+          // Recreate the response while preserving the request headers
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            });
+          });
         },
       },
     }
   );
 
-  // 2. ALWAYS use getUser() in middleware for security verification
-  const { data: { user } } = await supabase.auth.getUser();
+  // Always validate the authenticated user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const url = request.nextUrl.clone();
   const path = url.pathname;
 
-  // Define route rules
-  const isAuthPage = path.startsWith("/login") || path.startsWith("/signup");
-  const isPublicApi = path.startsWith("/api/uploadthing") || path.startsWith("/api/messages/send") || path.startsWith("/api/onboarding");
-  const isStaticPublic = path === "/" || path.startsWith("/cars") || path.startsWith("/parts") || path.startsWith("/services") || path.startsWith("/marketplace/search") || path.startsWith("/profile") || path.startsWith("/about") || path.startsWith("/home");
-  const isDashboardRoute = path.startsWith("/dashboard");
+  // -----------------------------
+  // Route Definitions
+  // -----------------------------
 
-  const isPublicRoute = isAuthPage || isPublicApi || isStaticPublic;
+  const isAuthPage =
+    path.startsWith("/login") ||
+    path.startsWith("/signup");
 
-  // 🔒 Guardrail 1: Standard Private Route Gatekeeper
+  const isPublicApi =
+    path.startsWith("/api/uploadthing") ||
+    path.startsWith("/api/messages/send") ||
+    path.startsWith("/api/onboarding");
+
+  const isStaticPublic =
+    path === "/" ||
+    path.startsWith("/cars") ||
+    path.startsWith("/parts") ||
+    path.startsWith("/services") ||
+    path.startsWith("/marketplace/search") ||
+    path.startsWith("/profile") ||
+    path.startsWith("/about") ||
+    path.startsWith("/home");
+
+  const isDashboardRoute =
+    path.startsWith("/dashboard");
+
+  const isPublicRoute =
+    isAuthPage ||
+    isPublicApi ||
+    isStaticPublic;
+
+  // -----------------------------
+  // Guardrail 1
+  // Protect private routes
+  // -----------------------------
+
   if (!user && !isPublicRoute) {
     url.pathname = "/login";
     url.searchParams.set("redirect_url", path);
+
     return NextResponse.redirect(url);
   }
 
-  // 🔄 Guardrail 2: Bounce authenticated traffic away from auth entry doors
+  // -----------------------------
+  // Guardrail 2
+  // Prevent authenticated users
+  // from revisiting login/signup
+  // -----------------------------
+
   if (user && isAuthPage) {
     url.pathname = "/";
+
     return NextResponse.redirect(url);
   }
 
-  // 🛡️ Guardrail 3: Secure Dealer Dashboard from standard buyers (Role-Based Access)
-  if (isDashboardRoute) {
-    if (!user) {
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
-    }
+  // -----------------------------
+  // Guardrail 3
+  // Dealer Dashboard Protection
+  // -----------------------------
 
-    // Read the role string directly from the encrypted Supabase JWT user_metadata
-    // This runs completely on the edge without making slow Prisma DB roundtrips!
-    const role = user.user_metadata?.role;
+  if (user && isDashboardRoute) {
+    console.log("[DASHBOARD_ACCESS_ATTEMPT]:", user);
+    const role =
+      user.user_metadata?.role
+        ?.toString()
+        .toUpperCase();
 
-    if (role !== "DEALER" && role !== "ADMIN") {
-      console.warn(`[UNAUTHORIZED_DASHBOARD_ACCESS]: User ${user.id} tried accessing dealer console with role: ${role}`);
-      
-      // Send standard buyers to their personal garage/profile page instead of the dealer panel
-      url.pathname = "/profile"; 
+    const allowedRoles = new Set([
+      "DEALER",
+      "ADMIN",
+    ]);
+
+    if (!allowedRoles.has(role ?? "")) {
+      console.warn(
+        `[UNAUTHORIZED_DASHBOARD_ACCESS] User=${user.id} Role=${role}`
+      );
+
+      url.pathname = "/profile";
+
       return NextResponse.redirect(url);
     }
   }
@@ -84,7 +142,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api|trpc)(.*)',
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|png|gif|svg|webp|ico|ttf|woff2?|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
   ],
 };

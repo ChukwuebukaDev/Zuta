@@ -25,6 +25,7 @@ export function AuthButtons() {
           const res = await fetch(`/api/user/role?id=${sessionUser.id}`);
           if (res.ok) {
             const data = await res.json();
+            console.log("[BOOTSTRAP_ROLE_FETCH]:", data);
             setDbRole(data.role?.toLowerCase() || "user");
           }
         }
@@ -57,7 +58,7 @@ export function AuthButtons() {
 
     return () => subscription.unsubscribe();
   }, [supabase]);
-
+useEffect(()=>{console.log(user)},[user])
   if (loading) {
     return <Loader2 className="w-5 h-5 animate-spin text-slate-500" />;
   }
