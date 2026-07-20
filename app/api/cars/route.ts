@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import {  prisma} from "@/lib/prisma"; 
+import { prisma } from "@/lib/prisma"; 
 import { z } from "zod";
 
 const carSchema = z.object({
@@ -37,7 +37,6 @@ export async function POST(req: Request) {
   try {
     const cookieStore = await cookies();
 
-    // 1. Initialize Supabase SSR
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -57,14 +56,12 @@ export async function POST(req: Request) {
       }
     );
 
-    // 2. Validate User Auth
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized. Account validation failed." }, { status: 401 });
     }
 
-    // 3. Parse and Validate Request Body
     const body = await req.json();
     const result = carSchema.safeParse(body);
     if (!result.success) {
@@ -76,7 +73,6 @@ export async function POST(req: Request) {
 
     const data = result.data;
 
-    // Verify 6 structural photos
     const mandatorySlotsComplete = data.images.slice(0, 6).every((url) => typeof url === "string" && url.trim() !== "");
     if (!mandatorySlotsComplete) {
       return NextResponse.json({ error: "Validation Error: Missing mandatory angle URLs." }, { status: 400 });
@@ -86,35 +82,53 @@ export async function POST(req: Request) {
       "FRONT", "REAR", "LEFT", "RIGHT", "INTERIOR", "UNDERNEATH"
     ];
 
-    // 4. ⚡ ATOMIC TRANSACTION: Check, Decrement Limit, and Create Listing
     const newCarListing = await prisma.$transaction(async (tx) => {
-      
-      // A. Fetch user limit metrics securely inside the transaction block
       const dbUser = await tx.user.findUnique({
         where: { id: user.id },
-        select: { privateListingLimit: true }
+        select: { 
+          role: true, 
+          privateListingLimit: true,
+          dealerProfile: {
+            select: { id: true, listingLimits: true }
+          }
+        }
       });
 
       if (!dbUser) {
         throw new Error("User record not found in database.");
       }
 
-      // B. Block the request if they have run out of listing credits
-      if (dbUser.privateListingLimit <= 0) {
-        throw new Error("You have 0 remaining listings left on your account.");
+      if (dbUser.role === "ADMIN") {
+        // Admins pass with infinite listings
+      } else if (dbUser.role === "DEALER") {
+        if (!dbUser.dealerProfile) {
+          throw new Error("Dealer profile node missing. Complete onboarding setup.");
+        }
+        if (dbUser.dealerProfile.listingLimits <= 0) {
+          throw new Error("Your showroom capacity limit has been reached.");
+        }
+        await tx.dealerProfile.update({
+          where: { id: dbUser.dealerProfile.id },
+          data: {
+            listingLimits: {
+              decrement: 1
+            }
+          }
+        });
+      } else {
+        if (dbUser.privateListingLimit <= 0) {
+          throw new Error("You have 0 remaining listings left on your account.");
+        }
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            privateListingLimit: {
+              decrement: 1
+            }
+          }
+        });
       }
 
-      // C. Update the user record to decrement their listing limit by 1
-      await tx.user.update({
-        where: { id: user.id },
-        data: {
-          privateListingLimit: {
-            decrement: 1
-          }
-        }
-      });
-
-      // D. Write the actual car listing to the database
       return tx.car.create({
         data: {
           slug: generateSlug(data.brand, data.model),
@@ -138,6 +152,7 @@ export async function POST(req: Request) {
           state: data.state,
           country: data.country,
           userId: user.id,
+          sellerType: dbUser.role === "DEALER" ? "DEALER" : "PRIVATE",
           carImages: {
             create: data.images.map((url, idx) => ({
               url,
@@ -155,8 +170,12 @@ export async function POST(req: Request) {
     console.error("SERVER_ERROR:", error);
     const msg = error instanceof Error ? error.message : "Internal server error";
     
-    // Check if it was our custom limit block throwing the error
-    if (msg.includes("remaining listings") || msg.includes("User record not found")) {
+    if (
+      msg.includes("remaining listings") || 
+      msg.includes("showroom capacity") || 
+      msg.includes("User record not found") || 
+      msg.includes("Dealer profile node missing")
+    ) {
       return NextResponse.json({ error: msg }, { status: 403 });
     }
 

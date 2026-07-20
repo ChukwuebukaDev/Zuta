@@ -318,7 +318,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               className={`w-full py-10 text-2xl font-black uppercase tracking-[0.4em] rounded-[2rem] transition-all transform active:scale-95 shadow-2xl ${
                 isPrivateUser 
                   ? "bg-amber-500 hover:bg-amber-600 text-black shadow-amber-900/10" 
-                  : "bg-blue-700 hover:bg-blue-600 text-white shadow-blue-900/20"
+                  : "bg-blue-700 hover:bg-blue-600  shadow-blue-900/20"
               }`}
             >
               {isSubmitting ? "Syncing..." : "Launch Listing"}

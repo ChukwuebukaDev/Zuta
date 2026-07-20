@@ -166,13 +166,13 @@ export default async function DealerDashboard() {
         <StatCard title="Live" value={String(approvedCount)} icon={<CheckCircle size={20}/>} colorClass="text-green-500" />
         <StatCard title="Review" value={String(pendingCount)} icon={<Clock size={20}/>} colorClass="text-yellow-500" />
         <StatCard title="Total Cars" value={String(myCars.length)} icon={<Car size={20}/>} colorClass="text-blue-500" />
-        <StatCard title="My Profile" value={firstName} icon={<User size={24}/>} colorClass="text-blue-500" href="/dashboard/profile" />
+        <StatCard title="My Profile" value={firstName} icon={<User size={24}/>} colorClass="text-blue-500" href="/profile" />
         <StatCard 
           title="Offers & Chat" 
           value={String(conversationCount)} 
           icon={<MessageSquare size={20}/>} 
           colorClass="text-purple-500" 
-          href="/dashboard/messages"
+          href="/messages"
         />
       </div>
 
