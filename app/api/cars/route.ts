@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/prisma"; 
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const carSchema = z.object({
@@ -10,9 +10,25 @@ const carSchema = z.object({
   color: z.string().min(1),
   year: z.coerce.number().int().gte(1900).lte(new Date().getFullYear()),
   bodyType: z.string().min(1),
-  transmission: z.preprocess((val) => String(val).toUpperCase(), z.enum(["MANUAL", "AUTOMATIC"])),
-  fuelType: z.preprocess((val) => String(val).toUpperCase(), z.enum(["PETROL", "DIESEL", "ELECTRIC", "HYBRID"])),
-  condition: z.preprocess((val) => String(val).toUpperCase(), z.enum(["NEW", "USED", "CERTIFIED"])),
+  trim: z.string().optional(),
+  doors: z.coerce.number().int().min(2).max(6).optional().default(4),
+  engineSize: z.string().optional(), // Flexible string so users can type "2.0L", "3.5L V6", etc.
+  cylinders: z.coerce.number().int().positive().optional(),
+  horsePower: z.coerce.number().int().positive().optional(),
+  fuelCapacity: z.coerce.number().positive().optional(),
+  seatingCapacity: z.coerce.number().int().positive().optional(),
+  transmission: z.preprocess(
+    (val) => String(val).toUpperCase(),
+    z.enum(["MANUAL", "AUTOMATIC"]),
+  ),
+  fuelType: z.preprocess(
+    (val) => String(val).toUpperCase(),
+    z.enum(["PETROL", "DIESEL", "ELECTRIC", "HYBRID"]),
+  ),
+  condition: z.preprocess(
+    (val) => String(val).toUpperCase(),
+    z.enum(["NEW", "USED", "CERTIFIED"]),
+  ),
   drivetrain: z.string().min(1),
   mileage: z.coerce.number().int().nonnegative(),
   accidentHistory: z.coerce.boolean().default(false),
@@ -20,7 +36,9 @@ const carSchema = z.object({
   price: z.coerce.number().positive(),
   negotiable: z.coerce.boolean().default(false),
   thumbnail: z.string().url(),
-  images: z.array(z.string().url()).min(6, "Minimum of 6 structural perspective photos required."),
+  images: z
+    .array(z.string().url())
+    .min(6, "Minimum of 6 structural perspective photos required."),
   city: z.string().min(1),
   state: z.string().min(1),
   country: z.string().min(1),
@@ -48,18 +66,24 @@ export async function POST(req: Request) {
           setAll(cookiesToSet) {
             try {
               cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
+                cookieStore.set(name, value, options),
               );
             } catch {}
           },
         },
-      }
+      },
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized. Account validation failed." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized. Account validation failed." },
+        { status: 401 },
+      );
     }
 
     const body = await req.json();
@@ -67,31 +91,41 @@ export async function POST(req: Request) {
     if (!result.success) {
       return NextResponse.json(
         { error: "Validation failed", details: result.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const data = result.data;
 
-    const mandatorySlotsComplete = data.images.slice(0, 6).every((url) => typeof url === "string" && url.trim() !== "");
+    const mandatorySlotsComplete = data.images
+      .slice(0, 6)
+      .every((url) => typeof url === "string" && url.trim() !== "");
     if (!mandatorySlotsComplete) {
-      return NextResponse.json({ error: "Validation Error: Missing mandatory angle URLs." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Validation Error: Missing mandatory angle URLs." },
+        { status: 400 },
+      );
     }
 
-    const structuralOrder: ("FRONT" | "REAR" | "LEFT" | "RIGHT" | "INTERIOR" | "UNDERNEATH")[] = [
-      "FRONT", "REAR", "LEFT", "RIGHT", "INTERIOR", "UNDERNEATH"
-    ];
+    const structuralOrder: (
+      | "FRONT"
+      | "REAR"
+      | "LEFT"
+      | "RIGHT"
+      | "INTERIOR"
+      | "UNDERNEATH"
+    )[] = ["FRONT", "REAR", "LEFT", "RIGHT", "INTERIOR", "UNDERNEATH"];
 
     const newCarListing = await prisma.$transaction(async (tx) => {
       const dbUser = await tx.user.findUnique({
         where: { id: user.id },
-        select: { 
-          role: true, 
+        select: {
+          role: true,
           privateListingLimit: true,
           dealerProfile: {
-            select: { id: true, listingLimits: true }
-          }
-        }
+            select: { id: true, listingLimits: true },
+          },
+        },
       });
 
       if (!dbUser) {
@@ -102,7 +136,9 @@ export async function POST(req: Request) {
         // Admins pass with infinite listings
       } else if (dbUser.role === "DEALER") {
         if (!dbUser.dealerProfile) {
-          throw new Error("Dealer profile node missing. Complete onboarding setup.");
+          throw new Error(
+            "Dealer profile node missing. Complete onboarding setup.",
+          );
         }
         if (dbUser.dealerProfile.listingLimits <= 0) {
           throw new Error("Your showroom capacity limit has been reached.");
@@ -111,28 +147,30 @@ export async function POST(req: Request) {
           where: { id: dbUser.dealerProfile.id },
           data: {
             listingLimits: {
-              decrement: 1
-            }
-          }
+              decrement: 1,
+            },
+          },
         });
       } else {
         if (dbUser.privateListingLimit <= 0) {
-          throw new Error("You have 0 remaining listings left on your account.");
+          throw new Error(
+            "You have 0 remaining listings left on your account.",
+          );
         }
         await tx.user.update({
           where: { id: user.id },
           data: {
             privateListingLimit: {
-              decrement: 1
-            }
-          }
+              decrement: 1,
+            },
+          },
         });
       }
 
       return tx.car.create({
         data: {
           slug: generateSlug(data.brand, data.model),
-          title: `${data.year} ${data.brand} ${data.model}`, 
+          title: `${data.year} ${data.brand} ${data.model}`,
           brand: data.brand,
           model: data.model,
           year: data.year,
@@ -140,6 +178,13 @@ export async function POST(req: Request) {
           bodyType: data.bodyType,
           transmission: data.transmission,
           fuelType: data.fuelType,
+          trim: data.trim,
+          doors: data.doors,
+          engineSize: data.engineSize,
+          cylinders: data.cylinders,
+          horsePower: data.horsePower,
+          seatingCapacity: data.seatingCapacity,
+          fuelCapacity: data.fuelCapacity,
           drivetrain: data.drivetrain,
           mileage: data.mileage,
           condition: data.condition,
@@ -156,7 +201,7 @@ export async function POST(req: Request) {
           carImages: {
             create: data.images.map((url, idx) => ({
               url,
-              angle: idx < 6 ? structuralOrder[idx] : "OPTIONAL"
+              angle: idx < 6 ? structuralOrder[idx] : "OPTIONAL",
             })),
           },
         },
@@ -165,15 +210,15 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(newCarListing, { status: 201 });
-
   } catch (error) {
     console.error("SERVER_ERROR:", error);
-    const msg = error instanceof Error ? error.message : "Internal server error";
-    
+    const msg =
+      error instanceof Error ? error.message : "Internal server error";
+
     if (
-      msg.includes("remaining listings") || 
-      msg.includes("showroom capacity") || 
-      msg.includes("User record not found") || 
+      msg.includes("remaining listings") ||
+      msg.includes("showroom capacity") ||
+      msg.includes("User record not found") ||
       msg.includes("Dealer profile node missing")
     ) {
       return NextResponse.json({ error: msg }, { status: 403 });

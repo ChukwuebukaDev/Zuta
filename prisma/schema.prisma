@@ -139,6 +139,13 @@ model Car {
   views           Int            @default(0)
   color           String
   fuelType        FuelType
+  trim            String?        
+  doors           Int?           @default(4) 
+  engineSize      String?       
+  cylinders       Int?          
+  horsePower      Int?           
+  fuelCapacity    Float?         
+  seatingCapacity Int?           
   transmission    Transmission
   condition       Condition
   status          Status         @default(AVAILABLE)
@@ -291,6 +298,9 @@ enum Role {
   USER
   DEALER
   ADMIN
+  SUPER_USER
+  SUPER_DEALER
+  SUPER_ADMIN
 }
 
 enum SellerType {

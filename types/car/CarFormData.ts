@@ -14,7 +14,9 @@ export type CarFormData = {
   year: number;
   transmission: Transmission;
   fuelType: FuelType;
-
+  trim?: string;  
+  engineSize?: string;
+  doorOptions?: number ;
   drivetrain?: Drivetrain;
   bodyType?: BodyType;
   condition?: CarCondition;

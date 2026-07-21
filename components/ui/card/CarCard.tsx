@@ -2,6 +2,7 @@ import Link from "next/link";
 import { UserCheck, Landmark } from "lucide-react";
 import { Car } from "@/types/car/cars.types";
 import { formatPrice } from "@/utilities/currency";
+import { MapPin } from "lucide-react";
 
 type CarsListProps = {
   cars: Car[];
@@ -76,17 +77,17 @@ export default function CarCard({ cars }: CarsListProps) {
                 {/* 🛠️ Fixed Minimum Height Block for Text Alignment */}
                 <div className="min-h-[2.25rem] sm:min-h-[2.5rem] flex flex-col justify-start">
                   <h4 className="font-bold text-xs sm:text-sm md:text-base text-slate-900 leading-tight tracking-tight whitespace-normal break-words group-hover:text-blue-600 transition-colors">
-                    {car.year} {car.brand} {car.model}
+                    {car.year} {car.brand} {car.model} <span className={`text-[6px] md:text-[10px] ${car.trim ? "bg-emerald-400 text-white rounded p-1" : ""}`}>{car.trim ? `${car.trim}` : ""}</span>
                   </h4>
                 </div>
 
                 {/* Transmission Info Tracker */}
-                <div className="mt-1 flex items-center justify-between">
+                <div className="mt-1 flex-col items-center justify-between">
                   <p className="text-[9px] md:text-[10px] font-bold tracking-wide uppercase text-slate-400">
                     {car.transmission}
                   </p>
-                  <p className="text-[9px] md:text-[10px] font-bold tracking-wide uppercase text-slate-400">
-                    {car.city}
+                  <p className="justify-self-end  text-[10px] font-bold tracking-wide uppercase text-slate-400">
+                    <MapPin size={12} className="text-emerald-400" />{car.city}     
                   </p>
                 </div>
 

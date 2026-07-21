@@ -3,6 +3,7 @@
 import { Gauge, Settings2, Activity } from "lucide-react";
 import Dropdown from "@/utilities/Dropdown";
 import { CarFormData } from "@/types/car/CarFormData";
+import { useEffect,useState } from "react";
 import {
   Transmission,
   FuelType,
@@ -10,30 +11,51 @@ import {
   BodyType,
   CarCondition,
 } from "@/types/car/car.enums";
+import {getCommonTrims,DOOR_OPTIONS,ENGINE_SIZES} from "@/constants/carspecs";
 
 type Props = {
+  vehicleSpecsDetails: {
+   brand: string;
   mileage: number;
   transmission: Transmission;
+  engineSize?: string;
+  doorOptions?: number | null;
   fuelType: FuelType;
+  trim?: string;
   drivetrain?: Drivetrain;
   bodyType?: BodyType;
   condition?: CarCondition;
   accidentHistory?: boolean;
   serviceHistory?: boolean;
   onChange: <K extends keyof CarFormData>(field: K, value: CarFormData[K]) => void;
+  }
 };
 
+
 export default function VehicleSpecs({
-  mileage,
-  transmission,
-  fuelType,
-  drivetrain,
-  bodyType,
-  condition,
-  accidentHistory,
-  serviceHistory,
-  onChange,
+  vehicleSpecsDetails
 }: Props) {
+  const {
+    brand,
+    mileage,
+    transmission,
+    engineSize,
+    doorOptions,
+    fuelType,
+    trim,
+    drivetrain,
+    bodyType,
+    condition,
+    accidentHistory,
+    serviceHistory,
+    onChange,
+  } = vehicleSpecsDetails;
+
+  const [availableTrims, setAvailableTrims] = useState<string[]>([]);
+useEffect(()=>{
+  const trims = getCommonTrims(brand);
+  setAvailableTrims(trims);
+},[brand])
   return (
     <div className="space-y-8">
       {/* Section Header */}
@@ -104,6 +126,31 @@ export default function VehicleSpecs({
             onChange={(val) => onChange("condition", val as CarCondition)}
           />
         </div>
+        <div className="relative">
+          <Dropdown
+            options={availableTrims}
+            value={trim || ""}
+            placeholder="Trim Level"
+            onChange={(val) => onChange("trim", val as string)}
+          />
+        </div>
+        <div className="relative">
+          <Dropdown
+            options={DOOR_OPTIONS.map(String)}
+            value={doorOptions || ''}
+            placeholder="Door Options"
+            onChange={(val) => onChange("doorOptions", Number(val))}
+          />
+        </div>
+        <div className="relative">
+          <Dropdown
+            options={ENGINE_SIZES}
+            value={engineSize || ""}
+            placeholder="Engine Size"
+            onChange={(val) => onChange("engineSize", val as string)}
+          />
+        </div>
+
       </div>
 
       {/* Binary Choice Grid Section */}

@@ -5,7 +5,7 @@ import { ChevronDown, Search, X } from "lucide-react";
 
 type DropdownProps = {
   options: string[];
-  value: string;
+  value: string | number;
   placeholder?: string;
   disabled?: boolean;
   onChange: (value: string) => void;

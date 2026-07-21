@@ -12,7 +12,9 @@ export type Car = {
   id: string;
   slug: string;
   vin?: string;
-
+  trim?: string;
+  engineSize?: string;
+  doorOptions?: number | null;
   brand: string;
   model: string;
   color?: string;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { X, ChevronLeft, Share2, Heart, MapPin, Gauge, Settings2, Fuel, MessageSquare } from "lucide-react";
+import { X, ChevronLeft, Share2, Heart, MapPin, Gauge, Settings2, Fuel, MessageSquare,Cpu,Badge,CircleGauge,FuelIcon } from "lucide-react";
 import CarImageSlider from "@/components/ui/Wrapper/CarImageSlider";
 import MapContainer from "@/map/MapContainer";
 import ContactSellerSection from "./ContactSellerSection";
@@ -19,6 +19,10 @@ export type SerializedCar = Omit<
   "price" | "createdAt" | "updatedAt" | "publishedAt" | "expiresAt" | "soldAt" | "archivedAt" | "carImages"
 > & {
   price: number;
+  trim: string;
+  engineSize: string;
+  fuelCapacity: string;
+  horsePower: string;
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;
@@ -125,6 +129,11 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
             <QuickFeature icon={<Settings2 size={18}/>} label="Gearbox" value={car.transmission} />
             <QuickFeature icon={<Fuel size={18}/>} label="Engine" value={car.fuelType} />
             <QuickFeature icon={<MapPin size={18}/>} label="Location" value={car.location || "Lagos, NG"} />
+            <QuickFeature icon={<Badge size={18}/>} label="Trim Level" value={car.trim} />
+            <QuickFeature icon={<Cpu size={18}/>} label="Engine Size" value={`${car.engineSize}L`} />
+            <QuickFeature icon={<CircleGauge size={18}/>} label="Horsepower" value={`${car.horsePower}Hp`} />
+            <QuickFeature icon={<FuelIcon size={18}/>} label="Fuel Capacity" value={`${car.fuelCapacity}L`} />
+
           </section>
 
           <section className="p-10 rounded-[3rem] bg-white border border-slate-200 shadow-sm">

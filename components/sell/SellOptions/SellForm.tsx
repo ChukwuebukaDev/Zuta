@@ -17,6 +17,7 @@ import SellerSection from "../FormData/SellerSection";
 // Utilities & Types
 import { CarFormData } from "@/types/car/CarFormData";
 import { useUploadThing } from "@/utilities/uploadthing";
+import { on } from "events";
 
 interface SellFormProps {
   defaultEmail: string;
@@ -60,6 +61,9 @@ export default function SellForm({
     year: new Date().getFullYear(),
     mileage: 0,
     transmission: "automatic",
+    trim: undefined,
+    doorOptions: undefined,
+    engineSize: undefined,
     fuelType: "petrol",
     price: 0,
     negotiable: false,
@@ -80,7 +84,7 @@ export default function SellForm({
   };
 
   const [formData, setFormData] = useState<CarFormData>(initialState);
-
+  
   const handleChange = <K extends keyof CarFormData>(
     key: K,
     value: CarFormData[K],
@@ -205,7 +209,21 @@ const handleSubmit = async (e: React.FormEvent) => {
       setIsSubmitting(false);
     }
   };
-
+const vehicleSpecsDetails = {
+    brand: formData.brand,
+    doorOptions: formData.doorOptions,
+    engineSize: formData.engineSize,
+    trim: formData.trim,
+    mileage: formData.mileage,
+    transmission: formData.transmission,
+    fuelType: formData.fuelType,
+    drivetrain: formData.drivetrain,
+    bodyType: formData.bodyType,
+    condition: formData.condition,
+    accidentHistory: formData.accidentHistory,
+    serviceHistory: formData.serviceHistory,
+    onChange: handleChange,
+  }
   return (
     <section className="bg-[#050505] text-white py-12 px-4 md:px-8">
       <div className="max-w-4xl mx-auto">
@@ -254,15 +272,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           {/* Specs Section */}
           <div className="bg-slate-900/30 p-8 rounded-[2.5rem] border border-slate-800/50 backdrop-blur-sm relative z-30">
             <VehicleSpecs
-              mileage={formData.mileage}
-              transmission={formData.transmission}
-              fuelType={formData.fuelType}
-              drivetrain={formData.drivetrain}
-              bodyType={formData.bodyType}
-              condition={formData.condition}
-              accidentHistory={formData.accidentHistory}
-              serviceHistory={formData.serviceHistory}
-              onChange={handleChange}
+            vehicleSpecsDetails={vehicleSpecsDetails}
             />
           </div>
 
