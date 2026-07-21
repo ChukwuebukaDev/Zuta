@@ -16,6 +16,7 @@ export type Car = {
   engineSize?: string;
   doorOptions?: number | null;
  fuelCapacity?:number | null;
+horsePower?:number | null;
   brand: string;
   model: string;
   color?: string;
