@@ -15,6 +15,7 @@ export type Car = {
   trim?: string;
   engineSize?: string;
   doorOptions?: number | null;
+ fuelCapacity?:number | null;
   brand: string;
   model: string;
   color?: string;
