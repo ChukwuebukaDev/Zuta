@@ -1,4 +1,4 @@
- const COMMON_TRIMS = {
+const COMMON_TRIMS: Record<string, string[]> = {
   Toyota: ["LE", "SE", "XLE", "XSE", "Limited", "Platinum", "TRD Pro", "GR"],
   Honda: ["LX", "EX", "EX-L", "Sport", "Touring", "Type R"],
   BMW: ["Base", "M Sport", "xDrive", "sDrive", "Competition", "CS"],
@@ -19,8 +19,12 @@ export const ENGINE_SIZES = [
 
 export function getCommonTrims(brand: string): string[] {
   const formattedBrand = brand.trim().toLowerCase();
+
   const brandKey = Object.keys(COMMON_TRIMS).find(
-    (key) => key.toLowerCase() === formattedBrand
+    key => key.toLowerCase() === formattedBrand
   );
-  return COMMON_TRIMS[brandKey] || [];
+
+  if (!brandKey) return [];
+
+  return COMMON_TRIMS[brandKey];
 }

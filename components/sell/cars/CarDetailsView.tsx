@@ -21,8 +21,8 @@ export type SerializedCar = Omit<
   price: number;
   trim: string;
   engineSize: string;
-  fuelCapacity: string;
-  horsePower: string;
+  fuelCapacity: number;
+  horsePower: number;
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;

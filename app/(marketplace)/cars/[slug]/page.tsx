@@ -48,10 +48,10 @@ export default async function CarDetailsPage({ params }: Props) {
   const serializedCar = {
     ...car,
     price: Number(car.price),
-    fuelCapacity: car.fuelCapacity, 
-  horsePower: car.horsePower,
-  trim:car.trim,
-  engineSize:car.engineSize,
+    fuelCapacity: Number(car.fuelCapacity) ?? 50, 
+  horsePower: Number(car.horsePower) ?? 150,
+  trim:car.trim ?? "",
+  engineSize:car.engineSize ?? "",
     // Process Dates to plain ISO strings safely, verifying optional fields first
     createdAt: car.createdAt instanceof Date ? car.createdAt.toISOString() : car.createdAt,
     updatedAt: car.updatedAt instanceof Date ? car.updatedAt.toISOString() : car.updatedAt,
