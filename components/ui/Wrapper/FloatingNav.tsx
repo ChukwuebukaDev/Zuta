@@ -6,9 +6,17 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Compass, Car, PlusCircle, LayoutDashboard, 
-  MessageSquare, User, Wrench, Calculator, 
-  X, ChevronRight, ArrowLeft
+  MessageSquare, User, Calculator, 
+  X, ChevronRight, ArrowLeft, LogIn
 } from "lucide-react";
+
+// ⚡ 1. DEFINE PROPS INTERFACE
+interface FloatingNavProps {
+  initialUser?: {
+    isAuthenticated: boolean;
+    role?: string | null;
+  };
+}
 
 interface NavLinkItem {
   label: string;
@@ -18,20 +26,42 @@ interface NavLinkItem {
   color?: string;
 }
 
-const NAV_LINKS: NavLinkItem[] = [
-  { label: "Showroom", href: "/cars", icon: Car },
-  { label: "List a Vehicle", href: "/sell", icon: PlusCircle, badge: "Free", color: "text-amber-400" },
-  { label: "Car Valuation", href: "/valuation", icon: Calculator },
-  { label: "Console", href: "/dashboard", icon: LayoutDashboard, badge: "Dealer" },
-  { label: "Inbox Messages", href: "/messages", icon: MessageSquare },
-  { label: "Account Profile", href: "/profile", icon: User },
-];
-
-export default function FloatingNav() {
+// ⚡ 2. ACCEPT initialUser IN COMPONENT FUNCTION SIGNATURE
+export default function FloatingNav({ initialUser }: FloatingNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
+
+  // Extract auth status from props
+  const isAuthenticated = initialUser?.isAuthenticated ?? false;
+  const userRole = initialUser?.role;
+
+  // Navigation Links definition using current user state
+  const NAV_LINKS: NavLinkItem[] = [
+    { label: "Showroom", href: "/cars", icon: Car },
+    { label: "List a Vehicle", href: "/sell", icon: PlusCircle, badge: "Free", color: "text-amber-400" },
+    { label: "Car Valuation", href: "/valuation", icon: Calculator },
+    { 
+      label: isAuthenticated ? (userRole === "DEALER" ? "Dealer Console" : "My Listings") : "Seller Portal", 
+      href: isAuthenticated ? "/dashboard" : "/login", 
+      icon: LayoutDashboard, 
+      badge: isAuthenticated ? (userRole === "DEALER" ? "Dealer" : "Owner") : "Sign In",
+      color: isAuthenticated ? "text-emerald-400" : "text-slate-400"
+    },
+    { 
+      label: "Inbox Messages", 
+      href: isAuthenticated ? "/messages" : "/login?redirect=/messages", 
+      icon: MessageSquare 
+    },
+    { 
+      label: isAuthenticated ? "Account Profile" : "Sign In / Register", 
+      href: isAuthenticated ? "/profile" : "/login", 
+      icon: isAuthenticated ? User : LogIn,
+      badge: isAuthenticated ? undefined : "Guest",
+      color: isAuthenticated ? undefined : "text-amber-400"
+    },
+  ];
 
   // Close menu automatically on route change
   useEffect(() => {
@@ -57,18 +87,12 @@ export default function FloatingNav() {
     };
   }, [isOpen]);
 
-  // Back Navigation Action
-  const handleBackNavigation = () => {
-    setIsOpen(false);
-    router.back();
-  };
-
   return (
     <div 
       ref={menuRef}
       className="fixed bottom-6 right-6 z-[999] flex flex-col items-end pointer-events-auto select-none"
     >
-      {/* 🚀 EXPANDED PAGE NAVIGATION DRAWER */}
+      {/* EXPANDED PAGE NAVIGATION DRAWER */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -84,15 +108,20 @@ export default function FloatingNav() {
                 <Compass size={12} className="text-amber-400" />
                 Zuta Directory
               </span>
-              <span className="text-[9px] font-bold text-slate-600 uppercase">Quick Jump</span>
+              <span className="text-[9px] font-bold text-amber-400/80 uppercase">
+                {isAuthenticated ? (userRole === "DEALER" ? "Dealer Active" : "Member") : "Guest Mode"}
+              </span>
             </div>
 
-            {/* ⚡ PREMIUM ADDITION: Back Button Trigger */}
+            {/* Back Button Trigger */}
             {pathname !== "/" && (
               <div className="pt-2 pb-1">
                 <button
                   type="button"
-                  onClick={handleBackNavigation}
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.back();
+                  }}
                   className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-slate-300 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 hover:text-white transition duration-200 cursor-pointer group"
                 >
                   <div className="flex items-center gap-2.5">
@@ -114,7 +143,7 @@ export default function FloatingNav() {
 
                 return (
                   <Link
-                    key={link.href}
+                    key={link.label}
                     href={link.href}
                     className={`
                       flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition duration-200 group
@@ -147,7 +176,7 @@ export default function FloatingNav() {
         )}
       </AnimatePresence>
 
-      {/* 🚀 CORE FLOATING SPEED-DIAL BUTTON */}
+      {/* FLOATING TOGGLE BUTTON */}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}

@@ -1,5 +1,6 @@
 import { getCars } from "@/lib/engine/marketplace";
 import Link from "next/link";
+import CarsHero from "@/components/ui/Home/CarsHero";
 import CarCard from "@/components/ui/card/CarCard";
 import CarsFilter from "@/components/ui/Filter/cars/CarsFilter";
 import FilterSheet from "@/components/ui/Filter/FilterSheet";
@@ -59,6 +60,7 @@ export default async function CarsPage({
         
   return (
     <div className="max-w-7xl relative mx-auto px-4 md:px-6 lg:px-8 py-4">
+      <CarsHero totalCars={cars.total}  />
       <div>
         <h1 className="text-2xl text-center text-gray-600 lg:text-3xl font-bold">{heading}</h1>
       </div>

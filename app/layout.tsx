@@ -6,6 +6,8 @@ import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/app/api/uploadthing/core";
 import { cn } from "@/lib/utils";
 import FloatingNav from "@/components/ui/Wrapper/FloatingNav";
+import { getServerSession } from "next-auth"; // ⚡ Server session import
+import { createClient } from "@/supabase/server";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 const inter = Inter({ subsets: ["latin"] });
@@ -17,18 +19,33 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+  const initialUser = authUser
+    ? {
+        role: (authUser as any).role || "USER",
+        isAuthenticated: true,
+      }
+    : {
+        role: null,
+        isAuthenticated: false,
+      };
+
   return (
     <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body className={`${inter.className} bg-gray-100 min-h-screen flex flex-col`}>
-        {/* Hydrates Uploadthing configurations without Clerk dependencies */}
+        {/* Hydrates Uploadthing configurations */}
         <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
         
-        <FloatingNav />
+        {/* ⚡ Pass initial server-side user state to FloatingNav */}
+        <FloatingNav initialUser={initialUser} />
+        
         <main className="flex-1">{children}</main>
         
         <Toaster position="top-center" richColors />
