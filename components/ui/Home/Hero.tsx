@@ -165,10 +165,9 @@ export default function Hero({ user }: HeroProps) {
                     <p className="text-base font-black text-slate-200 mt-1">{user?.privateListingLimit ?? 2} Remaining</p>
                   </div>
                 )}
-                <div className="bg-neutral-900/40 backdrop-blur-md p-4 rounded-xl border border-neutral-900/60 hover:border-neutral-800 transition">
-                  <p className="text-[9px] uppercase text-neutral-500 font-bold tracking-wider">Account Operations</p>
-                  <p className="text-base font-black text-emerald-400 mt-1 uppercase tracking-wide">Active Node</p>
-                </div>
+                <Link href="/messages" className="bg-neutral-900/40 backdrop-blur-md p-4 rounded-xl border text-neutral-500 border-neutral-900/60 hover:border-neutral-800 transition">
+                Inbox <MessageSquare className="ml-2 h-4 w-4 text-slate-200 shrink-0" />
+                </Link>
                 <Link href="/valuation" className="bg-neutral-900/40 hover:bg-neutral-900/80 backdrop-blur-md p-4 rounded-xl border border-neutral-900/60 hover:border-slate-800/80 transition group col-span-1 sm:col-span-3 lg:col-span-1">
                   <p className="text-[9px] uppercase text-neutral-500 font-bold tracking-wider group-hover:text-amber-400 transition-colors">Instant Valuation</p>
                   <p className="text-xs sm:text-sm font-bold text-slate-400 mt-1 flex items-center gap-1">Valuate my asset <ArrowRight size={12} /></p>
@@ -207,11 +206,7 @@ export default function Hero({ user }: HeroProps) {
                     List a Vehicle <PlusCircle className="ml-2 h-4 w-4 shrink-0" />
                   </Button>
                 )}
-                <Link href="/messages" className="w-full sm:w-auto">
-                  <Button variant="ghost" size="lg" className="w-full sm:w-auto text-neutral-400 hover:text-white hover:bg-white/5 font-bold text-xs uppercase tracking-widest py-3.5 sm:py-3 cursor-pointer rounded-xl transition flex items-center justify-center">
-                    Inbox <MessageSquare className="ml-2 h-4 w-4 shrink-0" />
-                  </Button>
-                </Link>
+              
               </>
             ) : (
               <Button

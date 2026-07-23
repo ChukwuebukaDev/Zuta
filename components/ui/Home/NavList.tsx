@@ -10,11 +10,9 @@ interface NavListProps {
 
 export default function NavList({ variant, setIsMenuOpen }: NavListProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-
   const links = [
     { name: "Home", link: "/home" },
     { name: "Cars", link: "/cars", isMega: true },
-    { name: "Pricing", link: "/pricing" },
     { name: "About", link: "/about" },
   ];
 

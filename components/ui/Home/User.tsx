@@ -25,7 +25,6 @@ export function AuthButtons() {
           const res = await fetch(`/api/user/role?id=${sessionUser.id}`);
           if (res.ok) {
             const data = await res.json();
-            console.log("[BOOTSTRAP_ROLE_FETCH]:", data);
             setDbRole(data.role?.toLowerCase() || "user");
           }
         }

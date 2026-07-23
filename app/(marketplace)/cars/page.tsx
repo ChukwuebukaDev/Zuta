@@ -43,6 +43,7 @@ export default async function CarsPage({
   });
 
   const hasResults = cars.data.length > 0;
+  const serializedCars = JSON.parse(JSON.stringify(cars.data));
 
   const heading = hasResults
     ? filters.q
@@ -58,20 +59,20 @@ export default async function CarsPage({
         
   return (
     <div className="max-w-7xl relative mx-auto px-4 md:px-6 lg:px-8 py-4">
-      <div className="">
+      <div>
         <h1 className="text-2xl text-center text-gray-600 lg:text-3xl font-bold">{heading}</h1>
       </div>
 
       <main className="flex-1">
         {/* Wrap CarsFilter in the closeable sheet */}
-       <FilterSheet totalResults={cars.total} defaultOpen={false}>
+        <FilterSheet totalResults={cars.total} defaultOpen={false}>
           <CarsFilter />
         </FilterSheet>
         
         {hasResults ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 2xl:grid-cols-6 gap-4 lg:gap-2 mt-4">
-              <CarCard cars={cars.data} />
+              <CarCard cars={serializedCars} />
             </div>
 
             <Pagination
@@ -91,16 +92,16 @@ export default async function CarsPage({
                   : "There are no cars available at the moment."}
             </p>
 
-           {cars.total >= 1 && (
-             <div className="mt-6">
-              <Link
-                href="/cars"
-                className="inline-block bg-black text-white px-6 py-2 rounded-lg"
-              >
-                View All Cars
-              </Link>
-            </div>
-           )}
+            {cars.total >= 1 && (
+              <div className="mt-6">
+                <Link
+                  href="/cars"
+                  className="inline-block bg-black text-white px-6 py-2 rounded-lg"
+                >
+                  View All Cars
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </main>
