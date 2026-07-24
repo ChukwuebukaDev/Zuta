@@ -1,65 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/supabase/client";
+import { useSearchParams } from "next/navigation";
 import { logout } from "@/app/(auth)/action";
-import { Loader2, LogOut, User } from "lucide-react";
+import { Loader2, LogOut, User, Sparkles } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export function AuthButtons() {
-  const supabase = createClient();
+  // Stable client reference across renders
+  const supabase = useMemo(() => createClient(), []);
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || "";
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [dbRole, setDbRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Fetch current authenticating credentials on initialization mount
-    const bootstrapAuthContext = async () => {
-      try {
-        const { data: { user: sessionUser } } = await supabase.auth.getUser();
-        setUser(sessionUser);
+    let isMounted = true;
 
-        if (sessionUser) {
-          // Fetch user profile metadata role from our Prisma PostgreSQL instance
-          const res = await fetch(`/api/user/role?id=${sessionUser.id}`);
-          if (res.ok) {
-            const data = await res.json();
-            setDbRole(data.role?.toLowerCase() || "user");
-          }
+    const fetchUserRole = async (userId: string) => {
+      try {
+        const res = await fetch(`/api/user/role?id=${userId}`);
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          setDbRole(data.role?.toLowerCase() || "user");
         }
       } catch (err) {
-        console.error("[AUTH_BUTTONS_ERR]:", err);
-      } finally {
-        setLoading(false);
+        console.error("[FETCH_ROLE_ERR]:", err);
       }
     };
 
-    bootstrapAuthContext();
-
-    // 2. Continuous real-time subscription anchor to catch session drop/sign-ins
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+
         if (session?.user) {
           setUser(session.user);
-          const res = await fetch(`/api/user/role?id=${session.user.id}`);
-          if (res.ok) {
-            const data = await res.json();
-            setDbRole(data.role?.toLowerCase() || "user");
-          }
+          await fetchUserRole(session.user.id);
         } else {
           setUser(null);
           setDbRole(null);
         }
-        setLoading(false);
+        
+        if (isMounted) setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [supabase]);
-useEffect(()=>{console.log(user)},[user])
+
   if (loading) {
-    return <Loader2 className="w-5 h-5 animate-spin text-slate-500" />;
+    return <Loader2 className="w-5 h-5 animate-spin text-amber-500" />;
   }
 
   if (user) {
@@ -67,19 +63,26 @@ useEffect(()=>{console.log(user)},[user])
     const isAdmin = dbRole === "admin" || dbRole === "superadmin";
 
     return (
-      <div className="flex items-center gap-4">
-       
-        {/* 🎬 Premium Dashboard Session Controller Mini-Menu */}
-        <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
-          <div className="w-9 h-9 flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-300 rounded-xl font-medium text-xs uppercase" title={user.email}>
-            <Link href = {isAdmin ? "/admin-dashboard" : isSeller ? "/dashboard" : "/profile"} >
-            <User size={16} />
-            </Link>
-          </div>
-          
+      <div className="flex items-center gap-3">
+        {/* User Role Tag */}
+        <span className="hidden sm:inline-block text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-amber-400">
+          {isAdmin ? "Admin" : isSeller ? "Dealer" : "Member"}
+        </span>
+
+        {/* Dashboard Profile Trigger */}
+        <div className="flex items-center gap-2 pl-2 border-l border-neutral-800">
+          <Link
+            href={isAdmin ? "/admin-dashboard" : isSeller ? "/dashboard" : "/profile"}
+            className="w-10 h-10 flex items-center justify-center bg-neutral-950 hover:bg-neutral-900 border border-neutral-800 hover:border-amber-500/40 text-neutral-300 hover:text-amber-400 rounded-xl transition-all duration-200 shadow-md group cursor-pointer"
+            title={user.email}
+          >
+            <User size={17} className="group-hover:scale-110 transition-transform" />
+          </Link>
+
+          {/* Logout Button */}
           <button
             onClick={() => logout()}
-            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/5 border border-transparent hover:border-red-500/10 rounded-xl transition-all"
+            className="w-10 h-10 flex items-center justify-center text-neutral-400 hover:text-red-400 bg-neutral-950 hover:bg-red-500/10 border border-neutral-800 hover:border-red-500/20 rounded-xl transition-all duration-200 cursor-pointer"
             title="Disconnect Session"
           >
             <LogOut size={16} />
@@ -90,19 +93,22 @@ useEffect(()=>{console.log(user)},[user])
   }
 
   return (
-    <div className="flex flex-col md:flex-row items-stretch gap-3">
+    <div className="flex items-center gap-2.5">
+      {/* Sign In Button */}
       <Link 
-        className="px-5 py-2 rounded-xl border border-slate-800 text-sm font-semibold text-center text-slate-400 hover:bg-slate-900 hover:text-white transition" 
         href="/login"
+        className="px-4 py-2 rounded-xl border border-neutral-800 hover:border-neutral-700 bg-neutral-950/80 hover:bg-neutral-900 text-xs font-bold text-neutral-300 hover:text-white transition duration-200"
       >
         Sign In
       </Link>
 
+      {/* Register / Get Started CTA */}
       <Link 
-        className="px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold text-center hover:bg-blue-700 transition shadow-lg shadow-blue-900/20" 
         href="/sign-up"
+        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider transition duration-200 shadow-md shadow-amber-500/10 active:scale-95"
       >
-        Register
+        <Sparkles size={13} className="fill-slate-950 shrink-0" />
+        <span>Register</span>
       </Link>
     </div>
   );

@@ -7,7 +7,7 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import SpecLookupWidget from "./SpecLookupWidget";
+//import SpecLookupWidget from "./SpecLookupWidget";
 
 export default function HomePage() {
   // Editorial data for the dynamic fuel efficiency highlight block
@@ -121,9 +121,9 @@ export default function HomePage() {
           </div>
         </div>
       </header>
-      <div className="max-w-7xl mx-auto px-4 mt-16">
+      {/* <div className="max-w-7xl mx-auto px-4 mt-16">
         <SpecLookupWidget />
-      </div>
+      </div> */}
       {/* 2. AUTOMOBILE SEGMENTS EXPLORER SECTION */}
       <section className="bg-slate-50/50 py-20 border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-6 space-y-12">

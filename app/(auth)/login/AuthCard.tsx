@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter,useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { login, signup, loginWithGoogle } from "@/app/(auth)/action";
 import { Mail, Lock, User, Phone, ArrowRight, Loader2 } from "lucide-react";
@@ -15,8 +15,9 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [localError, setLocalError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "";
   const router = useRouter();
-
   // Controlled Form Inputs to bypass dynamic mounting serialization issues
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +32,9 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
     const formData = new FormData();
     formData.append("email", email);
     formData.append("password", password);
-    
+    if (redirectUrl) {
+    formData.append("redirect", redirectUrl);
+  }
     if (mode === "signup") {
       formData.append("name", name);
       formData.append("phone", phone);
@@ -214,7 +217,7 @@ export function AuthCard({ initialMode, backendError }: AuthCardProps) {
       <motion.button
         layout="position"
         type="button"
-        onClick={() => loginWithGoogle()}
+        onClick={() => loginWithGoogle(redirectUrl)}
         className="w-full h-14 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-colors duration-150 flex items-center justify-center gap-3 group cursor-pointer"
       >
         <svg className="w-4 h-4 transition-transform group-hover:scale-105" viewBox="0 0 24 24">

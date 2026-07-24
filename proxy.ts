@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
@@ -8,7 +8,6 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // Initialize the Supabase SSR client for the Edge Runtime
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -27,7 +26,6 @@ export async function proxy(request: NextRequest) {
             });
           });
 
-          // Recreate the response while preserving the request headers
           response = NextResponse.next({
             request: {
               headers: request.headers,
@@ -46,62 +44,79 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Always validate the authenticated user
+  // Refresh the session and get the authenticated user
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const url = request.nextUrl.clone();
-  const path = url.pathname;
+  const pathname = url.pathname;
 
-  // -----------------------------
-  // Route Definitions
-  // -----------------------------
+  // =====================================================
+  // Route Classification
+  // =====================================================
+
+  const isApiRoute = pathname.startsWith("/api");
 
   const isAuthPage =
-    path.startsWith("/login") ||
-    path.startsWith("/signup");
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup");
 
   const isPublicApi =
-    path.startsWith("/api/uploadthing") ||
-    path.startsWith("/api/messages/send") ||
-    path.startsWith("/api/onboarding");
+    pathname.startsWith("/api/uploadthing") ||
+    pathname.startsWith("/api/messages/send") ||
+    pathname.startsWith("/api/onboarding");
 
-  const isStaticPublic =
-    path === "/" ||
-    path.startsWith("/cars") ||
-    path.startsWith("/parts") ||
-    path.startsWith("/services") ||
-    path.startsWith("/marketplace/search") ||
-    path.startsWith("/profile") ||
-    path.startsWith("/about") ||
-    path.startsWith("/home");
+  const isPublicPage =
+    pathname === "/" ||
+    pathname.startsWith("/home") ||
+    pathname.startsWith("/cars") ||
+    pathname.startsWith("/parts") ||
+    pathname.startsWith("/services") ||
+    pathname.startsWith("/marketplace/search") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/about");
 
   const isDashboardRoute =
-    path.startsWith("/dashboard");
+    pathname.startsWith("/dashboard");
 
   const isPublicRoute =
     isAuthPage ||
     isPublicApi ||
-    isStaticPublic;
+    isPublicPage;
 
-  // -----------------------------
-  // Guardrail 1
-  // Protect private routes
-  // -----------------------------
+  // =====================================================
+  // Guard 1
+  // Require authentication
+  // =====================================================
 
   if (!user && !isPublicRoute) {
+    // APIs should return 401 instead of redirecting
+    if (isApiRoute) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const redirectPath =
+      request.nextUrl.pathname +
+      request.nextUrl.search;
+
     url.pathname = "/login";
-    url.searchParams.set("redirect_url", path);
+    url.searchParams.set("redirect", redirectPath);
 
     return NextResponse.redirect(url);
   }
 
-  // -----------------------------
-  // Guardrail 2
-  // Prevent authenticated users
-  // from revisiting login/signup
-  // -----------------------------
+  // =====================================================
+  // Guard 2
+  // Prevent authenticated users from revisiting auth pages
+  // =====================================================
 
   if (user && isAuthPage) {
     url.pathname = "/";
@@ -109,13 +124,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // -----------------------------
-  // Guardrail 3
-  // Dealer Dashboard Protection
-  // -----------------------------
+  // =====================================================
+  // Guard 3
+  // Dealer/Admin dashboard protection
+  // =====================================================
 
   if (user && isDashboardRoute) {
-    console.log("[DASHBOARD_ACCESS_ATTEMPT]:", user);
     const role =
       user.user_metadata?.role
         ?.toString()

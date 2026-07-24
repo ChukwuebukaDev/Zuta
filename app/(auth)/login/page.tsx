@@ -1,7 +1,7 @@
 import { AuthCard } from "./AuthCard";
 
 interface AuthPageProps {
-  searchParams: Promise<{ mode?: string; error?: string }>;
+  searchParams: Promise<{ mode?: string; error?: string ;redirect?: string }>;
 }
 
 export default async function AuthPage({ searchParams }: AuthPageProps) {

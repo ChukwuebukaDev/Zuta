@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 import { Role } from "@prisma/client";
 import { ArrowRight, Car, LayoutDashboard, MessageSquare, PlusCircle, ShieldCheck, Star } from "lucide-react";
 import { Button } from "../controls/Button";
-import { AuthModal } from "@/components/auth/AuthModal";
 import { showListingPromptToast } from "@/components/toast/ListingPromptToast";
 import AccountStatusIsland from "@/components/ui/Wrapper/AccountIsland";
 import SubscriptionClient from "@/components/dashboard/SubscriptionClient";
@@ -209,23 +208,14 @@ export default function Hero({ user }: HeroProps) {
               
               </>
             ) : (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={handleListVehicleClick}
+              <Link href='/sell'
                 className="w-full sm:w-auto border-neutral-800 text-neutral-300 hover:bg-neutral-900 hover:text-white font-bold text-xs uppercase tracking-widest py-3.5 sm:py-3 cursor-pointer rounded-xl transition flex items-center justify-center"
               >
                 Sell Your Vehicle <ArrowRight className="ml-2 h-4 w-4 shrink-0" />
-              </Button>
+              </Link>
             )}
           </motion.div>
         </div>
-
-        <AuthModal
-          isOpen={authModal.isOpen}
-          initialMode={authModal.mode}
-          onClose={() => setAuthModal((prev) => ({ ...prev, isOpen: false }))}
-        />
       </section>
     </>
   );
