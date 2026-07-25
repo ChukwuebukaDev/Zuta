@@ -127,6 +127,9 @@ model Car {
   soldAt          DateTime?
   archivedAt      DateTime?
   updatedAt       DateTime       @updatedAt
+  rejectedAt      DateTime?
+  rejectionReason  String?       
+  adminFeedback    String?
   accidentHistory Boolean        @default(false)
   bodyType        String
   currency        String         @default("NGN")

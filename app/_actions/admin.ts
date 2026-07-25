@@ -76,17 +76,32 @@ export async function approveCarListing(carId: string) {
 /**
  * Rejects a Car Listing
  */
-export async function rejectCarListing(carId: string) {
+/**
+ * Rejects a Car Listing with categorized reason and feedback notes
+ */
+export async function rejectCarListing(
+  carId: string,
+  payload: { reason: string; feedback: string }
+) {
   try {
-    await checkAdmin(); 
+    await checkAdmin();
 
     await db.car.update({
       where: { id: carId },
-      data: { listingStatus: "REJECTED" },
+      data: {
+        listingStatus: "REJECTED",
+        rejectionReason: payload.reason,
+        adminFeedback: payload.feedback,
+        rejectedAt: new Date(),
+      },
     });
 
-    revalidatePath("/admin/dashboard");
+    // Revalidate affected routes to immediately update UI caches
+    revalidatePath("/admin-dashboard");
     revalidatePath("/dashboard");
+    revalidatePath("/profile");
+    revalidatePath(`/cars/${carId}`);
+
     return { success: true };
   } catch (error: unknown) {
     console.error("[CAR_REJECTION_ERROR]:", error);

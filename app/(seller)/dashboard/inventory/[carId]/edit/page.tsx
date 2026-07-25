@@ -34,7 +34,9 @@ export default async function EditCarPage({ params }: EditCarPageProps) {
   );
 
   // 2. Authenticate the session via Supabase SSR
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   if (!session?.user) {
     redirect("/sign-in");
@@ -46,26 +48,32 @@ export default async function EditCarPage({ params }: EditCarPageProps) {
   const resolvedParams = await params;
   const { carId } = resolvedParams;
 
-  // 4. Fetch the car listing parameters from Prisma
-  const car = await db.car.findUnique({
+  // 4. Fetch the car listing and its gallery images from Prisma
+  const rawCar = await db.car.findUnique({
     where: { id: carId },
+    include: {
+      carImages: true, // ⚡ Includes uploaded gallery photo models
+    },
   });
 
-  if (!car) notFound();
-  
+  if (!rawCar) notFound();
+
   // 5. Guard clause: Ensure the Supabase UUID matches the record's uploader ID
-  if (car.userId !== supabaseUser.id) {
+  if (rawCar.userId !== supabaseUser.id) {
     redirect("/dashboard");
   }
+
+  // ⚡ 6. Serialize Prisma Decimal & Date instances into plain JSON primitives
+  const car = JSON.parse(JSON.stringify(rawCar));
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8 bg-zinc-950 min-h-screen text-slate-100 rounded-3xl border border-slate-900">
       <div>
         <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white">
-          Modify <span className="text-blue-600">Listing</span>
+          Modify <span className="text-amber-500">Listing</span>
         </h1>
         <p className="text-slate-500 text-sm mt-1">
-          Updating critical fields like price or status might require a re-review by Zuta admins.
+          Updating critical fields like price or status will automatically place your listing under admin review.
         </p>
       </div>
 
