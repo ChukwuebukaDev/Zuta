@@ -2,14 +2,47 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2, ArrowLeft, AlertCircle, Sparkles } from "lucide-react";
+import {
+  Save,
+  Loader2,
+  ArrowLeft,
+  AlertCircle,
+  Sparkles,
+  UploadCloud,
+  RefreshCw,
+  CheckCircle2,
+  Image as ImageIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+
+// Mandatory blueprint angles required for Zuta verification
+const MANDATORY_ANGLES = [
+  { key: "FRONT", label: "Front Exterior" },
+  { key: "REAR", label: "Rear Exterior" },
+  { key: "SIDE_LEFT", label: "Driver Side" },
+  { key: "SIDE_RIGHT", label: "Passenger Side" },
+  { key: "INTERIOR", label: "Dashboard / Cabin" },
+  { key: "ENGINE", label: "Engine Bay" },
+];
 
 export default function EditCarForm({ car }: { car: any }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Hydrate initial gallery images from car.carImages
+  const initialGallery = (car.carImages || []).reduce(
+    (acc: Record<string, string>, img: any) => {
+      if (img.angle && img.url) acc[img.angle] = img.url;
+      return acc;
+    },
+    {}
+  );
+
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>(car.thumbnail || "");
+  const [angleImages, setAngleImages] = useState<Record<string, string>>(initialGallery);
 
   const [formData, setFormData] = useState({
     brand: car.brand || "",
@@ -39,9 +72,48 @@ export default function EditCarForm({ car }: { car: any }) {
     }));
   };
 
+  // Upload/Replace Handler for angle photos
+  const handleImageReplace = async (angleKey: string, file: File) => {
+    const toastId = toast.loading(`Uploading ${angleKey} photo...`);
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+
+      // Call your existing image upload API route
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+
+      // Update local state
+      setAngleImages((prev) => ({ ...prev, [angleKey]: url }));
+
+      // Automatically sync Front angle with primary thumbnail
+      if (angleKey === "FRONT" || !thumbnailUrl) {
+        setThumbnailUrl(url);
+      }
+
+      toast.success(`${angleKey} photo updated!`, { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload image. Please try again.", { id: toastId });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    // Format relational angle images array
+    const formattedCarImages = Object.entries(angleImages).map(
+      ([angle, url]) => ({
+        angle,
+        url,
+      })
+    );
 
     try {
       const response = await fetch(`/api/cars/${car.id}`, {
@@ -53,7 +125,9 @@ export default function EditCarForm({ car }: { car: any }) {
           price: Number(formData.price),
           mileage: Number(formData.mileage),
           doors: formData.doors ? Number(formData.doors) : undefined,
-          // Re-trigger review pipeline whenever critical specs are modified
+          thumbnail: thumbnailUrl,
+          carImages: formattedCarImages,
+          // Re-trigger review pipeline whenever listing is modified
           listingStatus: "PENDING",
         }),
       });
@@ -64,7 +138,7 @@ export default function EditCarForm({ car }: { car: any }) {
       }
 
       toast.success("Listing updated successfully!", {
-        description: "Your adjustments have been submitted for admin review.",
+        description: "Your adjustments and updated photos were submitted for review.",
       });
 
       router.push("/dashboard");
@@ -95,12 +169,88 @@ export default function EditCarForm({ car }: { car: any }) {
             Re-verification Notice
           </strong>
           Saving changes will place your listing back into{" "}
-          <span className="font-bold underline">Under Review</span> status so Zuta moderators can verify the updated specs.
+          <span className="font-bold underline">Under Review</span> status so Zuta moderators can verify the updated photos and specifications.
         </div>
       </div>
 
-      {/* Form Fields Matrix */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* --- SECTION 1: 6-ANGLE INSPECTION GALLERY MODIFIER --- */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="flex items-center gap-2">
+            <ImageIcon size={18} className="text-amber-400" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+              Inspection Photo Gallery
+            </h3>
+          </div>
+          <span className="text-[10px] text-neutral-500 font-mono">
+            {Object.keys(angleImages).length} / 6 Angles Uploaded
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {MANDATORY_ANGLES.map(({ key, label }) => {
+            const currentImg = angleImages[key];
+
+            return (
+              <div
+                key={key}
+                className="relative bg-neutral-900 border border-neutral-800 rounded-2xl p-3 flex flex-col justify-between overflow-hidden group"
+              >
+                {/* Photo Preview Box */}
+                <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800/80">
+                  {currentImg ? (
+                    <>
+                      <Image
+                        src={currentImg}
+                        alt={label}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-2 right-2 bg-emerald-500 text-slate-950 p-1 rounded-full shadow">
+                        <CheckCircle2 size={12} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-neutral-600 space-y-1">
+                      <UploadCloud size={20} />
+                      <span className="text-[9px] font-bold uppercase tracking-wider">
+                        Missing
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Replace Trigger Overlay */}
+                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1.5 transition cursor-pointer backdrop-blur-[2px]">
+                    <RefreshCw size={18} className="text-amber-400" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-white">
+                      Replace Photo
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageReplace(key, file);
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {/* Angle Label */}
+                <div className="mt-2.5 flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-300">
+                    {label}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* --- SECTION 2: SPECIFICATION INPUTS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-neutral-800">
         {/* Brand Name */}
         <div>
           <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 block mb-2">
@@ -148,7 +298,7 @@ export default function EditCarForm({ car }: { car: any }) {
           />
         </div>
 
-        {/* Year */}
+        {/* Production Year */}
         <div>
           <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 block mb-2">
             Production Year
