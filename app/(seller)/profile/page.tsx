@@ -113,6 +113,11 @@ export default async function ProfilePage() {
       transmission: true,
       status: true, 
       sellerType: true,
+      listingStatus:true,
+      rejectionReason:true,
+      adminFeedback:true,
+      rejectedAt:true,
+      carImages:true,
     },
     orderBy: { createdAt: "desc" },
   });

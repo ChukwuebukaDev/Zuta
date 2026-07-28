@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { 
   X, MapPin, Mail, User 
 } from "lucide-react";
@@ -20,7 +19,6 @@ interface VehicleReviewModalProps {
 export function VehicleReviewModal({ car, isOpen, onClose,galleryImages }: VehicleReviewModalProps) {
   if (!isOpen) return null;
   const carTitle = `${car.year ? `${car.year} ` : ""}${car.brand} ${car.model}`;
-  console.log('images',galleryImages);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 sm:p-6 overflow-y-auto">
       <div className="w-full max-w-4xl bg-zinc-950 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl text-white my-auto max-h-[90vh] flex flex-col">
