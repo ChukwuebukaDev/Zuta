@@ -66,17 +66,16 @@ export default function ProfileTabs({
   userRole,
 }: ProfileTabsProps) {
   const isDealer = userRole === "DEALER";
-const [isModalOpen, setIsModalOpen] = useState(false);
-const [openListDetails, setOpenListDetails] = useState(false);
 
-  // A standard 'USER' who has uploaded inventory functions as a Private Seller
+  // ⚡ Store the specific car selected for each modal (or null if closed)
+  const [selectedRejectionCar, setSelectedRejectionCar] = useState<DisplayCar | null>(null);
+  const [selectedDetailCar, setSelectedDetailCar] = useState<DisplayCar | null>(null);
+
   const isPrivateSeller =
     userRole === "USER" &&
     displayCars.some((car) => car.sellerType === "PRIVATE");
 
-  const [activeTab, setActiveTab] = useState<"inventory" | "negotiations">(
-    "inventory",
-  );
+  const [activeTab, setActiveTab] = useState<"inventory" | "negotiations">("inventory");
   const [itemsList, setItemsList] = useState<DisplayCar[]>(displayCars);
 
   useEffect(() => {
@@ -98,19 +97,18 @@ const [openListDetails, setOpenListDetails] = useState(false);
     }
   };
 
-  // 🛠️ Action Handler for Private Sellers updating status flags natively
   const toggleListingVisibility = async (
     carId: string,
     currentStatus: string | undefined,
-    e: React.MouseEvent,
+    e: React.MouseEvent
   ) => {
     e.preventDefault();
     const nextStatus = currentStatus === "AVAILABLE" ? "ARCHIVED" : "AVAILABLE";
 
     setItemsList((prev) =>
       prev.map((car) =>
-        car.id === carId ? { ...car, status: nextStatus } : car,
-      ),
+        car.id === carId ? { ...car, status: nextStatus } : car
+      )
     );
 
     try {
@@ -138,18 +136,15 @@ const [openListDetails, setOpenListDetails] = useState(false);
         >
           {isDealer ? (
             <>
-              <Store size={14} className="text-blue-400" /> My Showroom (
-              {itemsList.length})
+              <Store size={14} className="text-blue-400" /> My Showroom ({itemsList.length})
             </>
           ) : isPrivateSeller ? (
             <>
-              <UserCheck size={14} className="text-indigo-400" /> My Postings (
-              {itemsList.length})
+              <UserCheck size={14} className="text-indigo-400" /> My Postings ({itemsList.length})
             </>
           ) : (
             <>
-              <Heart size={14} className="text-pink-500" /> My Garage (
-              {itemsList.length})
+              <Heart size={14} className="text-pink-500" /> My Garage ({itemsList.length})
             </>
           )}
         </button>
@@ -163,8 +158,7 @@ const [openListDetails, setOpenListDetails] = useState(false);
           }`}
         >
           <MessageSquare size={14} className="text-emerald-400" />
-          {isDealer ? "Client Leads" : "Active Negotiations"} (
-          {activeChats.length})
+          {isDealer ? "Client Leads" : "Active Negotiations"} ({activeChats.length})
         </button>
       </div>
 
@@ -177,8 +171,8 @@ const [openListDetails, setOpenListDetails] = useState(false);
                 {isDealer
                   ? "Your showroom inventory is empty"
                   : isPrivateSeller
-                    ? "You haven't posted any vehicles"
-                    : "Your garage is empty"}
+                  ? "You haven't posted any vehicles"
+                  : "Your garage is empty"}
               </p>
               <p className="text-xs text-slate-600 mt-1.5 max-w-sm mx-auto leading-relaxed">
                 {isDealer || isPrivateSeller
@@ -194,16 +188,18 @@ const [openListDetails, setOpenListDetails] = useState(false);
               >
                 {/* Thumbnail Frame */}
                 <div className="relative w-full sm:w-40 h-28 rounded-2xl overflow-hidden bg-zinc-800 border border-slate-800 shrink-0">
-                  {car.listingStatus === "REJECTED" && (<div className="absolute inset-0 z-2000 bg-black/10 backdrop-blur-md animate-in fade-in duration-200">
+                  {car.listingStatus === "REJECTED" && (
+                    <div className="absolute inset-0 z-20 bg-black/10 backdrop-blur-md animate-in fade-in duration-200">
                       <div className="flex justify-center items-center h-full">
-                       <Image
-                      src='/images/rejected.png'
-                      alt='listing rejected'
-                      fill
-                      className="object-cover group-hover:scale-103 transition duration-500"
-                    />
+                        <Image
+                          src="/images/rejected.png"
+                          alt="listing rejected"
+                          fill
+                          className="object-cover group-hover:scale-103 transition duration-500"
+                        />
                       </div>
-                  </div>)}
+                    </div>
+                  )}
                   {car.thumbnail && (
                     <Image
                       src={car.thumbnail}
@@ -222,7 +218,6 @@ const [openListDetails, setOpenListDetails] = useState(false);
                         {car.year} {car.brand} {car.model}
                       </h3>
 
-                      {/* Trash Icon: Only visible for regular users reading bookmarked items */}
                       {!isDealer && !isPrivateSeller && (
                         <button
                           onClick={(e) => removeSavedItem(car.id, e)}
@@ -233,7 +228,7 @@ const [openListDetails, setOpenListDetails] = useState(false);
                         </button>
                       )}
                     </div>
-                    {/* Integrated Official Currency Formatting Utility */}
+
                     <p className="text-sm font-black text-blue-400 mt-0.5 antialiased">
                       {formatPrice(car.price)}
                     </p>
@@ -241,28 +236,27 @@ const [openListDetails, setOpenListDetails] = useState(false);
 
                   <div className="flex gap-4 text-[10px] uppercase font-bold tracking-wider text-slate-500">
                     <span className="flex items-center gap-1">
-                      <Gauge size={12} className="text-slate-600" />{" "}
+                      <Gauge size={12} className="text-slate-600" />
                       {car.mileage.toLocaleString()} KM
                     </span>
                     <span className="flex items-center gap-1">
-                      <Settings2 size={12} className="text-slate-600" />{" "}
+                      <Settings2 size={12} className="text-slate-600" />
                       {car.transmission}
                     </span>
                   </div>
 
-                  {/* Operational Controls Footer Footer */}
+                  {/* Operational Controls Footer */}
                   <div className="flex justify-between items-center pt-1.5 border-t border-slate-900/60 mt-auto">
+                    {/* ⚡ Open Details for THIS specific car */}
                     <button
-                      onClick={()=>setOpenListDetails(true)}
-                      className="text-[10px] uppercase font-black tracking-widest text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
+                      onClick={() => setSelectedDetailCar(car)}
+                      className="text-[10px] uppercase font-black tracking-widest text-slate-400 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       View details <ArrowUpRight size={12} />
                     </button>
 
-                    {/* 🛠️ PRESENTATION UPGRADE: Modification Management suite for Sellers */}
                     {isDealer || isPrivateSeller ? (
                       <div className="flex items-center gap-2">
-                        {/* Toggle Active Status Button */}
                         <button
                           onClick={(e) =>
                             toggleListingVisibility(car.id, car.status, e)
@@ -281,7 +275,6 @@ const [openListDetails, setOpenListDetails] = useState(false);
                           )}
                         </button>
 
-                        {/* Direct Navigation Route to Edit Matrix */}
                         <Link
                           href={`/dashboard/inventory/${car.id}/edit`}
                           className="p-1.5 rounded-lg bg-zinc-950 border border-slate-900 text-blue-400 hover:text-blue-300 transition flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2"
@@ -290,7 +283,6 @@ const [openListDetails, setOpenListDetails] = useState(false);
                           <span>Modify</span>
                         </Link>
 
-                        {/* Status Pin Indicator */}
                         {car.status && car.listingStatus === "APPROVED" && (
                           <span
                             className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${
@@ -304,33 +296,26 @@ const [openListDetails, setOpenListDetails] = useState(false);
                         )}
 
                         {car.listingStatus === "REJECTED" ? (
-                          <button onClick={()=>setIsModalOpen(true)} className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border bg-red-700/80 hover:bg-red-700 border-emerald-500/20">
+                          /* ⚡ Open Rejection Modal for THIS specific car */
+                          <button
+                            onClick={() => setSelectedRejectionCar(car)}
+                            className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border bg-red-700/80 hover:bg-red-700 border-emerald-500/20 cursor-pointer"
+                          >
                             {car.listingStatus + ", Why?"}
                           </button>
                         ) : (
-                          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border bg-yellow-500/50  border-emerald-500/20">
+                          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border bg-yellow-500/50 border-emerald-500/20">
                             {car.listingStatus}
                           </span>
                         )}
                       </div>
                     ) : (
-                      /* Standard Layout Fallback Badge for Buyers viewing bookmark cards */
                       car.status && (
                         <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-zinc-950 border-slate-900 text-slate-400">
                           {car.status}
                         </span>
                       )
                     )}
-                    <RejectionDetailsModal
-                      carId={car.id}
-                      carTitle={`${car.year} ${car.brand} ${car.model}`}
-                      rejectionReason={car.rejectionReason}
-                      adminFeedback={car.adminFeedback}
-                      rejectedAt={car.rejectedAt}
-                      isOpen={isModalOpen}
-                      onClose={() => setIsModalOpen(false)}
-                    />
-                    <ListingDetails car={car} openModal={openListDetails} closeModal={() => setOpenListDetails(false)}/>
                   </div>
                 </div>
               </div>
@@ -393,6 +378,32 @@ const [openListDetails, setOpenListDetails] = useState(false);
             ))
           )}
         </div>
+      )}
+
+      {/* ⚡ SINGLE MODAL INSTANCES (Rendered outside the map loop) */}
+
+      {/* Rejection Details Modal */}
+      {selectedRejectionCar && (
+        <RejectionDetailsModal
+          key={`rejection-${selectedRejectionCar.id}`}
+          carId={selectedRejectionCar.id}
+          carTitle={`${selectedRejectionCar.year} ${selectedRejectionCar.brand} ${selectedRejectionCar.model}`}
+          rejectionReason={selectedRejectionCar.rejectionReason}
+          adminFeedback={selectedRejectionCar.adminFeedback}
+          rejectedAt={selectedRejectionCar.rejectedAt}
+          isOpen={Boolean(selectedRejectionCar)}
+          onClose={() => setSelectedRejectionCar(null)}
+        />
+      )}
+
+      {/* Listing Details Modal */}
+      {selectedDetailCar && (
+        <ListingDetails
+          key={`detail-${selectedDetailCar.id}`}
+          car={selectedDetailCar}
+          openModal={Boolean(selectedDetailCar)}
+          closeModal={() => setSelectedDetailCar(null)}
+        />
       )}
     </div>
   );

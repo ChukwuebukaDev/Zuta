@@ -53,10 +53,18 @@ export async function signup(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const redirectParam = String(formData.get("redirect") ?? "").trim();
+
+  // 1. Basic field validation
   if (!email || !password || !name || !phone) {
     return { error: "All fields are required to complete registration." };
   }
 
+  // 2. Enforce minimum password strength
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters long." };
+  }
+
+  // 3. Register user in Supabase
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -69,6 +77,7 @@ export async function signup(formData: FormData) {
     return { error: error.message };
   }
 
+  // 4. Sync profile metadata to local Prisma DB
   if (data.user) {
     try {
       await db.user.upsert({
@@ -84,15 +93,32 @@ export async function signup(formData: FormData) {
         },
       });
     } catch (err) {
-      console.error("Prisma local postgres sync failed:", err);
-      return { 
-        error: "Account created in Supabase, but local database profile setup failed." 
+      console.error("Prisma local db sync failed:", err);
+      return {
+        error: "Account created, but database profile setup failed. Please contact support.",
       };
     }
   }
-const defaultRoute = "/home";
-const finalDestination = getSafeRedirectUrl(redirectParam, defaultRoute);
-  return { success: true, redirectTo: finalDestination };
+
+  // ⚡ 5. Check if Supabase issued an active session or requires email confirmation
+  if (!data.session) {
+    // Confirmation is ON (or email verification is required)
+    return {
+      success: true,
+      requiresConfirmation: true,
+      message: "Registration successful! Please check your email inbox to confirm your account before signing in.",
+    };
+  }
+
+  // Confirmation is OFF (Active session created immediately)
+  const defaultRoute = "/home";
+  const finalDestination = getSafeRedirectUrl(redirectParam, defaultRoute);
+
+  return {
+    success: true,
+    requiresConfirmation: false,
+    redirectTo: finalDestination,
+  };
 }
 export async function loginWithGoogle(redirectPath?: string) {
   const supabase = await createClient();
@@ -123,4 +149,27 @@ export async function logout(redirectPath?:string) {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect(redirectPath || '/'); 
+}
+
+export async function resetPasswordRequest(formData: FormData) {
+  const supabase = await createClient();
+  const email = String(formData.get("email") ?? "").trim();
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  if (!email) {
+    return { success: false, error: "Email address is required." };
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/reset-password`,
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return {
+    success: true,
+    message: "Password reset instructions sent to your email.",
+  };
 }
