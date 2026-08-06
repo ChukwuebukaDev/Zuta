@@ -304,9 +304,7 @@ export default function ProfileTabs({
                             {car.listingStatus + ", Why?"}
                           </button>
                         ) : (
-                          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border bg-yellow-500/50 border-emerald-500/20">
-                            {car.listingStatus}
-                          </span>
+                          <></>
                         )}
                       </div>
                     ) : (

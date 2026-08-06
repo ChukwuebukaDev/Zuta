@@ -10,6 +10,7 @@
     "sync:metadata": "tsx scripts/sync-user-metadata.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.16.0",
     "@headlessui/react": "^2.2.10",
     "@hookform/resolvers": "^5.2.2",
     "@next-auth/prisma-adapter": "^1.0.7",

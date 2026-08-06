@@ -11,8 +11,6 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 export function AuthButtons() {
   // Stable client reference across renders
   const supabase = useMemo(() => createClient(), []);
-  const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || "";
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [dbRole, setDbRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +33,6 @@ export function AuthButtons() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
-
         if (session?.user) {
           setUser(session.user);
           await fetchUserRole(session.user.id);
@@ -59,14 +56,14 @@ export function AuthButtons() {
   }
 
   if (user) {
-    const isSeller = dbRole === "dealer" || dbRole === "seller";
+    const isSeller = dbRole === "DEALER" || dbRole === "seller";
     const isAdmin = dbRole === "admin" || dbRole === "superadmin";
-
+    const userName = user.user_metadata?.full_name || user.email || "User";
     return (
       <div className="flex items-center gap-3">
         {/* User Role Tag */}
         <span className="hidden sm:inline-block text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-amber-400">
-          {isAdmin ? "Admin" : isSeller ? "Dealer" : "Member"}
+          {isAdmin ? "Admin" : isSeller ? "Dealer" : userName.split(" ")[0] || "User"}
         </span>
 
         {/* Dashboard Profile Trigger */}
