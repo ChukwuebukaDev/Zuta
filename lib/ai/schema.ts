@@ -68,6 +68,7 @@ export const SEARCH_RESPONSE_SCHEMA = {
       enum: [
         "AUTOMATIC",
         "MANUAL",
+       
       ],
       nullable: true,
     },
@@ -76,8 +77,8 @@ export const SEARCH_RESPONSE_SCHEMA = {
       type: Type.STRING,
       enum: [
         "NEW",
-        "FOREIGN_USED",
-        "LOCAL_USED",
+        "USED",
+        "CERTIFIED",
       ],
       nullable: true,
     },

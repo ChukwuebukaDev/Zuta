@@ -4,7 +4,7 @@ import { interpretSearchQuery } from "@/lib/ai/search";
 export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();
-
+  
     if (!prompt?.trim()) {
       return NextResponse.json(
         {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     }
 
     const filters = await interpretSearchQuery(prompt);
-
+console.log("[AI_SEARCH] Filters:", filters); // Debugging log
     return NextResponse.json({
       success: true,
       filters,

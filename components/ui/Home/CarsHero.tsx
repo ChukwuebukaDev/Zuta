@@ -13,7 +13,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { useAISearch } from "@/hooks/useAiSearch";
-import {createSearchParams} from "@/lib/search/params";
 
 interface CarsHeroProps {
   totalCars?: number;
@@ -45,7 +44,7 @@ export default function CarsHero({
   if (!searchQuery.trim()) return;
 
   const url = await search(searchQuery.trim());
-  console.log("AI Search URL:", url); // Log the generated URL for debugging
+  console.log("Navigating to URL:", url); // Debugging log
   router.push(url);
 };
 
@@ -61,7 +60,7 @@ export default function CarsHero({
         {/* Top Floating Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-900/90 border border-amber-500/30 text-amber-400 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-xl mb-6 backdrop-blur-md">
           <Sparkles size={13} className="animate-pulse text-amber-400" />
-          <span>Gemini AI Search Active</span>
+          <span>Zuta AI Search Active</span>
         </div>
 
         {/* Hero Title */}
