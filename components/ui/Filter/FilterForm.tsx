@@ -82,7 +82,7 @@ export default function FilterForm({
             placeholder="Min Price"
             value={filters.minPrice}
             options={priceRawValues}
-            renderOption={(val) => formatPriceLabel(val)}
+           
             onChange={(value) => updateFilter("minPrice", value)}
           />
         </div>
@@ -93,7 +93,7 @@ export default function FilterForm({
             placeholder="Max Price"
             value={filters.maxPrice}
             options={priceRawValues}
-            renderOption={(val) => formatPriceLabel(val)}
+           
             onChange={(value) => updateFilter("maxPrice", value)}
           />
         </div>

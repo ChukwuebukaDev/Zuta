@@ -45,7 +45,7 @@ export default function CarsHero({
   if (!searchQuery.trim()) return;
 
   const url = await search(searchQuery.trim());
-
+  console.log("AI Search URL:", url); // Log the generated URL for debugging
   router.push(url);
 };
 
