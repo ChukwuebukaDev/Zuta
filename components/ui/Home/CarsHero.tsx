@@ -88,6 +88,7 @@ export default function CarsHero({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => router.prefetch('/cars')}
             disabled={isSearching}
             placeholder='Try "car of 6.5m for uber" or "Toyota Corolla under 10m"...'
             className="w-full bg-transparent text-xs sm:text-sm text-white placeholder:text-neutral-500 outline-none font-medium disabled:opacity-50"

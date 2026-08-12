@@ -157,6 +157,8 @@ model Car {
   state           String
   description     String?
   userId          String
+  knowledgeId     String?
+  knowledge       CarKnowledge?  @relation(fields: [knowledgeId], references:[id])
   listingStatus   ListingStatus  @default(PENDING)
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   carImages       CarImage[]
@@ -173,6 +175,43 @@ model Car {
   @@index([createdAt])
   @@index([status])
   @@index([userId])
+}
+
+model CarKnowledge {
+  id          String   @id @default(cuid())
+  brand       String
+  model       String
+  generation  String?
+  variants    CarVariant[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  cars        Car[]
+  @@unique([brand, model, generation])
+}
+
+model CarVariant {
+  id          String @id @default(cuid())
+  knowledgeId String
+  knowledge   CarKnowledge @relation(
+    fields: [knowledgeId],
+    references: [id],
+    onDelete: Cascade
+  )
+  name         String?
+  yearFrom     Int?
+  yearTo       Int?
+  engineSize   Float?
+  cylinders    Int?
+  horsepower   Int?
+  fuelType     String?
+  transmission String?
+  drivetrain   String?
+  fuelEconomy  Json?
+  specifications Json?
+  intelligence  Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([knowledgeId])
 }
 
 model CarImage {
