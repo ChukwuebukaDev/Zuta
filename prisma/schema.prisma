@@ -145,6 +145,7 @@ model Car {
   trim            String?
   doors           Int?           @default(4)
   engineSize      String?
+  engineCode      String?
   cylinders       Int?
   horsePower      Int?
   fuelCapacity    Float?
@@ -192,11 +193,7 @@ model CarKnowledge {
 model CarVariant {
   id          String @id @default(cuid())
   knowledgeId String
-  knowledge   CarKnowledge @relation(
-    fields: [knowledgeId],
-    references: [id],
-    onDelete: Cascade
-  )
+  knowledge   CarKnowledge @relation(fields: [knowledgeId],references: [id],onDelete: Cascade)
   name         String?
   yearFrom     Int?
   yearTo       Int?

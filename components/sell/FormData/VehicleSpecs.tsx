@@ -11,7 +11,7 @@ import {
   BodyType,
   CarCondition,
 } from "@/types/car/car.enums";
-import {getCommonTrims,DOOR_OPTIONS,ENGINE_SIZES} from "@/constants/carspecs";
+import {getCommonTrims,DOOR_OPTIONS,ENGINE_SIZES,getEngineCode} from "@/constants/carspecs";
 
 type Props = {
   vehicleSpecsDetails: {
@@ -22,6 +22,7 @@ type Props = {
   doorOptions?: number | null;
   fuelType: FuelType;
   trim?: string;
+  engineCode?:string;
   drivetrain?: Drivetrain;
   bodyType?: BodyType;
   condition?: CarCondition;
@@ -43,6 +44,7 @@ export default function VehicleSpecs({
     doorOptions,
     fuelType,
     trim,
+    engineCode,
     drivetrain,
     bodyType,
     condition,
@@ -52,9 +54,14 @@ export default function VehicleSpecs({
   } = vehicleSpecsDetails;
 
   const [availableTrims, setAvailableTrims] = useState<string[]>([]);
+  const [availableEngineCodes, setAvailableEngneCodes] = useState<string[]>([]);
 useEffect(()=>{
   const trims = getCommonTrims(brand);
-  setAvailableTrims(trims);
+  const engineCodes = getEngineCode(brand);
+  setTimeout(()=>{
+    setAvailableTrims(trims);
+    setAvailableEngneCodes(engineCodes);
+  },0)
 },[brand])
   return (
     <div className="space-y-8">
@@ -132,6 +139,14 @@ useEffect(()=>{
             value={trim || ""}
             placeholder="Trim Level"
             onChange={(val) => onChange("trim", val as string)}
+          />
+        </div>
+        <div className="relative">
+          <Dropdown
+            options={availableEngineCodes}
+            value={engineCode || ""}
+            placeholder="Engine Code"
+            onChange={(val) => onChange("engineCode", val as string)}
           />
         </div>
         <div className="relative">

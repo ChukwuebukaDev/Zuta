@@ -44,7 +44,6 @@ export default async function CarDetailsPage({ params }: Props) {
   if (!car) {
     notFound();
   }
-
   const serializedCar = {
     ...car,
     price: Number(car.price),

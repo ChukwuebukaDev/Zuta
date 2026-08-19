@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "db:seedKnowledge": "tsx prisma/seedKnowledge.ts",
+    "testFile":"tsx app/modules/ai-search/knowledge/reference/test-vehicle-resolution.ts",
     "lint": "eslint",
     "sync:metadata": "tsx scripts/sync-user-metadata.ts"
   },

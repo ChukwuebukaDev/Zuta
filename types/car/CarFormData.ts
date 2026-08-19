@@ -20,7 +20,7 @@ export type CarFormData = {
   drivetrain?: Drivetrain;
   bodyType?: BodyType;
   condition?: CarCondition;
-
+  engineCode?:string;
   accidentHistory?: boolean;
   serviceHistory?: boolean;
 

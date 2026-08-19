@@ -82,6 +82,7 @@ export default async function CarsPage({
     ? `No ${filters.brand} vehicles available`
     : "No vehicles match your criteria";
 
+
   return (
     <div className="max-w-7xl relative mx-auto px-4 md:px-6 lg:px-8 py-6 text-white">
       {/* Hero Banner with Gemini AI Input */}
@@ -119,10 +120,9 @@ export default async function CarsPage({
         {/* Vehicle Cards Grid */}
         {hasResults ? (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-4">
-              <CarCard cars={serializedCars} />
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-4 sm:gap-4 mt-4">
+  <CarCard cars={serializedCars} />
+</div>
             {/* Pagination Controls */}
             <div className="pt-6 border-t border-neutral-900">
               <Pagination

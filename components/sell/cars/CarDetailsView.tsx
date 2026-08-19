@@ -8,7 +8,8 @@ import MapContainer from "@/map/MapContainer";
 import ContactSellerSection from "./ContactSellerSection";
 import { Button } from "@/components/ui/button";
 import { getCarBySlug } from "@/lib/engine/marketplace";
-
+import VehicleIntelligenceCard from "./VehicleIntelligenceCard";
+import {Dialog} from "@/components/ui/DialogOverlay";
 type PromisedCarType = ReturnType<typeof getCarBySlug>;
 type UnwrappedCarType = PromisedCarType extends Promise<infer T> ? T : never;
 
@@ -29,6 +30,8 @@ export type SerializedCar = Omit<
   expiresAt: string | null;
   soldAt: string | null;
   archivedAt: string | null;
+  country?:string;
+  engineCode?:string;
   carImages?: string[];
 };
 
@@ -38,9 +41,11 @@ export interface CarDetailsViewProps {
 }
 
 export default function CarDetailsView({ car, currentUserId }: CarDetailsViewProps) {
+
   const [showChatDesk, setShowChatDesk] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle");
+  //const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const seller = car;
   const formattedSeller = {
@@ -89,9 +94,26 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
       setIsSaved(!targetState);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 pb-20 selection:bg-black selection:text-white">
+
+      {/* upgrading and fixing bugs on vehicle intelligence, coming soon */}
+        {/* <Dialog isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} title="Vehicle Intelligence">
+           <VehicleIntelligenceCard
+  vehicle={{
+    brand: car.brand,
+    model: car.model,
+    year: car.year,
+    fuelType:car.fuelType,
+    transmission:car.transmission,
+    engineSize: car.engineSize,
+    drivetrain:car.drivetrain,
+    engineCode: car.engineCode,
+    country: car.country,
+  }}
+/>
+        </Dialog> */}
       {/* --- Top Navigation --- */}
       <nav className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center relative">
         <Link href="/cars" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-black transition-all">
@@ -111,11 +133,12 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12">
+     
         <div className="lg:col-span-8 space-y-12">
           <section className="rounded-[2.5rem] overflow-hidden border border-white bg-white shadow-[0_30px_80px_rgba(0,0,0,0.06)]">
             <CarImageSlider images={car.images} model={car.model} />
           </section>
-
+          
           <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-slate-200">
             <div>
               <span className="px-2 py-0.5 rounded bg-black text-[9px] font-black uppercase tracking-widest text-white">Featured</span>
@@ -123,16 +146,16 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
             </div>
             <p className="text-4xl font-black tracking-tighter">₦{car.price.toLocaleString()}</p>
           </section>
-
+          <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest text-center"><h2>PROVIDED INFORMATIONS</h2></div>
           <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <QuickFeature icon={<Gauge size={18}/>} label="Mileage" value={`${car.mileage.toLocaleString()} km`} />
             <QuickFeature icon={<Settings2 size={18}/>} label="Gearbox" value={car.transmission} />
             <QuickFeature icon={<Fuel size={18}/>} label="Engine" value={car.fuelType} />
             <QuickFeature icon={<MapPin size={18}/>} label="Location" value={car.location || "Lagos, NG"} />
             <QuickFeature icon={<Badge size={18}/>} label="Trim Level" value={car.trim} />
-            <QuickFeature icon={<Cpu size={18}/>} label="Engine Size" value={`${car.engineSize}L`} />
-            <QuickFeature icon={<CircleGauge size={18}/>} label="Horsepower" value={`${car.horsePower}Hp`} />
-            <QuickFeature icon={<FuelIcon size={18}/>} label="Fuel Capacity" value={`${car.fuelCapacity}L`} />
+            <QuickFeature icon={<Cpu size={18}/>} label="Engine Size" value={car.engineSize} />
+            <QuickFeature icon={<CircleGauge size={18}/>} label="Horsepower" value={`${car.horsePower}`} />
+            <QuickFeature icon={<FuelIcon size={18}/>} label="Fuel Capacity" value={`${car.fuelCapacity}`} />
 
           </section>
 
@@ -150,6 +173,9 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
             <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-6">Availability Map</h2>
             <div className="h-96 rounded-[3rem] overflow-hidden border border-slate-200"><MapContainer /></div>
           </section>
+
+          {/* Vehicle intelligence modal control*/}
+          {/* <button onClick={()=>setIsDialogOpen(true)}>view more details</button> */}
         </div>
 
         {seller.userId !== currentUserId && (
@@ -186,6 +212,8 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
 }
 
 function QuickFeature({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+
+  if(!label || !value || +value === 0)return;
   return (
     <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
       <div className="text-slate-400 mb-4">{icon}</div>
