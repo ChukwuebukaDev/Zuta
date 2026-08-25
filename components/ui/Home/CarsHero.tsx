@@ -12,7 +12,6 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
-import { useAISearch } from "@/hooks/useAiSearch";
 
 interface CarsHeroProps {
   totalCars?: number;
@@ -25,7 +24,7 @@ export default function CarsHero({
 }: CarsHeroProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
- const { search, isSearching } = useAISearch();
+
 
   const POPULAR_BRANDS = [
     "Toyota",
@@ -36,17 +35,6 @@ export default function CarsHero({
     "Hyundai",
   ];
 
- const handleSearchSubmit = async (
-  e: React.FormEvent
-) => {
-  e.preventDefault();
-
-  if (!searchQuery.trim()) return;
-
-  const url = await search(searchQuery.trim());
-  console.log("Navigating to URL:", url); // Debugging log
-  router.push(url);
-};
 
   return (
     <section className="relative w-full overflow-hidden bg-gradient-to-b from-neutral-950 via-zinc-950 to-neutral-900 pt-12 pb-14 rounded-3xl mb-10 border border-neutral-800/80 shadow-2xl">
@@ -78,7 +66,7 @@ export default function CarsHero({
 
         {/* --- GEMINI AI LIVE SEARCH INPUT BAR --- */}
         <form
-          onSubmit={handleSearchSubmit}
+          
           className="mt-8 w-full max-w-xl bg-neutral-900/90 border border-neutral-800 focus-within:border-amber-500/80 rounded-2xl p-2 flex items-center gap-2 shadow-2xl backdrop-blur-md transition-all group"
         >
           <div className="pl-3 text-neutral-500 group-focus-within:text-amber-400 transition-colors">
@@ -89,18 +77,18 @@ export default function CarsHero({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => router.prefetch('/cars')}
-            disabled={isSearching}
+            disabled
             placeholder='Try "car of 6.5m for uber" or "Toyota Corolla under 10m"...'
             className="w-full bg-transparent text-xs sm:text-sm text-white placeholder:text-neutral-500 outline-none font-medium disabled:opacity-50"
           />
           <button
             type="submit"
-            disabled={isSearching}
+            disabled
             className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition shrink-0 cursor-pointer shadow-lg shadow-amber-500/10 active:scale-95 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSearching ? (
+            {true ? (
               <>
-                <Loader2 size={14} className="animate-spin text-slate-950" />
+                {/* <Loader2 size={14} className="animate-spin text-slate-950" /> */}
                 <span>Analyzing...</span>
               </>
             ) : (

@@ -14,7 +14,8 @@ import {
   Building2,
   MapPin,
   Tag,
-  Phone
+  Phone,
+  Mail,
 } from "lucide-react";
 
 // Explicit Uploadthing Response Typing
@@ -47,6 +48,7 @@ export default function OnboardingForm({ userId, phone: initialPhone }: Onboardi
   const [uploadingType, setUploadingType] = useState<DocumentType | null>(null);
   
   const [businessName, setBusinessName] = useState("");
+  const [businessEmail, setBusinessEmail] = useState("");
   const [cacNumber, setCacNumber] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
   const [tagline, setTagline] = useState("");
@@ -74,6 +76,7 @@ export default function OnboardingForm({ userId, phone: initialPhone }: Onboardi
         body: JSON.stringify({
           userId,
           businessName: businessName.trim(),
+          businessEmail: businessEmail.trim() || undefined,
           phone: phone.trim(),
           cacNumber: cacNumber.trim(),
           businessAddress: businessAddress.trim(),
@@ -172,6 +175,17 @@ export default function OnboardingForm({ userId, phone: initialPhone }: Onboardi
           placeholder="e.g. +234 801 234 5678"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          className="bg-slate-950/50 border-slate-800 text-white h-12 text-sm focus:ring-blue-600 rounded-xl"
+        />
+      </div>
+      <div className="space-y-2">
+        <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <Mail size={14} /> Business Email Address
+        </label>
+        <Input
+          placeholder="e.g. info@zuta.com"
+          value={businessEmail}
+          onChange={(e) => setBusinessEmail(e.target.value)}
           className="bg-slate-950/50 border-slate-800 text-white h-12 text-sm focus:ring-blue-600 rounded-xl"
         />
       </div>

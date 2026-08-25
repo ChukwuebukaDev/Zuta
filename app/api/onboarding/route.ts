@@ -10,6 +10,7 @@ interface IncomingDocument {
 
 interface OnboardingRequestBody {
   businessName: string;
+  businessEmail?: string;
   phone: string;
   cacNumber: string;
   businessAddress: string;

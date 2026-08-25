@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { prisma as db } from "@/lib/prisma";
 import OnboardingForm from "@/components/forms/OnboardingForm";
 import { 
-  Car, Shield, Clock, Zap, Sparkles, Award, 
-  BadgeCheck, Users, TrendingUp, CheckCircle2,
+  Car, Shield, Clock, Zap, Sparkles,
+  BadgeCheck,CheckCircle2,
   Building2, Globe, Mail, Phone, Star, Crown
 } from "lucide-react";
 
@@ -33,7 +33,6 @@ export default async function OnboardingPage() {
     }
   );
 
-  // ⚡ OPTIMIZATION: Swapped getSession() for getUser() to prevent runtime session forgery
   const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !supabaseUser) {
@@ -68,7 +67,7 @@ export default async function OnboardingPage() {
     phone: supabaseUser.user_metadata?.phone || supabaseUser.phone || ""
   };
 
-  // 🛠️ FIXED: Static Tailwind style map dictionary to bypass string compilation constraints
+
   const benefitCards = [
     { 
       icon: Shield, 

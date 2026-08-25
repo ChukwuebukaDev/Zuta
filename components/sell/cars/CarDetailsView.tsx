@@ -8,8 +8,7 @@ import MapContainer from "@/map/MapContainer";
 import ContactSellerSection from "./ContactSellerSection";
 import { Button } from "@/components/ui/button";
 import { getCarBySlug } from "@/lib/engine/marketplace";
-import VehicleIntelligenceCard from "./VehicleIntelligenceCard";
-import {Dialog} from "@/components/ui/DialogOverlay";
+
 type PromisedCarType = ReturnType<typeof getCarBySlug>;
 type UnwrappedCarType = PromisedCarType extends Promise<infer T> ? T : never;
 
@@ -98,22 +97,6 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 pb-20 selection:bg-black selection:text-white">
 
-      {/* upgrading and fixing bugs on vehicle intelligence, coming soon */}
-        {/* <Dialog isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} title="Vehicle Intelligence">
-           <VehicleIntelligenceCard
-  vehicle={{
-    brand: car.brand,
-    model: car.model,
-    year: car.year,
-    fuelType:car.fuelType,
-    transmission:car.transmission,
-    engineSize: car.engineSize,
-    drivetrain:car.drivetrain,
-    engineCode: car.engineCode,
-    country: car.country,
-  }}
-/>
-        </Dialog> */}
       {/* --- Top Navigation --- */}
       <nav className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center relative">
         <Link href="/cars" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-black transition-all">

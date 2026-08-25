@@ -58,7 +58,8 @@ export function AuthButtons() {
   if (user) {
     const isSeller = dbRole === "DEALER" || dbRole === "seller";
     const isAdmin = dbRole === "admin" || dbRole === "superadmin";
-    const userName = user.user_metadata?.full_name || user.email || "User";
+    const userName = user.user_metadata?.name || user.email || "User";
+    console.log(user)
     return (
       <div className="flex items-center gap-3">
         {/* User Role Tag */}
