@@ -53,6 +53,10 @@ export const ENGINE_SIZES = [
   "4.5L Diesel", "5.0L Diesel", "6.0L Diesel"
 ];
 
+export const FUEL_TYPES = ["petrol", "diesel", "electric", "hybrid", "cng"];
+export const DrivetrainOptions = ["FWD", "RWD", "AWD", "4WD"];
+export const TRANSMISSION_TYPES = ["Automatic", "Manual", "CVT", "AMT", "DUAL_CLUTCH"];
+
 // Categorized engine codes
 export const ENGINE_CODES_BY_MANUFACTURER: Record<string, string[]> = {
   TOYOTA: [

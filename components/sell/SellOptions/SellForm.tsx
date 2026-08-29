@@ -14,6 +14,7 @@ import VehicleSpecs from "../FormData/VehicleSpecs";
 import PriceSection from "../FormData/PriceSection";
 import PhotoUploader from "../FormData/PhotoUploader";
 import SellerSection from "../FormData/SellerSection";
+import VehicleDescription from "../FormData/VehicleDescription";
 
 // Utilities & Types
 import { CarFormData } from "@/types/car/CarFormData";
@@ -63,12 +64,13 @@ export default function SellForm({
     color: "",
     year: new Date().getFullYear(),
     mileage: 0,
-    transmission: "automatic",
+    description: "",
+    transmission: "AUTOMATIC",
     trim: undefined,
     engineCode: undefined,
     doorOptions: undefined,
     engineSize: undefined,
-    fuelType: "petrol",
+    fuelType: "PETROL",
     price: 0,
     negotiable: false,
     thumbnail: null,
@@ -82,9 +84,6 @@ export default function SellForm({
     accidentHistory: false,
     serviceHistory: false,
     currency: "NGN",
-    sellerName: defaultName || "",
-    sellerPhone: defaultPhone || "",
-    sellerEmail: defaultEmail || "",
   };
 
   const [formData, setFormData] = useState<CarFormData>(initialState);
@@ -215,7 +214,7 @@ useEffect(() => {
       "Interior",
       "Underneath",
     ];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < mandatoryAngles.length; i++) {
       if (!formData.images[i]) {
         return toast.error(
           `Inspection Blueprint incomplete: Missing your "${mandatoryAngles[i]}" photo.`
@@ -232,9 +231,7 @@ useEffect(() => {
     try {
       setIsSubmitting(true);
       loadingToastId = toast.loading("Syncing inspection assets with Zuta Cloud...");
-
-      const compressedThumb = await optimizeImage(formData.thumbnail!);
-
+      const compressedThumb = formData.thumbnail;
       const compressedGallery = await Promise.all(
         formData.images.map(async (file) => {
           if (!file) return null;
@@ -268,6 +265,7 @@ useEffect(() => {
         mileage: Number(formData.mileage),
         price: Number(formData.price),
         trim: formData.trim,
+        description: formData.description,
         engineCode: formData.engineCode,
         doors: formData.doorOptions ? Number(formData.doorOptions) : undefined,
         engineSize: formData.engineSize,
@@ -275,17 +273,12 @@ useEffect(() => {
         drivetrain: formData.drivetrain,
         transmission: normalizeTransmission(formData.transmission),
         fuelType: normalizeFuel(formData.fuelType),
-        condition: formData.condition?.toUpperCase() || "USED",
+        condition: formData.condition?.replace(/ /g,"_").toUpperCase(),
         accidentHistory: Boolean(formData.accidentHistory),
         serviceHistory: Boolean(formData.serviceHistory),
         negotiable: Boolean(formData.negotiable),
         thumbnail: thumbnailUrl,
         images: imageUrls,
-        sellerName:
-          formData.sellerName ||
-          (isPrivateUser ? "Private Seller" : "Verified Dealer"),
-        sellerPhone: formData.sellerPhone,
-        sellerEmail: formData.sellerEmail || null,
         city: formData.city,
         state: formData.state,
         country: formData.country,
@@ -298,6 +291,7 @@ useEffect(() => {
           );
         }, 30000)
       );
+
 
       const res: Response = await Promise.race([
         fetch("/api/cars", {
@@ -408,9 +402,7 @@ useEffect(() => {
                   isPrivateUser ? "text-amber-500" : "text-blue-600"
                 }`}
               />
-              <p className="text-2xl font-black tracking-[0.4em] uppercase animate-pulse">
-                Publishing
-              </p>
+            
             </div>
           </div>
         )}
@@ -439,6 +431,14 @@ useEffect(() => {
               negotiable={formData.negotiable}
               onChange={handleChange}
             />
+          </div>
+
+          {/* Description Section */}
+          <div className="bg-slate-900/30 p-8 rounded-[2.5rem] border border-slate-800/50 backdrop-blur-sm relative z-20">
+            <VehicleDescription descriptionDetails={{
+    description: formData.description,
+    onChange: handleChange,
+  }} />
           </div>
 
           {/* Core Structured Media Perspective Matrix Component Slot */}

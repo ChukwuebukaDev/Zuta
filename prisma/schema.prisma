@@ -8,58 +8,57 @@ datasource db {
 }
 
 model User {
-  id                  String               @id @default(cuid())
+  id                  String         @id @default(cuid())
   name                String?
-  email               String?              @unique
+  email               String?        @unique
   password            String?
   phone               String?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  isVerified          Boolean              @default(false)
-  isBanned            Boolean              @default(false) // Removed duplicate entry
-  role                Role                 @default(USER)
-  onboardingComplete  Boolean              @default(false)
-  fraudScore          Int                  @default(0)
-  fraudStatus         FraudStatus          @default(CLEAR)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  isVerified          Boolean        @default(false)
+  isBanned            Boolean        @default(false)
+  role                Role           @default(USER)
+  onboardingComplete  Boolean        @default(false)
+  fraudScore          Int            @default(0)
+  fraudStatus         FraudStatus    @default(CLEAR)
   fraudEvents         FraudEvent[]
   favourites          Favorite[]
   cars                Car[]
   bookings            Booking[]
-  buyerConversations  Conversation[]       @relation("BuyerConversations")
-  sellerConversations Conversation[]       @relation("SellerConversations")
+    verificationRequest VerificationRequest?
+  buyerConversations  Conversation[] @relation("BuyerConversations")
+  sellerConversations Conversation[] @relation("SellerConversations")
   dealerProfile       DealerProfile?
   messages            Message[]
-  verificationRequest VerificationRequest?
-  privateListingLimit Int                  @default(2)
-  carValuations       CarValuation[] // Added missing inverse relation
-  dealerReviews       DealerReview[] // Added missing inverse relation
+  privateListingLimit Int            @default(2)
+  dealerReviews       DealerReview[]
 }
 
 model DealerProfile {
-  id                  String              @id @default(cuid())
+  id                  String               @id @default(cuid())
   businessName        String
   businessEmail       String?
-  slug                String              @unique
+  slug                String               @unique
   phone               String?
   tagline             String?
   bio                 String?
   logo                String?
   banner              String?
   website             String?
-  status              DealerStatus        @default(DRAFT)
-  listingLimits       Int                 @default(50)
-  autoApproveListings Boolean             @default(false)
-  rating              Float               @default(5)
-  totalReviews        Int                 @default(0)
-  responseRate        Float               @default(100)
-  responseTime        Int                 @default(0)
-  totalSales          Int                 @default(0)
+  status              DealerStatus         @default(DRAFT)
+  listingLimits       Int                  @default(50)
+  autoApproveListings Boolean              @default(false)
+  rating              Float                @default(5)
+  totalReviews        Int                  @default(0)
+  responseRate        Float                @default(100)
+  responseTime        Int                  @default(0)
+  totalSales          Int                  @default(0)
   subscription        DealerSubscription?
-  userId              String              @unique
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviews             DealerReview[] 
+  userId              String               @unique
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviews             DealerReview[]
 }
 
 model DealerSubscription {
@@ -102,7 +101,7 @@ model VerificationRequest {
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
   documents       VerificationDocument[]
-  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationDocument {
@@ -132,7 +131,7 @@ model Car {
   rejectionReason String?
   adminFeedback   String?
   accidentHistory Boolean        @default(false)
-  bodyType        String
+  bodyType        BodyType
   currency        String         @default("NGN")
   drivetrain      String
   featured        Boolean        @default(false)
@@ -153,7 +152,7 @@ model Car {
   seatingCapacity Int?
   transmission    Transmission
   condition       Condition
-  status          Status         @default(AVAILABLE)
+  status          CarStatus      @default(AVAILABLE)
   city            String
   country         String         @default("Nigeria")
   state           String
@@ -201,30 +200,31 @@ model Favorite {
   @@index([carId])
 }
 
-model CarValuation {
-  id           String       @id @default(cuid())
-  brand        String
-  model        String
-  year         Int
-  mileage      Int
-  transmission Transmission
-  fuelType     FuelType
-  condition    Condition
-  bodyType     String?
-  color        String?
-  state        String
-  city         String
-  estimatedMin Decimal      @db.Decimal(15, 2)
-  estimatedMax Decimal      @db.Decimal(15, 2)
-  confidence   Int?
-  userId       String?
-  email        String?
-  phone        String?
-  createdAt    DateTime     @default(now())
-  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-}
+/**
+ * model CarValuation {
+ * id           String       @id @default(cuid())
+ * brand        String
+ * model        String
+ * year         Int
+ * mileage      Int
+ * transmission Transmission
+ * fuelType     FuelType
+ * condition    Condition
+ * bodyType     String?
+ * color        String?
+ * state        String
+ * city         String
+ * estimatedMin Decimal      @db.Decimal(15, 2)
+ * estimatedMax Decimal      @db.Decimal(15, 2)
+ * confidence   Int?
+ * userId       String?
+ * email        String?
+ * phone        String?
+ * createdAt    DateTime     @default(now())
+ * user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+ * @@index([userId])
+ * }
+ */
 
 model Conversation {
   id        String    @id @default(cuid())
@@ -302,45 +302,121 @@ enum ImageAngle {
 enum Role {
   USER
   DEALER
+  PREMIUM_DEALER
   ADMIN
-}
-
-enum SellerType {
-  PRIVATE
-  DEALER
+  SUPER_ADMIN
 }
 
 enum Transmission {
+  // Traditional manual transmission operated by the driver.
   MANUAL
+
+  // Manual gearbox where clutch engagement and gear changes are automated.
+  AUTOMATED_MANUAL
+
+  // Conventional automatic transmission with fixed gear ratios.
   AUTOMATIC
+
+  // Continuously Variable Transmission with a continuously variable gear ratio.
+  CVT
+
+  // Dual-Clutch Transmission using two clutches for gear changes.
+  DUAL_CLUTCH
+
+  OTHER
 }
 
 enum FuelType {
+  // Conventional gasoline/petrol-powered engine.
   PETROL
+
+  // Conventional diesel-powered engine.
   DIESEL
+
+  // Vehicle powered primarily by electricity using a battery and electric motor.
   ELECTRIC
+
+  // Hybrid vehicle combining an internal combustion engine with an electric motor.
   HYBRID
+
+  // Vehicle powered by compressed natural gas.
+  CNG
+
 }
+
+enum BodyType {
+  // Four-door passenger car with a separate trunk.
+  SEDAN
+
+  // Passenger car with a rear hatch and folding rear seats.
+  HATCHBACK
+
+  // Two-door passenger car with a fixed roof and sporty styling.
+  COUPE
+
+  // Vehicle with a retractable or removable roof.
+  CONVERTIBLE
+
+  // Sport Utility Vehicle with increased ground clearance.
+  SUV
+
+  // Car-based vehicle combining passenger-car handling with SUV characteristics.
+  CROSSOVER
+
+  // Multi-purpose vehicle with flexible seating and cargo capacity.
+  MINIVAN
+
+  // Vehicle primarily designed to transport passengers or cargo in an enclosed body.
+  VAN
+
+  // Vehicle with an open cargo bed behind the passenger cabin.
+  PICKUP
+
+  // High-performance passenger vehicle designed for speed and handling.
+  SPORTS_CAR
+
+  // Vehicle primarily designed for commercial transportation or heavy-duty work.
+  TRUCK
+
+  // Body type not covered by the standard categories.
+  OTHER
+}
+
+enum DriveTrain {
+  FWD
+  RWD
+  AWD
+  FOUR_WD
+}
+
 
 enum Condition {
   NEW
-  USED
-  CERTIFIED
+  LOCAL_USED
+  FOREIGN_USED
 }
 
 enum ListingStatus {
   DRAFT
   PENDING
+  UNDER_REVIEW
   APPROVED
   REJECTED
   SOLD
   ARCHIVED
 }
 
-enum Status {
+enum CarStatus {
   AVAILABLE
+  NEGOTIATING
   SOLD
   RESERVED
+}
+
+enum SellerType {
+  PRIVATE
+  DEALER
+  PREMIUM_DEALER
 }
 
 enum DealerStatus {

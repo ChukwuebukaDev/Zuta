@@ -40,7 +40,7 @@ export default function FloatingNav({ initialUser }: FloatingNavProps) {
   // Navigation Links definition using current user state
   const NAV_LINKS: NavLinkItem[] = [
     { label: "Showroom", href: "/cars", icon: Car },
-    { label: "List a Vehicle", href: "/sell", icon: PlusCircle, badge: "Free", color: "text-amber-400" },
+    { label: "Sell a Vehicle", href: "/sell", icon: PlusCircle, badge: "Free", color: "text-amber-400" },
     { label: "Car Valuation", href: "/valuation", icon: Calculator },
     { 
       label: isAuthenticated ? (userRole === "DEALER" ? "Dealer Console" : "My Listings") : "Seller Portal", 

@@ -59,10 +59,27 @@ export async function signup(formData: FormData) {
     return { error: "All fields are required to complete registration." };
   }
 
-  // 2. Enforce minimum password strength
-  if (password.length < 8) {
-    return { error: "Password must be at least 8 characters long." };
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Invalid email format." };
   }
+  // 2. Enforce minimum password strength
+
+if (password.length < 8) {
+  return { error: "Password must be at least 8 characters long." };
+}
+
+if(!/[A-Z]/.test(password)) {
+  return { error: "Password must contain at least one uppercase letter." };
+}
+
+if (!/[0-9]/.test(password)) {
+  return { error: "Password must contain at least one number." };
+}
+
+if (!/[!@#$%^&*(),.?":{}|<>_\-\\[\]/;'`~+=]/.test(password)) {
+  return { error: "Password must contain at least one special character." };
+}
+
 
   // 3. Register user in Supabase
   const { data, error } = await supabase.auth.signUp({
@@ -89,7 +106,6 @@ export async function signup(formData: FormData) {
           name,
           phone,
           role: Role.USER,
-          privateListingLimit: 2,
         },
       });
     } catch (err) {

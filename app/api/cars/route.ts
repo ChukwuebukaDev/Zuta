@@ -3,31 +3,36 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
+import {FuelType,BodyType,Transmission,Condition} from '@prisma/client';
 const carSchema = z.object({
   brand: z.string().min(1),
   model: z.string().min(1),
   color: z.string().min(1),
   year: z.coerce.number().int().gte(1900).lte(new Date().getFullYear()),
-  bodyType: z.string().min(1),
+  bodyType:z.preprocess(
+    (val) => String(val).toUpperCase(),
+    z.enum(BodyType),
+  ),
   trim: z.string().optional(),
   doors: z.coerce.number().int().min(2).max(6).optional().default(4),
-  engineSize: z.string().optional(), // Flexible string so users can type "2.0L", "3.5L V6", etc.
+  engineSize: z.string().optional(), 
+  engineCode: z.string().optional(),
+  description: z.string().min(50, "Description must be at least 50 characters long.").max(2000, "Description cannot exceed 2000 characters.").optional(),
   cylinders: z.coerce.number().int().positive().optional(),
   horsePower: z.coerce.number().int().positive().optional(),
   fuelCapacity: z.coerce.number().positive().optional(),
   seatingCapacity: z.coerce.number().int().positive().optional(),
   transmission: z.preprocess(
     (val) => String(val).toUpperCase(),
-    z.enum(["MANUAL", "AUTOMATIC"]),
+    z.enum(Transmission),
   ),
   fuelType: z.preprocess(
     (val) => String(val).toUpperCase(),
-    z.enum(["PETROL", "DIESEL", "ELECTRIC", "HYBRID"]),
+    z.enum(FuelType),
   ),
   condition: z.preprocess(
     (val) => String(val).toUpperCase(),
-    z.enum(["NEW", "USED", "CERTIFIED"]),
+    z.enum(Condition),
   ),
   drivetrain: z.string().min(1),
   mileage: z.coerce.number().int().nonnegative(),
@@ -88,6 +93,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const result = carSchema.safeParse(body);
+    
     if (!result.success) {
       return NextResponse.json(
         { error: "Validation failed", details: result.error.flatten() },
@@ -133,11 +139,11 @@ export async function POST(req: Request) {
       }
 
       if (dbUser.role === "ADMIN") {
-        // Admins pass with infinite listings
+        throw new Error("Access Denied: Admins not allowed");
       } else if (dbUser.role === "DEALER") {
         if (!dbUser.dealerProfile) {
           throw new Error(
-            "Dealer profile node missing. Complete onboarding setup.",
+            "Dealer profile information missing. Complete onboarding setup.",
           );
         }
         if (dbUser.dealerProfile.listingLimits <= 0) {
@@ -166,11 +172,13 @@ export async function POST(req: Request) {
           },
         });
       }
-
+      function toUpper(word:string){
+        return word.toUpperCase();
+      }
       return tx.car.create({
         data: {
           slug: generateSlug(data.brand, data.model),
-          title: `${data.year} ${data.brand} ${data.model}`,
+          title: `${data.year} ${toUpper(data.brand)} ${toUpper(data.model)} ${data.engineSize ? data.engineSize : ''}`,
           brand: data.brand,
           model: data.model,
           year: data.year,
@@ -181,6 +189,8 @@ export async function POST(req: Request) {
           trim: data.trim,
           doors: data.doors,
           engineSize: data.engineSize,
+          engineCode: data.engineCode,  
+          description: data.description,
           cylinders: data.cylinders,
           horsePower: data.horsePower,
           seatingCapacity: data.seatingCapacity,
@@ -197,7 +207,7 @@ export async function POST(req: Request) {
           state: data.state,
           country: data.country,
           userId: user.id,
-          sellerType: dbUser.role === "DEALER" ? "DEALER" : "PRIVATE",
+          sellerType: dbUser.role === "DEALER" ? "DEALER" : dbUser.role === "PREMIUM_DEALER" ? "PREMIUM_DEALER" : "PRIVATE",
           carImages: {
             create: data.images.map((url, idx) => ({
               url,
@@ -219,7 +229,7 @@ export async function POST(req: Request) {
       msg.includes("remaining listings") ||
       msg.includes("showroom capacity") ||
       msg.includes("User record not found") ||
-      msg.includes("Dealer profile node missing")
+      msg.includes("Dealer profile information missing")
     ) {
       return NextResponse.json({ error: msg }, { status: 403 });
     }

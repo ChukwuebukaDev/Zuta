@@ -7,11 +7,11 @@ import { useEffect,useState } from "react";
 import {
   Transmission,
   FuelType,
-  Drivetrain,
   BodyType,
-  CarCondition,
-} from "@/types/car/car.enums";
-import {getCommonTrims,DOOR_OPTIONS,ENGINE_SIZES,getEngineCode} from "@/constants/carspecs";
+  Condition,
+  DriveTrain
+} from "@prisma/client";
+import {getCommonTrims,DOOR_OPTIONS,ENGINE_SIZES,getEngineCode,FUEL_TYPES,DrivetrainOptions,TRANSMISSION_TYPES} from "@/constants/carspecs";
 
 type Props = {
   vehicleSpecsDetails: {
@@ -23,9 +23,9 @@ type Props = {
   fuelType: FuelType;
   trim?: string;
   engineCode?:string;
-  drivetrain?: Drivetrain;
+  drivetrain?: DriveTrain
   bodyType?: BodyType;
-  condition?: CarCondition;
+  condition?: Condition;
   accidentHistory?: boolean;
   serviceHistory?: boolean;
   onChange: <K extends keyof CarFormData>(field: K, value: CarFormData[K]) => void;
@@ -87,7 +87,7 @@ useEffect(()=>{
         {/* Transmission */}
         <div className="relative">
           <Dropdown
-            options={["automatic", "manual"]}
+            options={TRANSMISSION_TYPES}
             value={transmission}
             placeholder="Transmission"
             onChange={(val) => onChange("transmission", val as Transmission)}
@@ -97,7 +97,7 @@ useEffect(()=>{
         {/* Fuel Type */}
         <div className="relative">
           <Dropdown
-            options={["petrol", "diesel", "electric", "hybrid"]}
+            options={FUEL_TYPES}
             value={fuelType}
             placeholder="Fuel Type"
             onChange={(val) => onChange("fuelType", val as FuelType)}
@@ -107,10 +107,10 @@ useEffect(()=>{
         {/* Drivetrain */}
         <div className="relative">
           <Dropdown
-            options={["FWD", "RWD", "AWD"]}
+            options={DrivetrainOptions}
             value={drivetrain || ""}
             placeholder="Drivetrain"
-            onChange={(val) => onChange("drivetrain", val as Drivetrain)}
+            onChange={(val) => onChange("drivetrain", val as "FWD" | "RWD" | "AWD" | "FOUR_WD")}
           />
         </div>
 
@@ -127,10 +127,10 @@ useEffect(()=>{
         {/* Condition */}
         <div className="relative">
           <Dropdown
-            options={["New", "Used", "Certified"]}
+            options={["New", "Local Used", "Foreign Used"]}
             value={condition || ""}
             placeholder="Condition"
-            onChange={(val) => onChange("condition", val as CarCondition)}
+            onChange={(val) => onChange("condition", val as Condition)}
           />
         </div>
         <div className="relative">
@@ -204,7 +204,7 @@ useEffect(()=>{
         {/* Service History Choice Card */}
         <div className="space-y-3">
           <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
-            Is the vehicle's full service history available?
+            Is the vehicle&apos;s full service history available?
           </label>
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -236,7 +236,7 @@ useEffect(()=>{
       {/* Small design hint for the dealer */}
       <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-tighter px-2 pt-2">
         <Activity size={12} className="text-blue-500" />
-        Ensure all technical data is verified via the vehicle's logbook.
+        Ensure all technical data is verified via the vehicle&apos;s logbook.
       </div>
     </div>
   );

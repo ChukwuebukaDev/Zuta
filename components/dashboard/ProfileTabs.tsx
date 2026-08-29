@@ -12,12 +12,13 @@ import {
   Trash2,
   Store,
   UserCheck,
-  Edit3,
   EyeOff,
 } from "lucide-react";
 import { formatPrice } from "@/utilities/currency";
 import { RejectionDetailsModal } from "../seller/RejectionDetailModal";
 import { ListingDetails } from "../seller/ListingDetails";
+import EditCar from "@/utilities/carEdit";
+import { Role } from "@prisma/client";
 
 interface DisplayCar {
   id: string;
@@ -57,7 +58,7 @@ interface ConversationItem {
 interface ProfileTabsProps {
   displayCars: DisplayCar[];
   activeChats: ConversationItem[];
-  userRole: "USER" | "DEALER" | "ADMIN";
+  userRole: Role;
 }
 
 export default function ProfileTabs({
@@ -163,7 +164,7 @@ export default function ProfileTabs({
       </div>
 
       {/* --- TAB 1: SHOWROOM / POSTINGS / GARAGE GRID --- */}
-      {activeTab === "inventory" && (
+      {!isDealer && activeTab === "inventory" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {itemsList.length === 0 ? (
             <div className="col-span-full py-16 text-center border border-dashed border-slate-900 rounded-3xl text-slate-500 bg-zinc-950/10">
@@ -275,13 +276,7 @@ export default function ProfileTabs({
                           )}
                         </button>
 
-                        <Link
-                          href={`/dashboard/inventory/${car.id}/edit`}
-                          className="p-1.5 rounded-lg bg-zinc-950 border border-slate-900 text-blue-400 hover:text-blue-300 transition flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2"
-                        >
-                          <Edit3 size={11} />
-                          <span>Modify</span>
-                        </Link>
+                         <EditCar carId = {car.id} mode = "PROFILE"/>
 
                         {car.status && car.listingStatus === "APPROVED" && (
                           <span

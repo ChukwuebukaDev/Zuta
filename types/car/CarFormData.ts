@@ -3,9 +3,9 @@ import {
   FuelType,
   Drivetrain,
   BodyType,
-  CarCondition,
-  Currency,
-} from "./car.enums";
+  Condition,
+  
+} from "@prisma/client";
 
 export type CarFormData = {
   brand: string;
@@ -16,25 +16,24 @@ export type CarFormData = {
   fuelType: FuelType;
   trim?: string;  
   engineSize?: string;
+  description?: string;
   doorOptions?: number ;
   drivetrain?: Drivetrain;
   bodyType?: BodyType;
-  condition?: CarCondition;
+  condition?: Condition;
   engineCode?:string;
   accidentHistory?: boolean;
   serviceHistory?: boolean;
 
   mileage: number;
   price: number;
-  currency?: Currency;
+  currency?: 'NGN' | 'USD';
   negotiable: boolean;
 
   thumbnail: File | null;
   images: File[];
 
-  sellerName: string;
-  sellerPhone: string;
-  sellerEmail?: string;
+
 
   country: string;
   state: string;

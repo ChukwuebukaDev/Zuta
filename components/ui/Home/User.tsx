@@ -3,18 +3,17 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/supabase/client";
-import { useSearchParams } from "next/navigation";
 import { logout } from "@/app/(auth)/action";
-import { Loader2, LogOut, User, Sparkles } from "lucide-react";
+import { Loader2, LogOut, User, Sparkles} from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-
+import CandidateBadge from "@/utilities/CandidateBadge";
 export function AuthButtons() {
   // Stable client reference across renders
   const supabase = useMemo(() => createClient(), []);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [dbRole, setDbRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
+type UserRole = "USER" | "DEALER" |"PREMIUM_DEALER" | "ADMIN" | "SUPERADMIN";
   useEffect(() => {
     let isMounted = true;
 
@@ -54,18 +53,21 @@ export function AuthButtons() {
   if (loading) {
     return <Loader2 className="w-5 h-5 animate-spin text-amber-500" />;
   }
-
+const dbRoleUpper = dbRole?.toUpperCase() || "USER";
   if (user) {
-    const isSeller = dbRole === "DEALER" || dbRole === "seller";
+    const isSeller = dbRole?.toUpperCase() === "DEALER" || dbRole === "seller";
     const isAdmin = dbRole === "admin" || dbRole === "superadmin";
     const userName = user.user_metadata?.name || user.email || "User";
-    console.log(user)
     return (
       <div className="flex items-center gap-3">
         {/* User Role Tag */}
+        <div className="flex items-center gap-1.5">
+          
         <span className="hidden sm:inline-block text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-amber-400">
           {isAdmin ? "Admin" : isSeller ? "Dealer" : userName.split(" ")[0] || "User"}
         </span>
+       <p title={`Verified ${dbRoleUpper}`} className="hover:animate-pulse transition duration-200 cursor-pointer"><CandidateBadge role={dbRoleUpper as UserRole} /></p>
+        </div>
 
         {/* Dashboard Profile Trigger */}
         <div className="flex items-center gap-2 pl-2 border-l border-neutral-800">

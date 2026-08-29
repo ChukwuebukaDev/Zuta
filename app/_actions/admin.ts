@@ -56,7 +56,10 @@ export async function approveCarListing(carId: string) {
     await checkAdmin(); 
     await db.car.update({
       where: { id: carId },
-      data: { listingStatus: "APPROVED" },
+      data: { 
+        listingStatus: "APPROVED",
+        publishedAt: new Date(),
+      },
     });
 
     // Revalidate paths to drop cache layout constraints immediately across targets

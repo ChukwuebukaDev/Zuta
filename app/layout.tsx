@@ -6,7 +6,6 @@ import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/app/api/uploadthing/core";
 import { cn } from "@/lib/utils";
 import FloatingNav from "@/components/ui/Wrapper/FloatingNav";
-import { getServerSession } from "next-auth"; // ⚡ Server session import
 import { createClient } from "@/supabase/server";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });

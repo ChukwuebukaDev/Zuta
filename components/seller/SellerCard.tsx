@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card/Card";
 import { Tag, Pencil, AlertTriangle } from "lucide-react";
 import { RejectionDetailsModal } from "./RejectionDetailModal";
-
+import EditCar from "@/utilities/carEdit";
 interface InventoryCar {
   id: string;
   brand: string;
@@ -124,12 +124,7 @@ export function SellerCarCard({ car }: { car: InventoryCar }) {
             {formatPrice(car.price)}
           </p>
 
-          <Link href={`/dashboard/inventory/${car.id}/edit`}>
-            <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-900 border border-slate-800 hover:border-slate-600 text-[11px] font-bold uppercase tracking-wider text-slate-300 hover:text-white rounded-xl transition duration-150 active:scale-95 cursor-pointer">
-              <Pencil size={12} className="text-slate-400" />
-              Edit Spec
-            </button>
-          </Link>
+         <EditCar carId = {car.id}  />
         </div>
       </Card>
 

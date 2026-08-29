@@ -61,9 +61,10 @@ export default function OnboardingForm({ userId, phone: initialPhone }: Onboardi
   const isValidName = businessName.trim().length >= 3;
   const isValidCac = cacNumber.trim().length >= 6; 
   const isValidAddress = businessAddress.trim().length >= 10;
+  const isValidEmail = businessEmail.trim() === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(businessEmail.trim());
   const isValidPhone = phone.trim().length >= 8;
   
-  const isComplete = isValidName && isValidCac && isValidAddress && isValidPhone && hasId && hasCard;
+  const isComplete = isValidName && isValidCac && isValidAddress && isValidEmail && isValidPhone && hasId && hasCard;
 
   async function onSubmit() {
     if (!isComplete || loading) return;

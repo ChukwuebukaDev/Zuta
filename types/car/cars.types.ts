@@ -1,12 +1,10 @@
 import {
   Transmission,
   FuelType,
-  Drivetrain,
   BodyType,
-  CarCondition,
-  ListingStatus,
-  Currency,
-} from "./car.enums";
+  Condition
+
+} from "@prisma/client";
 
 export type Car = {
   id: string;
@@ -47,14 +45,12 @@ horsePower?:number | null;
     imageUrl?: string | null; // Clerk image URL
     isVerified?: boolean;
   };
+  country:string;
   city:string;
   status: string;
   listingStatus: string;
   featured: boolean;
   views: number;
-  sellerName: string;
-  sellerPhone: string;
-  sellerEmail?: string | null;
   location: string;
   createdAt: Date;
   updatedAt: Date;
@@ -74,7 +70,7 @@ export type CarFilters = {
   bodyType?: BodyType;
   fuelType?: FuelType;
   transmission?: Transmission;
-  condition?: CarCondition | "used";
+  condition?: Condition;
 
   minMileage?: number;
   maxMileage?: number;

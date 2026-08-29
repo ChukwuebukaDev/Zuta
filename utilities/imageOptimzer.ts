@@ -10,9 +10,6 @@ const options = {
 export async function optimizeImage(file: File) {
   try {
     const compressedFile = await imageCompression(file, options);
-    console.log(
-      `✅ Optimized: ${file.size / 1024 / 1024}MB -> ${compressedFile.size / 1024 / 1024}MB`,
-    );
     return compressedFile;
   } catch (error) {
     console.error("Image compression failed, using original file", error);
