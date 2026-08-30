@@ -1,85 +1,279 @@
+
 "use client";
 
 import { useState } from "react";
-import { verifyUser } from "@/app/_actions/admin";
 import { toast } from "sonner";
-import { ExternalLink, ShieldCheck, ShieldAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ExternalLink,
+  ShieldCheck,
+  ShieldAlert,
+  Loader2,
+  XCircle,
+} from "lucide-react";
 
-export function VerificationTable({ users }: { users: any[] }) {
+import {
+  approveDealer,
+  rejectDealer,
+} from "@/app/(admin)/admin-dashboard/verification/action";
+
+type VerificationRequest = {
+  status:string,
+verificationRequest:{
+    id: string;
+  requestId: string;
+
+  legalName: string;
+
+  idUrl: string;
+  cardUrl: string;
+
+  status: "SUBMITTED" | "APPROVED" | "REJECTED";
+}
+};
+
+export function VerificationTable({
+  users,
+}: {
+  users: VerificationRequest[];
+}) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const router = useRouter();
+  const handleApprove = async (requestId: string) => {
+    setLoadingId(requestId);
 
-  const handleToggleVerify = async (userId: string, currentStatus: boolean) => {
-    setLoadingId(userId);
-    const result = await verifyUser(userId, !currentStatus);
-    if (result.success) {
-      toast.success("User status updated");
-    } else {
-      toast.error("Failed to update status");
+    try {
+      await approveDealer(requestId);
+
+      toast.success("Dealer approved successfully.");
+      router.refresh();
+    } catch (error) {
+      console.error("[APPROVE_DEALER]", error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to approve dealer."
+      );
+
+      
+    } finally {
+      setLoadingId(null);
+    }  };
+
+
+  const handleReject = async (requestId: string) => {
+    const notes = window.prompt(
+      "Enter a reason for rejecting this application:"
+    );
+
+    // User cancelled
+    if (notes === null) {
+      return;
     }
-    setLoadingId(null);
+
+    if (!notes.trim()) {
+      toast.error("A rejection reason is required.");
+      return;
+    }
+
+    setLoadingId(requestId);
+
+    try {
+      await rejectDealer(requestId, notes);
+
+      toast.success("Dealer application rejected.");
+      router.refresh();
+    } catch (error) {
+      console.error("[REJECT_DEALER]", error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to reject dealer."
+      );
+    } finally {
+      setLoadingId(null);
+    }
   };
 
+  function capitalizeName(name: string): string {
+    if (!name) return "";
+
+    return name
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .map(
+        (word) =>
+          word.charAt(0).toUpperCase() +
+          word.slice(1)
+      )
+      .join(" ");
+  }
+
+
+  function renderStatus(
+    status: VerificationRequest["status"]
+  ) {
+    switch (status) {
+      case "APPROVED":
+        return (
+          <span className="flex items-center gap-1 font-bold text-emerald-500">
+            <ShieldCheck size={16} />
+            Approved
+          </span>
+        );
+
+      case "REJECTED":
+        return (
+          <span className="flex items-center gap-1 font-bold text-red-500">
+            <XCircle size={16} />
+            Rejected
+          </span>
+        );
+
+      case "SUBMITTED":
+      default:
+        return (
+          <span className="flex items-center gap-1 font-bold text-amber-500">
+            <ShieldAlert size={16} />
+            Pending
+          </span>
+        );
+    }
+  }
+
+
   return (
-    <div className="rounded-md border border-slate-800 bg-slate-950 overflow-hidden">
-      <table className="w-full text-sm text-left">
-        <thead className="text-xs uppercase bg-slate-900 text-slate-400">
+    <div className="overflow-hidden rounded-md border border-slate-800 bg-slate-950">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-slate-900 text-xs uppercase text-slate-400">
           <tr>
-            <th className="px-6 py-4">Legal Name</th>
-            <th className="px-6 py-4">Documents</th>
-            <th className="px-6 py-4">Status</th>
-            <th className="px-6 py-4">Action</th>
+            <th className="px-6 py-4">
+              Legal Name
+            </th>
+
+            <th className="px-6 py-4">
+              Documents
+            </th>
+
+            <th className="px-6 py-4">
+              Status
+            </th>
+
+            <th className="px-6 py-4">
+              Action
+            </th>
           </tr>
         </thead>
+
         <tbody className="divide-y divide-slate-800">
-          {users.map((user) => (
-            <tr key={user.id} className="hover:bg-slate-900/50 transition-colors">
-              <td className="px-6 py-4 font-medium text-white">
-                {user.legalName}
-              </td>
-              <td className="px-6 py-4 space-x-3">
-                <a 
-                  href={user.idUrl} 
-                  target="_blank" 
-                  className="inline-flex items-center gap-1 text-blue-400 hover:underline"
-                >
-                  Gov ID <ExternalLink size={14} />
-                </a>
-                <a 
-                  href={user.cardUrl} 
-                  target="_blank" 
-                  className="inline-flex items-center gap-1 text-blue-400 hover:underline"
-                >
-                  Card <ExternalLink size={14} />
-                </a>
-              </td>
-              <td className="px-6 py-4">
-                {user.isVerified ? (
-                  <span className="flex items-center gap-1 text-emerald-500 font-bold">
-                    <ShieldCheck size={16} /> Verified
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-amber-500 font-bold">
-                    <ShieldAlert size={16} /> Pending
-                  </span>
-                )}
-              </td>
-              <td className="px-6 py-4">
-                <button
-                  onClick={() => handleToggleVerify(user.id, user.isVerified)}
-                  disabled={loadingId === user.id}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                    user.isVerified 
-                      ? "bg-red-500/10 text-red-500 hover:bg-red-500/20" 
-                      : "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
-                  }`}
-                >
-                  {loadingId === user.id ? "..." : user.isVerified ? "Revoke" : "Approve"}
-                </button>
-              </td>
-            </tr>
-          ))}
+          {users.map((res) => {
+            const request = res.verificationRequest;
+            const isLoading =
+              loadingId === request.id;
+
+            const isPending =
+              request.status === "SUBMITTED";
+
+            return (
+              <tr
+                key={request.id}
+                className="transition-colors hover:bg-slate-900/50"
+              >
+  
+                <td className="px-6 py-4 font-medium text-white">
+                  {capitalizeName(request.legalName)}
+                </td>
+
+                <td className="space-x-3 px-6 py-4">
+                  <a
+                    href={request.idUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-blue-400 hover:underline"
+                  >
+                    Gov ID
+                    <ExternalLink size={14} />
+                  </a>
+
+                  <a
+                    href={request.cardUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-blue-400 hover:underline"
+                  >
+                    Card
+                    <ExternalLink size={14} />
+                  </a>
+                </td>
+
+                <td className="px-6 py-4">
+                  {renderStatus(request.status)}
+                </td>
+
+                <td className="px-6 py-4">
+                  {isPending ? (
+                    <div className="flex gap-x-2">
+                      {/* Approve */}
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() =>
+                          handleApprove(
+                            request.id
+                          )
+                        }
+                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-500 transition-all hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isLoading ? (
+                          <Loader2
+                            size={14}
+                            className="animate-spin"
+                          />
+                        ) : (
+                          <ShieldCheck size={14} />
+                        )}
+
+                        Approve
+                      </button>
+
+                      {/* Reject */}
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() =>
+                          handleReject(
+                            request.id
+                          )
+                        }
+                        className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2 text-xs font-bold text-red-500 transition-all hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isLoading ? (
+                          <Loader2
+                            size={14}
+                            className="animate-spin"
+                          />
+                        ) : (
+                          <XCircle size={14} />
+                        )}
+
+                        Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-500">
+                      Processed
+                    </span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
+

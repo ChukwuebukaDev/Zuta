@@ -43,10 +43,9 @@ export default async function OnboardingStatusPage() {
   const user = await db.user.findUnique({
     where: { id: supabaseUser.id },
     select: {
-      name: true,               // 🌟 Added root name fallback
-      isVerified: true,
+      name: true,              
       onboardingComplete: true,
-      dealerProfile: {          // 🌟 Added relational profiles to grab dealership name
+      dealerProfile: {          
         select: {
           businessName: true,
         }
@@ -56,12 +55,12 @@ export default async function OnboardingStatusPage() {
 
   if (!user) return null;
   
-  if (user.isVerified) {
+  if (user.dealerProfile) {
     redirect("/dashboard");
   }
 
   // Determine a personalized display name (prefer business name, then user name, then default)
-  const displayName = user.dealerProfile?.businessName || user.name || "Dealer";
+  const displayName:string = user.dealerProfile?.businessName || user.name || "Dealer";
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">

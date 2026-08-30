@@ -15,7 +15,6 @@ export default async function SellerLayout({ children }: { children: React.React
     where: { id: authUser.id },
     select: { 
       role: true, 
-      isVerified: true,
       onboardingComplete: true 
     }
   });
@@ -36,14 +35,11 @@ export default async function SellerLayout({ children }: { children: React.React
 
   // 4. Dealership Verification Lifecycle Enforcement
   if (user.role === "DEALER") {
-    if (!user.isVerified) {
-      if (user.onboardingComplete) {
+    if (user.onboardingComplete) {
         redirect("/onboarding/status");
       } else {
         redirect("/onboarding");
       }
-    }
-    
 
     return (
       <div className="min-h-screen bg-zinc-950 text-slate-100 selection:bg-emerald-600/30 selection:text-white">

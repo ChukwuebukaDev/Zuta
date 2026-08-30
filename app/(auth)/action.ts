@@ -3,7 +3,6 @@
 import { createClient } from "@/supabase/server";
 import { prisma as db } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import {Role} from "@prisma/client";
 
 // Helper function to validate redirect paths safely
 function getSafeRedirectUrl(param: unknown, fallback: string): string {
@@ -105,7 +104,6 @@ if (!/[!@#$%^&*(),.?":{}|<>_\-\\[\]/;'`~+=]/.test(password)) {
           email,
           name,
           phone,
-          role: Role.USER,
         },
       });
     } catch (err) {

@@ -228,7 +228,7 @@ export default function OnboardingForm({ userId, phone: initialPhone }: Onboardi
           </div>
           <div className="text-center">
             <p className="text-xs font-black text-white uppercase tracking-wider">Representative ID</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Driver's License or Int'l Passport</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Driver&apos;s License or Int&apos;l Passport</p>
           </div>
           <UploadButton {...getUploadConfig("GOVT_ID")} />
           {hasId && (

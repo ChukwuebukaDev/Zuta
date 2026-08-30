@@ -44,7 +44,9 @@ export default async function OnboardingPage() {
     select: { 
       role: true,
       onboardingComplete: true, 
-      isVerified: true 
+      verificationRequest:{
+        select:{status:true}
+      }
     }
   });
 
@@ -52,11 +54,11 @@ export default async function OnboardingPage() {
     redirect('/admin-dashboard');
   }
 
-  if (dbUser?.isVerified && dbUser?.role === "DEALER") {
+  if (dbUser?.role === "DEALER") {
     redirect("/dashboard");
   }
 
-  if (dbUser?.onboardingComplete && !dbUser?.isVerified) {
+  if (dbUser?.onboardingComplete && dbUser?.verificationRequest?.status === 'UNDER_REVIEW') {
     redirect("/onboarding/status");
   }
 

@@ -202,7 +202,7 @@ export default function Hero({ user }: HeroProps) {
                     size="lg" 
                     className="w-full sm:w-auto border-amber-500/30 text-amber-400 hover:bg-amber-400/10 font-bold text-xs uppercase tracking-widest py-3.5 sm:py-3 cursor-pointer rounded-xl transition flex items-center justify-center"
                   >
-                    List a Vehicle <PlusCircle className="ml-2 h-4 w-4 shrink-0" />
+                    Sell a Vehicle <PlusCircle className="ml-2 h-4 w-4 shrink-0" />
                   </Button>
                 )}
               

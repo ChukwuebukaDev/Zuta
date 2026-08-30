@@ -157,7 +157,6 @@ export default async function ProfilePage() {
       year: "numeric",
     }),
     location: "Nigeria",
-    isVerified: user.isVerified,
     tagline: isDealer ? user.dealerProfile?.tagline : null,
   };
 

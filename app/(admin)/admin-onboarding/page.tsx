@@ -4,8 +4,9 @@ import { VerificationTable } from "@/components/ui/table/VerificationTable";
 export default async function AdminOnboardingPage() {
   const users = await prisma.user.findMany({
     where: {
-      onboardingComplete: true,
+      verificationRequest: {status:"SUBMITTED"},
     },
+    select:{verificationRequest:true},
     orderBy: {
       updatedAt: "desc",
     },
