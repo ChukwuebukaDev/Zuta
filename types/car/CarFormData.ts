@@ -1,7 +1,7 @@
 import {
   Transmission,
   FuelType,
-  Drivetrain,
+  DriveTrain,
   BodyType,
   Condition,
   
@@ -18,7 +18,7 @@ export type CarFormData = {
   engineSize?: string;
   description?: string;
   doorOptions?: number ;
-  drivetrain?: Drivetrain;
+  drivetrain?: DriveTrain;
   bodyType?: BodyType;
   condition?: Condition;
   engineCode?:string;

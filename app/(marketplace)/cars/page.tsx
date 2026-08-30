@@ -7,7 +7,7 @@ import FilterSheet from "@/components/ui/Filter/FilterSheet";
 import type { CarFilters } from "@/types/car/cars.types";
 import Pagination from "@/components/ui/Pagination/CarPagination";
 import { Sparkles, CarFront, RotateCcw } from "lucide-react";
-import { BodyType, Transmission,FuelType } from "@/types/car/car.enums";
+import { BodyType, Transmission,FuelType } from "@prisma/client";
 
 function getEnumValue<T extends string>(
   value: string | string[] | undefined

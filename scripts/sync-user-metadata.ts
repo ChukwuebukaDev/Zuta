@@ -23,11 +23,9 @@ async function syncUsers() {
       role: true,
       onboardingComplete: true,
       privateListingLimit: true,
-      isVerified: true,
     },
   });
 
-  console.log(`Found ${users.length} users.\n`);
 
   let success = 0;
   let failed = 0;
@@ -40,7 +38,6 @@ async function syncUsers() {
           role: user.role,
           onboardingComplete: user.onboardingComplete,
           privateListingLimit: user.privateListingLimit,
-          isVerified: user.isVerified,
         },
       }
     );

@@ -3,8 +3,6 @@
 import { prisma as db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/supabase/server";
-import { DealerStatus } from "@prisma/client";
-
 
 async function checkAdmin() {
   const supabase = await createClient();
@@ -26,29 +24,29 @@ async function checkAdmin() {
   return user.id;
 }
 
-export async function verifyUser(targetUserId: string, status: boolean) {
-  try {
-    await checkAdmin(); 
+// export async function verifyUser(targetUserId: string, status: boolean) {
+//   try {
+//     await checkAdmin(); 
 
-    await db.$transaction([
-      db.user.update({
-        where: { id: targetUserId },
-        data: { isVerified: status },
-      }),
-      db.dealerProfile.updateMany({
-        where: { userId: targetUserId },
-        data: { status: status ? DealerStatus.APPROVED : DealerStatus.PENDING }
-      })
-    ]);
+//     await db.$transaction([
+//       db.user.update({
+//         where: { id: targetUserId },
+//         data: { isVerified: status },
+//       }),
+//       db.dealerProfile.updateMany({
+//         where: { userId: targetUserId },
+//         data: { status: status ? DealerStatus.APPROVED : DealerStatus.PENDING }
+//       })
+//     ]);
 
-    revalidatePath("/admin-dashboard");
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("[USER_VERIFICATION_ERROR]:", error);
-    const msg = error instanceof Error ? error.message : "Verification failed";
-    return { success: false, message: msg };
-  }
-}
+//     revalidatePath("/admin-dashboard");
+//     return { success: true };
+//   } catch (error: unknown) {
+//     console.error("[USER_VERIFICATION_ERROR]:", error);
+//     const msg = error instanceof Error ? error.message : "Verification failed";
+//     return { success: false, message: msg };
+//   }
+// }
 
 
 export async function approveCarListing(carId: string) {

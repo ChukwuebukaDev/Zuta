@@ -23,13 +23,12 @@ model User {
   fraudEvents         FraudEvent[]
   favourites          Favorite[]
   cars                Car[]
-  bookings            Booking[]
   verificationRequest VerificationRequest?
   buyerConversations  Conversation[] @relation("BuyerConversations")
   sellerConversations Conversation[] @relation("SellerConversations")
   dealerProfile       DealerProfile?
   messages            Message[]
-  privateListingLimit Int            @default(2)
+  privateListingLimit Int            @default(5)
 }
 
 model DealerProfile {
@@ -261,21 +260,6 @@ model Message {
   sender         User         @relation(fields: [senderId], references: [id])
 }
 
-model ServiceProvider {
-  id         String      @id @default(uuid())
-  name       String
-  type       ServiceType
-  rating     Float       @default(5.0)
-  location   String
-  address    String
-  phone      String
-  image      String?
-  priceFrom  Float
-  isVerified Boolean     @default(false)
-  createdAt  DateTime    @default(now())
-  bookings   Booking[]
-}
-
 model FraudEvent {
   id        String   @id @default(cuid())
   userId    String
@@ -286,18 +270,6 @@ model FraudEvent {
   user      User     @relation(fields: [userId], references: [id])
 }
 
-model Booking {
-  id          String          @id @default(uuid())
-  userId      String
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  providerId  String
-  provider    ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  scheduledAt DateTime
-  status      BookingStatus   @default(PENDING)
-  notes       String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-}
 
 enum ImageAngle {
   FRONT
@@ -454,21 +426,6 @@ enum DocumentType {
   GOVT_ID
   BUSINESS_CARD
   CAC_CERTIFICATE
-}
-
-enum ServiceType {
-  MECHANIC
-  CAR_WASH
-  DETAILING
-  TOWING
-  INSPECTION
-}
-
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  COMPLETED
-  CANCELLED
 }
 
 enum FraudStatus {

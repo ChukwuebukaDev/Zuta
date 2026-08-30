@@ -7,7 +7,7 @@ export type SellerProfile = {
   totalReviews: number;
   location: string;
   joinedDate: string;
-  phoneNumber: string;
+  phoneNumber:string;
 };
 
 export type MessageItem = {

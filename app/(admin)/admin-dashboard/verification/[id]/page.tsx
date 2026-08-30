@@ -36,7 +36,7 @@ export default async function VerificationDetail({
   // 2. Handle Server Action Wrappers
   async function handleApprove() {
     "use server"
-    await approveDealer(request!.id, request!.userId)
+    await approveDealer(request!.id)
     redirect("/admin/dashboard/verification")
   }
 

@@ -59,8 +59,6 @@ export default async function OnboardingStatusPage() {
     redirect("/dashboard");
   }
 
-  // Determine a personalized display name (prefer business name, then user name, then default)
-  const displayName:string = user.dealerProfile?.businessName || user.name || "Dealer";
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
@@ -81,7 +79,7 @@ export default async function OnboardingStatusPage() {
           </h1>
           <h2 className="text-2xl font-semibold">Verification in Progress</h2>
           <p className="text-slate-400 leading-relaxed">
-            Hello, <span className="text-white font-medium">{displayName}</span>. 
+            Hello, <span className="text-white font-medium">{user?.name}</span>. 
             Our team is currently reviewing your dealer credentials. This usually takes 
             less than 24 hours.
           </p>

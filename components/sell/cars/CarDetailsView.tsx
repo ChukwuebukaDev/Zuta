@@ -49,14 +49,14 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
   const seller = car;
   const formattedSeller = {
     id: seller?.userId || "unknown_seller",
-    name: seller?.sellerName || "Verified Dealer",
     avatarUrl: seller?.thumbnail || "",
     listingStatus: seller?.listingStatus || '',
     rating: 4.9,
     totalReviews: 24,
     location: car.location || "Lagos, Nigeria",
-    joinedDate: "2024",
-    phoneNumber: seller?.sellerPhone || "0800ZUTACARS",
+    name:'ebuka',   //for testing only, not real
+    phoneNumber:'08098982921', // for testing only
+    joinedDate: "2024", // testing only
   };
 
   const mockOtherListings = [

@@ -18,74 +18,90 @@ import {
 } from "@/app/(admin)/admin-dashboard/verification/action";
 
 type VerificationRequest = {
-  status:string,
-verificationRequest:{
-    id: string;
-  requestId: string;
-
+  id: string;
   legalName: string;
-
   idUrl: string;
   cardUrl: string;
-
-  status: "SUBMITTED" | "APPROVED" | "REJECTED";
-}
+  status: "SUBMITTED" | "APPROVED" | "REJECTED"  | "UNDER_REVIEW";
 };
 
 export function VerificationTable({
-  users,
+  requests,
 }: {
-  users: VerificationRequest[];
+  requests: VerificationRequest[];
 }) {
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [loadingId, setLoadingId] =
+    useState<string | null>(null);
+
   const router = useRouter();
-  const handleApprove = async (requestId: string) => {
+
+  const handleApprove = async (
+    requestId: string
+  ) => {
     setLoadingId(requestId);
 
     try {
       await approveDealer(requestId);
 
-      toast.success("Dealer approved successfully.");
+      toast.success(
+        "Dealer approved successfully."
+      );
+
       router.refresh();
     } catch (error) {
-      console.error("[APPROVE_DEALER]", error);
+      console.error(
+        "[APPROVE_DEALER]",
+        error
+      );
 
       toast.error(
         error instanceof Error
           ? error.message
           : "Failed to approve dealer."
       );
-
-      
     } finally {
       setLoadingId(null);
-    }  };
+    }
+  };
 
 
-  const handleReject = async (requestId: string) => {
+  const handleReject = async (
+    requestId: string
+  ) => {
     const notes = window.prompt(
       "Enter a reason for rejecting this application:"
     );
 
-    // User cancelled
     if (notes === null) {
       return;
     }
 
     if (!notes.trim()) {
-      toast.error("A rejection reason is required.");
+      toast.error(
+        "A rejection reason is required."
+      );
+
       return;
     }
 
     setLoadingId(requestId);
 
     try {
-      await rejectDealer(requestId, notes);
+      await rejectDealer(
+        requestId,
+        notes
+      );
 
-      toast.success("Dealer application rejected.");
+      toast.success(
+        "Dealer application rejected."
+      );
+
       router.refresh();
     } catch (error) {
-      console.error("[REJECT_DEALER]", error);
+      console.error(
+        "[REJECT_DEALER]",
+        error
+      );
 
       toast.error(
         error instanceof Error
@@ -97,7 +113,7 @@ export function VerificationTable({
     }
   };
 
-  function capitalizeName(name: string): string {
+  function capitalizeName(name: string) {
     if (!name) return "";
 
     return name
@@ -134,13 +150,15 @@ export function VerificationTable({
         );
 
       case "SUBMITTED":
-      default:
         return (
           <span className="flex items-center gap-1 font-bold text-amber-500">
             <ShieldAlert size={16} />
             Pending
           </span>
         );
+
+      default:
+        return null;
     }
   }
 
@@ -169,8 +187,7 @@ export function VerificationTable({
         </thead>
 
         <tbody className="divide-y divide-slate-800">
-          {users.map((res) => {
-            const request = res.verificationRequest;
+          {requests.map((request) => {
             const isLoading =
               loadingId === request.id;
 
@@ -182,11 +199,14 @@ export function VerificationTable({
                 key={request.id}
                 className="transition-colors hover:bg-slate-900/50"
               >
-  
+                {/* Legal Name */}
                 <td className="px-6 py-4 font-medium text-white">
-                  {capitalizeName(request.legalName)}
+                  {capitalizeName(
+                    request.legalName
+                  )}
                 </td>
 
+                {/* Documents */}
                 <td className="space-x-3 px-6 py-4">
                   <a
                     href={request.idUrl}
@@ -209,10 +229,14 @@ export function VerificationTable({
                   </a>
                 </td>
 
+                {/* Status */}
                 <td className="px-6 py-4">
-                  {renderStatus(request.status)}
+                  {renderStatus(
+                    request.status
+                  )}
                 </td>
 
+                {/* Actions */}
                 <td className="px-6 py-4">
                   {isPending ? (
                     <div className="flex gap-x-2">
@@ -276,4 +300,3 @@ export function VerificationTable({
     </div>
   );
 }
-

@@ -24,7 +24,7 @@ export async function getCars(filters?: Partial<CarFilters>) {
       where.OR = [
         { brand: { contains: filters.q, mode: 'insensitive' } },
         { model: { contains: filters.q, mode: 'insensitive' } },
-        { bodyType: { contains: filters.q, mode: 'insensitive' } },
+        // { bodyType: { contains: filters.q, mode: 'insensitive' } },
       ];
     }
 

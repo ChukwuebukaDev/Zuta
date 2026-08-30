@@ -188,9 +188,6 @@ useEffect(() => {
       localStorage.removeItem(DRAFT_KEY);
       setFormData({
         ...initialState,
-        sellerName: defaultName || "",
-        sellerPhone: defaultPhone || "",
-        sellerEmail: defaultEmail || "",
       });
       toast.success("Draft cleared.");
     } catch (err) {
