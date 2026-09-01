@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Star, ShieldCheck, MapPin, Calendar, Phone, Send } from "lucide-react";
+import { Star, ShieldCheck, MapPin, Phone, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +11,9 @@ import {
   MessageItem,
   MiniListingCard,
 } from "@/types/seller/contact.types";
+import CandidateBadge from "@/utilities/CandidateBadge";
+
+
 
 interface ContactSellerProps {
   seller: SellerProfile;
@@ -46,6 +49,8 @@ export default function ContactSellerSection({
 
   const hasConversation = messages.length > 1;
   const router = useRouter();
+
+  const isDealer = seller.role === "DEALER" && seller.role;
 
   useEffect(() => {
     let isMounted = true;
@@ -390,7 +395,10 @@ export default function ContactSellerSection({
                 <MapPin size={12} /> <span>{seller.location}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Calendar size={12} /> <span>Registered Account</span>
+                {isDealer ? <>
+                <CandidateBadge role = 'DEALER'/> 
+                <span>Verified Dealer</span>
+                </> : <span>Private Seller</span>}
               </div>
             </div>
 
@@ -429,7 +437,7 @@ export default function ContactSellerSection({
                     {listing.title}
                   </h6>
                   <p className="text-xs font-black text-white mt-0.5">
-                    {listing.price}
+                    {listing.price.toLocaleString()}
                   </p>
                 </div>
               </Link>

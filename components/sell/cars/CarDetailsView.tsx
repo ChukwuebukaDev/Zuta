@@ -8,6 +8,7 @@ import MapContainer from "@/map/MapContainer";
 import ContactSellerSection from "./ContactSellerSection";
 import { Button } from "@/components/ui/button";
 import { getCarBySlug } from "@/lib/engine/marketplace";
+import { SellerCars } from "@/types/seller/contact.types";
 
 type PromisedCarType = ReturnType<typeof getCarBySlug>;
 type UnwrappedCarType = PromisedCarType extends Promise<infer T> ? T : never;
@@ -32,42 +33,53 @@ export type SerializedCar = Omit<
   country?:string;
   engineCode?:string;
   carImages?: string[];
+  description:string;
 };
+
+type SellerCar = {
+  status:string;
+  id:string;
+}
 
 export interface CarDetailsViewProps {
   car: SerializedCar; 
   currentUserId: string;
+
+  user:{
+      cars:SellerCars[],
+    id:string;
+   thumbnail?:string,
+privateListingLimit:number,
+  role:string,
+    state?:string,
+    name:string,
+    phone:string,
+    createdAt?:string,
+    
+ },
+
 }
 
-export default function CarDetailsView({ car, currentUserId }: CarDetailsViewProps) {
-
+export default function CarDetailsView({ car, currentUserId,user }: CarDetailsViewProps) {
   const [showChatDesk, setShowChatDesk] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle");
-  //const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const seller = car;
+const {privateListingLimit:listingStatus,name,phone:phoneNumber,createdAt,role}  = user;
   const formattedSeller = {
-    id: seller?.userId || "unknown_seller",
-    avatarUrl: seller?.thumbnail || "",
-    listingStatus: seller?.listingStatus || '',
+    id: user.id,
+    avatarUrl:car.thumbnail,
+  listingStatus,
     rating: 4.9,
     totalReviews: 24,
-    location: car.location || "Lagos, Nigeria",
-    name:'ebuka',   //for testing only, not real
-    phoneNumber:'08098982921', // for testing only
-    joinedDate: "2024", // testing only
+    location:car.city,
+    name,
+    role,
+    phoneNumber,
+    joinedDate:String(createdAt)
   };
+const otherListings = user?.cars?.filter((sellerCar:SellerCar) => sellerCar.id !== car.id && sellerCar.status === "AVAILABLE");
 
-  const mockOtherListings = [
-    {
-      slug: "listing-example-1",
-      thumbnail: car.images?.[0] || "",
-      title: `${car.brand} Alternative Spec`,
-      price: `₦${(car.price * 0.95).toLocaleString()}`,
-      year: String(car.year)
-    }
-  ];
 
   const handleShareListing = async () => {
     const shareData = { title: `${car.year} ${car.brand} ${car.model}`, url: window.location.href };
@@ -149,6 +161,7 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
               <DetailRow label="Drivetrain" value={car.drivetrain} />
               <DetailRow label="Condition" value={car.condition} />
               <DetailRow label="Status" value={car.status} />
+              <DetailRow label="Description" value={car.description}/>
             </div>
           </section>
 
@@ -161,7 +174,7 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
           {/* <button onClick={()=>setIsDialogOpen(true)}>view more details</button> */}
         </div>
 
-        {seller.userId !== currentUserId && (
+        {car.userId !== currentUserId && (
           <aside className="lg:col-span-4">
             <div className="sticky top-10 p-8 rounded-[3rem] bg-white border border-slate-200 shadow-sm space-y-6">
               <Button onClick={() => setShowChatDesk(true)} className="w-full h-16 rounded-2xl bg-black text-white font-black uppercase tracking-widest flex items-center gap-2">
@@ -183,7 +196,7 @@ export default function CarDetailsView({ car, currentUserId }: CarDetailsViewPro
             <ContactSellerSection 
               key={car.id} 
               seller={formattedSeller} 
-              otherListings={mockOtherListings} 
+              otherListings={otherListings} 
               carId={car.id} 
               currentUserId={currentUserId} 
             />

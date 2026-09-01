@@ -65,7 +65,8 @@ export async function proxy(request: NextRequest) {
   const isPublicApi =
     pathname.startsWith("/api/uploadthing") ||
     pathname.startsWith("/api/messages/send") ||
-    pathname.startsWith("/api/onboarding");
+    pathname.startsWith("/api/onboarding") ||
+     pathname.startsWith("/api/cars/preview");
 
   const isPublicPage =
     pathname === "/" ||

@@ -28,9 +28,13 @@ export async function getCars(filters?: Partial<CarFilters>) {
       ];
     }
 
+
     // Direct brand/model filtering
     if (filters.brand) where.brand = { contains: filters.brand, mode: 'insensitive' };
     if (filters.model) where.model = { contains: filters.model, mode: 'insensitive' };
+    if (filters.bodyType) {
+  where.bodyType = filters.bodyType;
+}
     if (filters.year) where.year = filters.year;
 
     // Numerical price range filtering

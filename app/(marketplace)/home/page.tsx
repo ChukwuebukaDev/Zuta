@@ -1,13 +1,14 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Flame,
-  Gauge,
   ShieldAlert,
   Sparkles,
   Zap,
 } from "lucide-react";
+import { BodyType } from "@prisma/client";
 //import SpecLookupWidget from "./SpecLookupWidget";
+import CarQueryPreview from "@/components/ui/Home/CarQueryPreview";
+
 
 export default function HomePage() {
   // Editorial data for the dynamic fuel efficiency highlight block
@@ -42,36 +43,48 @@ export default function HomePage() {
     },
   ];
 
-  const automobileTypes = [
-    {
-      title: "SUVs",
-      description:
-        "High ground clearance, maximum commanding view, and family space.",
-      query: "suv",
-      count: "140+ Listed",
-    },
-    {
-      title: "Sedans",
-      description:
-        "Traditional executive comfort, isolated luggage trunk, and sleek economy.",
-      query: "sedan",
-      count: "98+ Listed",
-    },
-    {
-      title: "Coupes",
-      description:
-        "Aggressive two-door sloping lines, focused dynamics, and performance styling.",
-      query: "coupe",
-      count: "45+ Listed",
-    },
-    {
-      title: "Hatchbacks",
-      description:
-        "Compact parking dimensions with folding rear capacity for urban agility.",
-      query: "hatchback",
-      count: "62+ Listed",
-    },
-  ];
+ const automobileTypes: {
+  title: string;
+  description: string;
+  query: BodyType;
+  count: string;
+}[] = [
+  {
+    title: "SUVs",
+    description:
+      "High ground clearance, maximum commanding view, and family space.",
+    query: BodyType.SUV,
+    count: "140+ Listed",
+  },
+  {
+    title: "Sedans",
+    description:
+      "Traditional executive comfort, isolated luggage trunk, and sleek economy.",
+    query: BodyType.SEDAN,
+    count: "98+ Listed",
+  },
+  {
+    title: "Coupes",
+    description:
+      "Aggressive two-door sloping lines, focused dynamics, and performance styling.",
+    query: BodyType.COUPE,
+    count: "45+ Listed",
+  },
+  {
+    title: "Hatchbacks",
+    description:
+      "Compact parking dimensions with folding rear capacity for urban agility.",
+    query: BodyType.HATCHBACK,
+    count: "62+ Listed",
+  },
+  {
+    title: "Trucks",
+    description:
+      "Rugged performance with powerful 4wheel drive capacity for offroads.",
+    query: BodyType.TRUCK,
+    count: "82+ Listed",
+  },
+];
 
   return (
     <div className="bg-white text-slate-900 min-h-screen selection:bg-black selection:text-white antialiased">
@@ -138,32 +151,103 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {automobileTypes.map((type) => (
-              <Link
-                key={type.title}
-                href={`/cars?t=${type.query}`}
-                className="group p-8 rounded-3xl bg-white border border-slate-200/60 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[220px]"
-              >
-                <div className="space-y-3">
-                  <span className="text-[10px] font-black tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase">
-                    {type.count}
-                  </span>
-                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                    {type.title}
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    {type.description}
-                  </p>
-                </div>
-                <div className="pt-4 flex items-center justify-between text-xs font-bold text-slate-800 border-t border-slate-50 mt-4 group-hover:text-blue-600 transition-colors">
-                  Explore Classification{" "}
-                  <ArrowRight
-                    size={14}
-                    className="transform group-hover:translate-x-1 transition-transform"
-                  />
-                </div>
-              </Link>
-            ))}
+{automobileTypes.map((type) => (
+  <CarQueryPreview
+  key={type.title}
+  title={type.title}
+  description={type.description}
+  bodyType={type.query}
+>
+    <div
+      className="
+        group
+        p-8
+        rounded-3xl
+        bg-white
+        border
+        border-slate-200/60
+        shadow-sm
+        hover:shadow-xl
+        hover:-translate-y-1
+        transition-all
+        duration-300
+        flex
+        flex-col
+        justify-between
+        h-60
+        cursor-pointer
+      "
+    >
+      <div className="space-y-3">
+        <span
+          className="
+            text-[10px]
+            font-black
+            tracking-widest
+            text-blue-600
+            bg-blue-50
+            px-2.5
+            py-1
+            rounded-md
+            uppercase
+          "
+        >
+          {type.count}
+        </span>
+
+        <h3
+          className="
+            text-xl
+            font-bold
+            text-slate-900
+            group-hover:text-blue-600
+            transition-colors
+          "
+        >
+          {type.title}
+        </h3>
+
+        <p
+          className="
+            text-xs
+            text-slate-400
+            leading-relaxed
+          "
+        >
+          {type.description}
+        </p>
+      </div>
+
+      <div
+        className="
+          pt-4
+          flex
+          items-center
+          justify-between
+          text-xs
+          font-bold
+          text-slate-800
+          border-t
+          border-slate-50
+          mt-4
+          group-hover:text-blue-600
+          transition-colors
+        "
+      >
+        Explore Classification
+
+        <ArrowRight
+          size={14}
+          className="
+            transform
+            group-hover:translate-x-1
+            transition-transform
+          "
+        />
+      </div>
+    </div>
+  </CarQueryPreview>
+))}
           </div>
         </div>
       </section>
