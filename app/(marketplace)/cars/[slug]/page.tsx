@@ -116,12 +116,14 @@ const serializedUser = {
         : sellerCar.rejectedAt ?? null,
   })),
 };
+
   const serializedCar = {
     ...car,
     price: Number(car.price),
     fuelCapacity: Number(car.fuelCapacity) ?? 50, 
   horsePower: Number(car.horsePower) ?? 150,
   trim:car.trim ?? "",
+  description:car.description ?? "",
   engineSize:car.engineSize ?? "",
     // Process Dates to plain ISO strings safely, verifying optional fields first
     createdAt: car.createdAt instanceof Date ? car.createdAt.toISOString() : car.createdAt,

@@ -52,9 +52,9 @@ export interface CarDetailsViewProps {
 privateListingLimit:number,
   role:string,
     state?:string,
-    name:string,
-    phone:string,
-    createdAt?:string,
+    name:string | null,
+    phone:string | null,
+    createdAt?:Date,
     
  },
 

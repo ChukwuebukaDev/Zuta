@@ -37,7 +37,7 @@ horsePower?:number | null;
   thumbnail: string;
   images: string[]; 
   carImages: string[];
-
+description:string;
   userId: string;
   user?: {
     name: string | null;

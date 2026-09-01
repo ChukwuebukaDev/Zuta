@@ -1,14 +1,14 @@
 export type SellerProfile = {
   id: string;
-  name: string;
+  name: string | null;
   avatarUrl: string;
   role:string;
-  listingStatus: string;
+  listingStatus: number;
   rating: number;
   totalReviews: number;
   location: string;
   joinedDate: string;
-  phoneNumber:string;
+  phoneNumber:string |null;
 };
 
 export type SellerCars = {
@@ -74,8 +74,8 @@ export type MessageItem = {
 
 export type MiniListingCard = {
   slug: string;
-  thumbnail: string;
+  thumbnail: string | null;
   title: string;
-  price: string;
-  year: string;
+  price: number;
+  year: number;
 };

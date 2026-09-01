@@ -359,7 +359,7 @@ export default function ContactSellerSection({
                 {seller.avatarUrl ? (
                   <Image
                     src={seller.avatarUrl}
-                    alt={seller.name}
+                    alt={seller.name || "Seller Avatar"}
                     fill
                     className="object-cover"
                   />
